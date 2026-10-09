@@ -1,84 +1,1063 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Wedding Maya | Destination Wedding Persona</title>
+
+    <style>
+        body {
+            max-width: 950px;
+            margin: 40px auto;
+            padding: 0 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #263238;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            margin-top: 40px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        h4 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        .flow-step {
+            background-color: #f7f9fc;
+            border: 1px solid #dce3eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .flow-step p:last-child {
+            margin-bottom: 0;
+        }
+
+        .flow-step ul {
+            margin-top: 8px;
+        }
+
+        .flow-diagram {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px auto;
+        }
+    </style>
 </head>
-<link rel="stylesheet" href="style.css">
+
 <body>
 
-<h1>Destination Wedding Organizer Persona</h1>
-<h2>Persona</h2>
-<h3>Name: Maya Rodriguez</h3>
-<h3> Technology:</h3>
-<ul> Cell Phone Apple iPhone 15 Pro</ul>
-<ul> Desktop: Apple MacBook Air 13-inch (M2)</ul>
-<ul> Watch: Apple Watch Series 9</ul>
+<main>
 
-<h3> Proficiency</h3>
-<p> Maya is moderately high to highly proficient with technology. She’s 29, regularly uses travel sites, social media, group chats, and online booking, but she’s not a technical professional.
-</p>
+    <h1>Wedding Maya | Destination Wedding Organizer</h1>
 
-<p> Maya is comfortable navigating websites, mobile apps, social media, online booking platforms, and digital planning tools. She learns new apps quickly but prefers technology that is intuitive and does not require instructions.</p>
+    <!-- SECTION 1: PERSONA -->
 
-<p> She wants to do the destination wedding planning on her Macbook and use her iPhone during the actual trip for the itinerary, directions, reservations, messages, and last-minute changes. </p>
+    <section id="persona">
 
-<h3> Love/Hate</h3>
-<p> 
-    <strong> Love</strong>
-<ul> Planning memorable experiences for friends and family</ul>
-<ul> Beautiful destinations and unique activities</ul>
-<ul> Having everything organized ahead of time</ul>
-<ul> Finding venues and churches on Instagram/TikTok</ul>
-</p>
-<p>
-    <strong> Hate</strong>
-<ul> Answering the same questions over and over</ul>
-<ul> Chasing people for RSVPs or decisions</ul>
-<ul> Last-minute cancellations and changes</ul>
-<ul> Information scattered between texts, emails, and group chats</ul>
-</p>
+        <h2>1. Persona</h2>
 
-<h2>Attitudes and Behaviors</h2>
-<p>
-    Maya enjoys planning ahead and keeping her destination wedding organized, even when all the details are not finalized. She likes researching venues, churches, and activities and prefers to manage the larger planning tasks on her MacBook.
-</p>
+        <h3>Name and Background</h3>
 
-<p>
-    Maya wants to keep her bridal party informed as plans develop without sharing unfinished details with every guest. She frequently uses her iPhone for group messages and quick updates and prefers having one central place for wedding information instead of searching through texts, emails, and notes.
-</p>
-<h2>User Story</h2>
+        <p>
+            <strong>Name:</strong> Maya Rodriguez<br>
+            <strong>Age:</strong> 29<br>
+            <strong>Role:</strong> Destination Wedding Organizer<br>
+            <strong>Trip:</strong> Destination Wedding<br>
+            <strong>Group:</strong> Wedding Guests and Bridal Party
+        </p>
 
-<p>
-    As the organizer of a destination wedding, I want to add the church and reception locations to my itinerary before the times are finalized so that I can keep my bridal party updated as the wedding plans develop.
-</p>
-<h2>Use Case</h2>
-<h3> Scenario</h3>
-<p>Maya has confirmed the church and reception locations for her destination wedding, but the times are not finalized. She wants to add both locations to the wedding itinerary and share the preliminary information with her bridal party.</p>
-<h3> Precondition</h3>
-<p>Maya has an account, has created her wedding trip, and has added her bridal party to the trip.</p>
-<h3> Postcondition</h3>
-<p>The church and reception locations are saved to the itinerary without required times, and Maya's bridal party can view the updated information.</p>
-<h2>Interaction Flow</h2>
-<ol start="1">
-    <li><strong>User Interaction:</strong> Maya logs into her account.</li>
-    <li><strong>Website Response:</strong> The website authenticates Maya and displays her dashboard.</li>
-    <li><strong>User Interaction:</strong> Maya selects her destination wedding trip.</li>
-    <li><strong>Website Response:</strong> The website opens the wedding itinerary.</li>
-    <li><strong>User Interaction:</strong> Maya selects <strong>Add Event</strong>.</li>
-    <li><strong>Website Response:</strong> The website displays a form to create a new itinerary event.</li>
-    <li><strong>User Interaction:</strong> Maya enters the church name and location but leaves the time blank.</li>
-    <li><strong>Website Response:</strong> The website accepts the location information without requiring a time.</li>
-    <li><strong>User Interaction:</strong> Maya selects <strong>Bridal Party</strong> as the audience.</li>
-    <li><strong>Website Response:</strong> The website sets the event visibility to bridal-party members only.</li>
-    <li><strong>User Interaction:</strong> Maya selects <strong>Save Event</strong>.</li>
-    <li><strong>Website Response:</strong> The website saves the church event and displays it on the itinerary.</li>
-    <li><strong>User Interaction:</strong> Maya repeats the process to add the reception location.</li>
-    <li><strong>Website Response:</strong> The website saves the reception event and displays it on the itinerary.</li>
-    <li><strong>User Interaction:</strong> Maya views the updated wedding itinerary.</li>
-    <li><strong>Website Response:</strong> The website displays the church and reception locations to the bridal party and shows that the event times are not yet determined.</li>
-</ol>
+        <p>
+            Maya is organizing a destination wedding that
+            brings together friends and family for a
+            celebration away from home. She enjoys
+            researching beautiful destinations, churches,
+            reception venues, and memorable activities
+            that will make the experience special.
+        </p>
+
+        <p>
+            Maya is organized and comfortable using
+            technology to coordinate travel and events.
+            She wants guests to feel informed and
+            prepared without having to personally
+            answer questions about every activity.
+        </p>
+
+        <p>
+            Although Maya enjoys planning, coordinating
+            a destination wedding involves managing
+            schedules, locations, reservations,
+            attendance, and last-minute changes.
+            She needs a reliable way to communicate
+            finalized plans and keep guests informed.
+        </p>
+
+    </section>
+
+    <!-- SECTION 2: TECHNOLOGY -->
+
+    <section id="technology">
+
+        <h2>2. Technology</h2>
+
+        <h3>Devices</h3>
+
+        <ul>
+            <li>
+                <strong>Primary:</strong>
+                Apple MacBook Air 13-inch (M2)
+                for planning and reservations.
+            </li>
+
+            <li>
+                <strong>Secondary:</strong>
+                Apple iPhone 15 Pro for accessing
+                the itinerary while traveling.
+            </li>
+
+            <li>
+                <strong>Additional:</strong>
+                Apple Watch Series 9.
+            </li>
+        </ul>
+
+        <h3>Technology Proficiency</h3>
+
+        <p>
+            Maya has moderately high to high
+            technology proficiency. She regularly
+            uses travel websites, social media,
+            group chats, and online booking
+            platforms, although she is not
+            a technical professional.
+        </p>
+
+        <p>
+            She learns new applications quickly
+            but prefers intuitive websites
+            that do not require extensive
+            instructions. She uses her MacBook
+            for detailed planning and her
+            iPhone to access schedules,
+            locations, and updates during
+            the trip.
+        </p>
+
+        <h3>Loves</h3>
+
+        <ul>
+            <li>
+                Planning memorable experiences
+                for friends and family.
+            </li>
+
+            <li>
+                Beautiful destinations
+                and unique activities.
+            </li>
+
+            <li>
+                Having plans organized
+                before the wedding.
+            </li>
+
+            <li>
+                Discovering venues and churches
+                through Instagram and TikTok.
+            </li>
+
+            <li>
+                Knowing who plans to attend
+                each wedding activity.
+            </li>
+        </ul>
+
+        <h3>Hates</h3>
+
+        <ul>
+            <li>
+                Answering the same logistical
+                questions repeatedly.
+            </li>
+
+            <li>
+                Chasing guests for RSVPs.
+            </li>
+
+            <li>
+                Last-minute cancellations
+                and schedule changes.
+            </li>
+
+            <li>
+                Information scattered across
+                emails, texts, and group chats.
+            </li>
+
+            <li>
+                Having to communicate the same
+                update to multiple guests.
+            </li>
+        </ul>
+
+        <h3>Frustrations and Needs</h3>
+
+        <p>
+            Maya's biggest frustration is becoming
+            the primary source of information
+            for everyone attending her destination
+            wedding. Guests frequently ask about
+            ceremony times, reception locations,
+            transportation, dress codes, and
+            other details that have already
+            been communicated.
+        </p>
+
+        <p>
+            Wedding information is often scattered
+            across emails, booking confirmations,
+            text messages, and social media.
+            Maya wants a centralized itinerary
+            where guests can independently
+            find the information they need.
+        </p>
+
+        <p>
+            She also needs to collect accurate
+            attendance information for individual
+            wedding activities. When plans change,
+            she wants the updated information
+            to appear in the shared itinerary
+            and be communicated through email
+            rather than contacting each
+            guest individually.
+        </p>
+
+    </section>
+
+    <!-- SECTION 3: ATTITUDES AND BEHAVIORS -->
+
+    <section id="attitudes-behaviors">
+
+        <h2>3. Attitudes and Behaviors</h2>
+
+        <p>
+            Maya enjoys planning ahead and
+            creating meaningful experiences
+            for friends and family. She is
+            detail-oriented and prefers
+            researching venues, churches,
+            and activities before making
+            final decisions. She frequently
+            discovers inspiration through
+            Instagram, TikTok, and travel
+            websites, then coordinates
+            reservations directly with
+            the venues.
+        </p>
+
+        <p>
+            Maya likes to organize information
+            as soon as details are confirmed.
+            Although she may know the church
+            or reception venue before the
+            event times are finalized, she
+            understands that activities
+            require a scheduled start
+            and end time before they can
+            be added to the shared itinerary.
+            She keeps preliminary details
+            in her personal planning notes
+            until the schedule is ready.
+        </p>
+
+        <p>
+            Once activities are scheduled,
+            Maya enters their dates, times,
+            locations, costs, and important
+            notes into the trip planner.
+            She uses email invitations to
+            provide guests with access
+            to the shared itinerary and
+            relies on Going, Maybe, or
+            Not Going responses to help
+            coordinate attendance.
+        </p>
+
+        <p>
+            During the destination wedding,
+            Maya uses her iPhone to review
+            the itinerary and make updates
+            when necessary. She expects
+            guests to check the shared
+            schedule independently and
+            receive email notifications
+            when activity details change.
+            Her goal is to spend less
+            time managing logistics and
+            more time enjoying the celebration.
+        </p>
+
+    </section>
+
+    <!-- SECTION 4: USER STORY -->
+
+    <section id="user-story">
+
+        <h2>4. User Story</h2>
+
+        <p>
+            As a destination wedding organizer,
+            I want to share one itinerary
+            so guests can access event details
+            and RSVP independently.
+        </p>
+
+    </section>
+
+    <!-- SECTION 5: USE CASE -->
+
+    <section id="use-case">
+
+        <h2>5. Use Case</h2>
+
+        <h3>Use Case Statement</h3>
+
+        <p>
+            As the organizer of a destination wedding,
+            I need to schedule and share ceremony
+            and reception details so guests can
+            find the information they need
+            and confirm their attendance.
+        </p>
+
+        <h3>Scenario</h3>
+
+        <p>
+            Maya is organizing a destination wedding
+            for friends and family. She has confirmed
+            the church and reception venues, but
+            initially does not know the exact
+            event times. She keeps the preliminary
+            information in her personal planning
+            notes while she works with the
+            venues to finalize the schedule.
+        </p>
+
+        <p>
+            Once the ceremony and reception
+            start and end times are confirmed,
+            Maya logs into the trip-planning
+            website and adds both activities
+            to her existing wedding trip.
+            She includes the venue names,
+            addresses, descriptions,
+            and important guest information.
+        </p>
+
+        <p>
+            Maya invites adult wedding guests
+            through email. After accepting
+            their invitations, guests can
+            access the shared itinerary
+            and submit Going, Maybe, or
+            Not Going responses for activities
+            that require an RSVP.
+        </p>
+
+        <p>
+            As the wedding approaches,
+            Maya reviews attendance totals
+            within the trip itinerary.
+            If a ceremony or reception
+            detail changes, she updates
+            the activity and the website
+            sends an email notification
+            to accepted travelers.
+        </p>
+
+        <h3>Preconditions</h3>
+
+        <ul>
+            <li>
+                Maya has an existing account
+                with the trip-planning website.
+            </li>
+
+            <li>
+                She has already created
+                her destination wedding trip.
+            </li>
+
+            <li>
+                The church and reception
+                venues have been selected.
+            </li>
+
+            <li>
+                The ceremony and reception
+                start and end times have
+                been confirmed.
+            </li>
+
+            <li>
+                Maya has the email addresses
+                of the adult guests
+                she plans to invite.
+            </li>
+        </ul>
+
+        <h3>Postconditions</h3>
+
+        <ul>
+            <li>
+                The ceremony and reception
+                are saved as activities
+                within the wedding trip.
+            </li>
+
+            <li>
+                Each activity includes
+                a valid date, start time,
+                end time, and location.
+            </li>
+
+            <li>
+                All accepted trip travelers
+                can view the activities.
+            </li>
+
+            <li>
+                Guests can submit Going,
+                Maybe, or Not Going
+                responses when RSVP
+                is enabled.
+            </li>
+
+            <li>
+                Maya can review attendance
+                totals within the itinerary.
+            </li>
+
+            <li>
+                Activity updates appear
+                in the shared itinerary
+                and trigger email
+                notifications to guests.
+            </li>
+        </ul>
+
+    </section>
+
+    <!-- SECTION 6: INTERACTION FLOW -->
+
+    <section id="interaction-flow">
+
+        <h2>6. Detailed User Interaction Flow</h2>
+
+        <p>
+            Maya's interaction flow follows
+            the same eight-page trip-planning
+            website used by the other personas.
+            She uses her existing account
+            and wedding trip to add activities,
+            invite guests, collect RSVPs,
+            and communicate schedule changes.
+        </p>
+
+        <!-- LOGIN -->
+
+        <h3>Access the Wedding Trip</h3>
+
+        <div class="flow-step">
+            <h4>Step 1: Log In</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Opens the trip-planning website
+                on her MacBook and selects Log In.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Displays the login form with:
+            </p>
+
+            <ul>
+                <li>Email Address</li>
+                <li>Password</li>
+                <li>Log In button</li>
+            </ul>
+
+            <p>
+                <strong>Maya:</strong>
+                Enters her credentials
+                and selects Log In.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Validates her credentials.
+                If incorrect, an error
+                message appears. If valid,
+                the website opens My Trips.
+            </p>
+        </div>
+
+        <div class="flow-step">
+            <h4>Step 2: Select Destination Wedding</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Finds her existing destination
+                wedding trip in My Trips
+                and selects it.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Opens the trip itinerary
+                and displays existing
+                activities in chronological
+                order, along with organizer
+                controls for adding
+                or editing activities.
+            </p>
+        </div>
+
+        <!-- ADD CEREMONY -->
+
+        <h3>Add the Wedding Ceremony</h3>
+
+        <div class="flow-step">
+            <h4>Step 3: Open Add Activity</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Selects Add Activity
+                from the trip itinerary.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Opens the Add Activity
+                form with the following fields:
+            </p>
+
+            <ul>
+                <li>Activity Name</li>
+                <li>Activity Type: Core or Optional</li>
+                <li>Activity Date</li>
+                <li>Start Time</li>
+                <li>End Time</li>
+                <li>Location Name</li>
+                <li>Location Address</li>
+                <li>Description</li>
+                <li>Estimated Cost</li>
+                <li>Cost Notes</li>
+                <li>Event Notes</li>
+                <li>Reservation Confirmation</li>
+                <li>Reservation Link</li>
+                <li>RSVP Required: Yes or No</li>
+                <li>Save Activity button</li>
+                <li>Cancel button</li>
+            </ul>
+
+            <p>
+                All activities are visible
+                to accepted travelers.
+                There is no bridal-party-only
+                visibility option.
+            </p>
+        </div>
+
+        <div class="flow-step">
+            <h4>Step 4: Enter Ceremony Details</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Enters Wedding Ceremony
+                as the activity name
+                and selects Core Event.
+            </p>
+
+            <p>
+                She enters the ceremony date,
+                confirmed start and end times,
+                church name, and address.
+            </p>
+
+            <p>
+                In the description, she explains
+                the ceremony details. In Event Notes,
+                she includes guest arrival time,
+                parking information, dress code,
+                and any relevant accessibility
+                instructions.
+            </p>
+
+            <p>
+                She enters any applicable cost,
+                enables RSVPs, and selects
+                Save Activity.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Validates the required fields,
+                confirms that the activity date
+                falls within the trip dates,
+                and checks that the end time
+                is later than the start time.
+            </p>
+
+            <p>
+                If the form is incomplete
+                or invalid, the website
+                displays field-specific
+                error messages.
+            </p>
+
+            <p>
+                If valid, the website saves
+                the ceremony and displays
+                it in the trip itinerary.
+            </p>
+        </div>
+
+        <!-- ADD RECEPTION -->
+
+        <h3>Add the Wedding Reception</h3>
+
+        <div class="flow-step">
+            <h4>Step 5: Create Reception Activity</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Returns to the itinerary
+                and selects Add Activity.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Opens a new Add Activity
+                form with the same fields.
+            </p>
+
+            <p>
+                <strong>Maya:</strong>
+                Enters Wedding Reception,
+                selects Core Event,
+                and chooses the date,
+                confirmed start and end
+                times, venue name,
+                and street address.
+            </p>
+
+            <p>
+                She includes a description,
+                estimated cost if applicable,
+                reservation details,
+                and notes about transportation,
+                parking, attire, and
+                guest arrival instructions.
+            </p>
+
+            <p>
+                She enables RSVPs and
+                selects Save Activity.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Validates the information,
+                saves the reception,
+                and returns Maya to
+                the updated itinerary.
+            </p>
+        </div>
+
+        <div class="flow-step">
+            <h4>Step 6: Review Wedding Schedule</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Reviews the ceremony
+                and reception activities
+                to confirm that the dates,
+                times, and locations
+                are correct.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Displays both activities
+                in chronological order.
+                Each activity links
+                to its details.
+            </p>
+        </div>
+
+        <!-- INVITE GUESTS -->
+
+        <h3>Invite Wedding Guests</h3>
+
+        <div class="flow-step">
+            <h4>Step 7: Open Travelers &amp; Invites</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Selects Travelers &amp; Invites
+                from the wedding itinerary.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Displays the traveler roster,
+                invitation statuses,
+                and Invite Traveler button.
+            </p>
+        </div>
+
+        <div class="flow-step">
+            <h4>Step 8: Send Guest Invitations</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Selects Invite Traveler.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Displays an invitation form with:
+            </p>
+
+            <ul>
+                <li>Adult Traveler Email Address</li>
+                <li>Add Another Email button</li>
+                <li>Invitation Message</li>
+                <li>Send Invitations button</li>
+                <li>Cancel button</li>
+            </ul>
+
+            <p>
+                <strong>Maya:</strong>
+                Enters the email addresses
+                of invited adult guests
+                and includes a message
+                explaining that the shared
+                itinerary contains the
+                ceremony and reception details.
+            </p>
+
+            <p>
+                She selects Send Invitations.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Validates the email addresses,
+                sends the invitations,
+                and displays Pending
+                invitation statuses.
+            </p>
+        </div>
+
+        <div class="flow-step">
+            <h4>Step 9: Guests Accept Invitations</h4>
+
+            <p>
+                <strong>Guest:</strong>
+                Opens the invitation link
+                from their email.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Opens Accept Invitation
+                and prompts the guest
+                to Sign Up or Log In.
+            </p>
+
+            <p>
+                <strong>Guest:</strong>
+                Creates an account if needed,
+                or logs in, then accepts
+                the invitation.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Adds the guest to the
+                wedding trip, changes
+                their invitation status
+                to Accepted, and provides
+                access through My Trips.
+            </p>
+        </div>
+
+        <!-- RSVP -->
+
+        <h3>Collect Wedding Activity RSVPs</h3>
+
+        <div class="flow-step">
+            <h4>Step 10: Guest Opens Activity Details</h4>
+
+            <p>
+                <strong>Guest:</strong>
+                Opens the wedding trip
+                from My Trips and selects
+                the ceremony or reception.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Opens Activity Details &amp; RSVP
+                and displays the activity
+                name, date, start and end
+                times, location, address,
+                description, cost, notes,
+                and reservation information.
+            </p>
+        </div>
+
+        <div class="flow-step">
+            <h4>Step 11: Submit RSVP</h4>
+
+            <p>
+                <strong>Website:</strong>
+                Checks whether RSVPs
+                are required for the activity.
+                If enabled, it displays
+                the following options:
+            </p>
+
+            <ul>
+                <li>Going</li>
+                <li>Maybe</li>
+                <li>Not Going</li>
+                <li>Submit RSVP button</li>
+            </ul>
+
+            <p>
+                <strong>Guest:</strong>
+                Selects a response
+                and submits it.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Saves the RSVP, updates
+                the attendance totals,
+                and displays a confirmation.
+            </p>
+
+            <p>
+                The confirmation includes
+                an Add to Calendar option
+                and host contact information.
+                Guests can return to update
+                their responses.
+            </p>
+        </div>
+
+        <!-- ATTENDANCE -->
+
+        <h3>Review Wedding Attendance</h3>
+
+        <div class="flow-step">
+            <h4>Step 12: Review Attendance Summary</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Opens the trip itinerary
+                to review attendance
+                for the ceremony and reception.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Displays an organizer-only
+                attendance summary within
+                the itinerary.
+            </p>
+
+            <p>
+                Each activity displays
+                the number of travelers
+                marked Going, Maybe,
+                Not Going, and Not Responded.
+            </p>
+
+            <p>
+                Maya uses these totals
+                to coordinate with the
+                church and reception venue.
+            </p>
+        </div>
+
+        <!-- UPDATES -->
+
+        <h3>Manage Wedding Schedule Changes</h3>
+
+        <div class="flow-step">
+            <h4>Step 13: Update an Activity</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Receives confirmation
+                that the reception
+                start time has changed.
+            </p>
+
+            <p>
+                She opens the wedding
+                itinerary, selects
+                the reception, and
+                chooses Edit Activity.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Opens the Edit Activity
+                form with the existing
+                information populated.
+            </p>
+
+            <p>
+                <strong>Maya:</strong>
+                Updates the start time,
+                adjusts the end time
+                if necessary, and
+                selects Save Activity.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Validates and saves
+                the updated schedule.
+                The revised information
+                appears in the shared
+                wedding itinerary.
+            </p>
+        </div>
+
+        <div class="flow-step">
+            <h4>Step 14: Notify Wedding Guests</h4>
+
+            <p>
+                <strong>Website:</strong>
+                Sends an email notification
+                to accepted adult travelers
+                informing them that the
+                reception details have changed.
+            </p>
+
+            <p>
+                The email identifies
+                the updated activity
+                and directs guests
+                to the shared itinerary
+                for current information.
+            </p>
+
+            <p>
+                <strong>Guest:</strong>
+                Opens the email or
+                accesses the website
+                to review the change.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Displays the updated
+                reception schedule
+                and event details.
+            </p>
+        </div>
+
+        <!-- FINAL OUTCOME -->
+
+        <h3>Final Outcome</h3>
+
+        <div class="flow-step">
+            <h4>Step 15: Enjoy the Celebration</h4>
+
+            <p>
+                <strong>Maya:</strong>
+                Attends her destination
+                wedding knowing guests
+                can independently access
+                ceremony and reception
+                information and submit
+                their RSVPs.
+            </p>
+
+            <p>
+                <strong>Website:</strong>
+                Maintains the shared
+                wedding itinerary,
+                tracks attendance,
+                and communicates
+                activity changes
+                through email.
+            </p>
+        </div>
+
+        <p>
+            Maya successfully organizes
+            the ceremony and reception
+            within one shared trip itinerary.
+            Guests can independently
+            access event information,
+            confirm their participation,
+            and review schedule changes.
+            Maya spends less time
+            answering repetitive questions
+            and more time enjoying
+            the destination wedding.
+        </p>
+
+        <!-- MAYA USER FLOW DIAGRAM -->
+
+        <img
+                src="maya-flow.png"
+                alt="Wedding Planner Maya user interaction flowchart"
+                class="flow-diagram"
+        >
+
+    </section>
+
+</main>
+
 </body>
-
 </html>
