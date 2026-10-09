@@ -1,0 +1,613 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Capstone | Conceptual Model and ERD</title>
+
+    <style>
+        body {
+            max-width: 950px;
+            margin: 40px auto;
+            padding: 0 20px;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #263238;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            margin-top: 40px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 8px;
+        }
+
+        h3 {
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid #dce3eb;
+            padding: 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #f0f3f7;
+        }
+
+        .entity {
+            background-color: #f7f9fc;
+            border: 1px solid #dce3eb;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .entity h3 {
+            margin-top: 0;
+        }
+
+        .diagram {
+            width: 100%;
+            height: auto;
+            display: block;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+<main>
+
+    <h1>Capstone Project: Conceptual Model and ERD</h1>
+
+    <p>
+        This document describes the proposed database
+        entities and relationships for our group
+        trip-planning website.
+    </p>
+
+    <p>
+        The application allows users to organize trips,
+        create shared itineraries, invite travelers,
+        manage household members, and collect RSVPs
+        for individual activities.
+    </p>
+
+    <h2>1. Project Overview</h2>
+
+    <p>
+        Our capstone project is a shared trip-planning
+        application designed for different types of
+        group travel, including family reunions,
+        birthday celebrations, destination weddings,
+        and corporate retreats.
+    </p>
+
+    <p>
+        Users can create accounts, organize trips,
+        invite other travelers through email,
+        and build itineraries containing scheduled
+        activities. Accepted travelers can view
+        activity details and submit RSVP responses.
+    </p>
+
+    <p>
+        Organizers can review attendance summaries
+        and update activities. The application
+        communicates activity changes through
+        email notifications.
+    </p>
+
+    <h2>2. Proposed Database Entities</h2>
+
+    <p>
+        Our conceptual model contains eight proposed
+        entities. Each entity represents information
+        the application needs to store or manage.
+    </p>
+
+    <div class="entity">
+
+        <h3>Entity 1: User</h3>
+
+        <p>
+            Stores account information for adults
+            who use the application.
+        </p>
+
+        <ul>
+            <li>user_id (Primary Key)</li>
+            <li>first_name</li>
+            <li>last_name</li>
+            <li>email</li>
+            <li>password_hash</li>
+            <li>created_at</li>
+        </ul>
+
+        <p>
+            A User can organize multiple trips,
+            accept invitations, and participate
+            in activities.
+        </p>
+
+    </div>
+
+    <div class="entity">
+
+        <h3>Entity 2: Trip</h3>
+
+        <p>
+            Stores the main information about
+            each group trip.
+        </p>
+
+        <ul>
+            <li>trip_id (Primary Key)</li>
+            <li>organizer_id (Foreign Key to User)</li>
+            <li>trip_name</li>
+            <li>trip_type</li>
+            <li>destination</li>
+            <li>start_date</li>
+            <li>end_date</li>
+            <li>description</li>
+            <li>created_at</li>
+        </ul>
+
+        <p>
+            Each Trip has one organizer and can
+            contain multiple activities,
+            invitations, and travelers.
+        </p>
+
+    </div>
+
+    <div class="entity">
+
+        <h3>Entity 3: TripMembership</h3>
+
+        <p>
+            Connects users to the trips
+            they organize or attend.
+        </p>
+
+        <ul>
+            <li>membership_id (Primary Key)</li>
+            <li>trip_id (Foreign Key to Trip)</li>
+            <li>user_id (Foreign Key to User)</li>
+            <li>role (Organizer or Traveler)</li>
+            <li>joined_at</li>
+        </ul>
+
+        <p>
+            TripMembership allows one User
+            to participate in multiple Trips,
+            with a different role in each Trip.
+        </p>
+
+    </div>
+
+    <div class="entity">
+
+        <h3>Entity 4: Invitation</h3>
+
+        <p>
+            Stores email invitations sent
+            to prospective travelers.
+        </p>
+
+        <ul>
+            <li>invitation_id (Primary Key)</li>
+            <li>trip_id (Foreign Key to Trip)</li>
+            <li>invited_email</li>
+            <li>invited_by (Foreign Key to User)</li>
+            <li>invitation_token</li>
+            <li>status (Pending or Accepted)</li>
+            <li>sent_at</li>
+            <li>accepted_at</li>
+        </ul>
+
+        <p>
+            Each Invitation belongs to one Trip.
+            When a user accepts an invitation,
+            the application creates or confirms
+            their TripMembership.
+        </p>
+
+    </div>
+
+    <div class="entity">
+
+        <h3>Entity 5: HouseholdMember</h3>
+
+        <p>
+            Stores children or dependents
+            managed by an adult account.
+        </p>
+
+        <ul>
+            <li>household_member_id (Primary Key)</li>
+            <li>guardian_user_id (Foreign Key to User)</li>
+            <li>first_name</li>
+            <li>last_name</li>
+            <li>created_at</li>
+        </ul>
+
+        <p>
+            HouseholdMember is our proposed
+            weak entity because it depends
+            on a guardian User for its existence.
+        </p>
+
+        <p>
+            Children do not need separate
+            accounts or passwords.
+            Their guardian manages their
+            participation and RSVPs.
+        </p>
+
+    </div>
+
+    <div class="entity">
+
+        <h3>Entity 6: Activity</h3>
+
+        <p>
+            Stores individual events
+            within a trip itinerary.
+        </p>
+
+        <ul>
+            <li>activity_id (Primary Key)</li>
+            <li>trip_id (Foreign Key to Trip)</li>
+            <li>activity_name</li>
+            <li>activity_type (Core or Optional)</li>
+            <li>activity_date</li>
+            <li>start_time</li>
+            <li>end_time</li>
+            <li>location_name</li>
+            <li>location_address</li>
+            <li>description</li>
+            <li>estimated_cost</li>
+            <li>cost_notes</li>
+            <li>event_notes</li>
+            <li>reservation_confirmation</li>
+            <li>reservation_link</li>
+            <li>rsvp_required</li>
+            <li>created_at</li>
+            <li>updated_at</li>
+        </ul>
+
+        <p>
+            Each Activity belongs to one Trip.
+            The organizer creates and edits
+            activities, while accepted
+            travelers can view their details.
+        </p>
+
+        <p>
+            Activities must have a valid date,
+            start time, and end time
+            before they can be saved.
+        </p>
+
+    </div>
+
+    <div class="entity">
+
+        <h3>Entity 7: RSVP</h3>
+
+        <p>
+            Stores attendance responses
+            for individual activities.
+        </p>
+
+        <ul>
+            <li>rsvp_id (Primary Key)</li>
+            <li>activity_id (Foreign Key to Activity)</li>
+            <li>user_id (Optional Foreign Key to User)</li>
+            <li>household_member_id (Optional Foreign Key to HouseholdMember)</li>
+            <li>response (Going, Maybe, Not Going)</li>
+            <li>responded_at</li>
+        </ul>
+
+        <p>
+            Each RSVP belongs to one Activity
+            and represents one traveler.
+        </p>
+
+        <p>
+            An RSVP is associated with either
+            an adult User or a HouseholdMember,
+            but not both.
+        </p>
+
+        <p>
+            Not Responded is calculated
+            when a traveler has not yet
+            submitted an RSVP.
+        </p>
+
+    </div>
+
+    <div class="entity">
+
+        <h3>Entity 8: ActivityNotification</h3>
+
+        <p>
+            Stores records of email notifications
+            associated with activity changes.
+        </p>
+
+        <ul>
+            <li>notification_id (Primary Key)</li>
+            <li>activity_id (Foreign Key to Activity)</li>
+            <li>recipient_user_id (Foreign Key to User)</li>
+            <li>notification_type</li>
+            <li>sent_at</li>
+            <li>delivery_status</li>
+        </ul>
+
+        <p>
+            Each Activity can have multiple
+            notifications, and each notification
+            is associated with an adult User
+            receiving an update.
+        </p>
+
+    </div>
+
+    <h2>3. Entity Relationships</h2>
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+            <tr>
+                <th>Entity A</th>
+                <th>Relationship</th>
+                <th>Entity B</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            <tr>
+                <td>User</td>
+                <td>One-to-Many</td>
+                <td>Trip</td>
+            </tr>
+
+            <tr>
+                <td>User</td>
+                <td>One-to-Many</td>
+                <td>TripMembership</td>
+            </tr>
+
+            <tr>
+                <td>Trip</td>
+                <td>One-to-Many</td>
+                <td>TripMembership</td>
+            </tr>
+
+            <tr>
+                <td>Trip</td>
+                <td>One-to-Many</td>
+                <td>Invitation</td>
+            </tr>
+
+            <tr>
+                <td>User</td>
+                <td>One-to-Many</td>
+                <td>HouseholdMember</td>
+            </tr>
+
+            <tr>
+                <td>Trip</td>
+                <td>One-to-Many</td>
+                <td>Activity</td>
+            </tr>
+
+            <tr>
+                <td>Activity</td>
+                <td>One-to-Many</td>
+                <td>RSVP</td>
+            </tr>
+
+            <tr>
+                <td>Activity</td>
+                <td>One-to-Many</td>
+                <td>ActivityNotification</td>
+            </tr>
+
+            <tr>
+                <td>User</td>
+                <td>One-to-Many</td>
+                <td>ActivityNotification</td>
+            </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <h2>4. Weak Entity</h2>
+
+    <p>
+        Our proposed weak entity is HouseholdMember.
+        A HouseholdMember represents a child
+        or dependent whose participation
+        is managed by an adult User.
+    </p>
+
+    <p>
+        A HouseholdMember cannot exist
+        independently of its guardian
+        in our application.
+        The guardian creates and manages
+        the HouseholdMember record.
+    </p>
+
+    <p>
+        The guardian also submits RSVPs
+        on behalf of the child.
+        This allows family organizers
+        to calculate attendance
+        without requiring children
+        to create separate accounts.
+    </p>
+
+    <h2>5. Team Entity Responsibilities</h2>
+
+    <p>
+        Each team member will take ownership
+        of at least one entity and participate
+        in implementing its related frontend
+        and backend functionality.
+        The assignments below are proposed
+        and should be confirmed by the team.
+    </p>
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+            <tr>
+                <th>Team Member</th>
+                <th>Primary Entity</th>
+                <th>Related Functionality</th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            <tr>
+                <td>Lauren</td>
+                <td>Activity</td>
+                <td>
+                    Add/Edit Activity and
+                    Activity Details &amp; RSVP
+                </td>
+            </tr>
+
+            <tr>
+                <td>Zoey</td>
+                <td>Trip</td>
+                <td>
+                    Create/Edit Trip and
+                    Trip Itinerary
+                </td>
+            </tr>
+
+            <tr>
+                <td>Morelia</td>
+                <td>Invitation</td>
+                <td>
+                    Travelers &amp; Invites
+                    and Accept Invitation
+                </td>
+            </tr>
+
+            <tr>
+                <td>Melissa</td>
+                <td>User</td>
+                <td>
+                    Account access,
+                    Landing Page,
+                    and My Trips
+                </td>
+            </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    <h2>6. Entity Relationship Diagram (ERD)</h2>
+
+    <p>
+        The following diagram visually represents
+        the proposed database entities,
+        their attributes, and their relationships.
+    </p>
+
+    <!--
+        The image must be named erg-flow.png
+        and saved in the same folder as
+        conceptual-model.html.
+    -->
+
+    <img
+            src="erg-flow.png"
+            alt="Entity relationship diagram for the group trip-planning capstone"
+            class="diagram"
+    >
+
+    <h2>7. Conclusion</h2>
+
+    <p>
+        This conceptual model provides
+        the initial database structure
+        for our group trip-planning application.
+        The eight proposed entities support
+        user accounts, trip organization,
+        invitations, household management,
+        activities, attendance tracking,
+        and activity notifications.
+    </p>
+
+    <p>
+        The model supports all four capstone
+        personas while remaining within
+        the project's approved eight-page
+        application structure.
+    </p>
+
+    <p>
+        Entity ownership and final database
+        constraints will be reviewed
+        by the development team before
+        implementation.
+    </p>
+
+</main>
+
+</body>
+</html>
