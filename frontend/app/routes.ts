@@ -1,5 +1,8 @@
 import { type RouteConfig, index, route } from "@react-router/dev/routes";
 
+
+
+
 export default [
     index("routes/home/home.tsx"),
     // add new pages above this line, e.g. route("about", "routes/about/about.tsx"),
