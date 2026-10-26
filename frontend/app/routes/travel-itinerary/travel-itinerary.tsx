@@ -1,6 +1,8 @@
 import {createTheme, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow} from "flowbite-react";
 import { Card } from "flowbite-react";
 import {TravelerRow} from "~/routes/travel-itinerary/traveler-row";
+import { Button, Checkbox, Label, TextInput } from "flowbite-react";
+
 const coralTableTheme = createTheme({
     table: {
         head: {
@@ -45,8 +47,8 @@ const travelers: Traveler[] = [
         phone: '867-5308',
         email: '1email@email.com',
         going: 'no',
-        children: 0,
-        adults: 0,
+        children: 1,
+        adults: 1,
     },
     {userId: 'qerwerwerewrw',
         tripId: 'adfsfdsfds',
@@ -56,14 +58,24 @@ const travelers: Traveler[] = [
         going: 'yes',
         children: 4,
         adults: 1,
-    }
+    }]
+    //filter for Total Travelers
+//sum total travelers
+    const totalTravelers=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.going==='yes' ? (traveler.children+traveler.adults) : 0), 0)
+//sum of adults
+    const totalAdults=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.adults), 0)
+    // sum of children
+    const totalChildren=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.children), 0)
+// filter for people going-notgoing-maybe
+    const totalGoing=travelers.filter(( traveler) => traveler.going ==='yes').length
+    const totalNotGoing=travelers.filter(( traveler) => traveler.going ==='no').length
+    const totalMaybe=travelers.filter(( traveler) => traveler.going ==='maybe').length
 
-]
     return (
-        <main className="min-h-screen bg-[#FEA6A7]">
-            <h1 className={'text-3xl font-bold'}>Travelers & Invites</h1>
-            <p> Need link from My Trips "Name Trip"</p>
-            <h1 className={'font-bold'}> Traveler Roster</h1>
+        <main className="min-h-screen">
+            <h1 className={'text-2xl font-bold tracking-tight text-gray-500'}>Travelers & Invites</h1>
+                    <p> Need link from My Trips "Name Trip"</p>
+            <h1 className={'text-2xl font-bold tracking-tight text-gray-500'}> Traveler Roster</h1>
 
             <section className={''}>
                 <div className="overflow-x-auto rounded-xl">
@@ -88,27 +100,69 @@ const travelers: Traveler[] = [
             </section>
 
 
-            <h1 className={'font-bold'}> Chilren & Parent Attendance</h1>
-            <p> Parent/guardian card goes here</p>
-            <section className={''}>
+            <section className={'overflow-x-auto rounded-xl my-8'}>
 
                 <Card href="#" className="max-w-sm">
-                    <h5 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-                        Noteworthy technology acquisitions 2021
+                    <h5 className="text-2xl font-bold tracking-tight text-gray-500">
+                        Status:
                     </h5>
                     <p className="font-normal text-gray-700 dark:text-gray-400">
-                    Here are the biggest enterprise technology acquisitions of 2021 so far, in reverse chronological order.
+                        Going: {totalGoing}
+                    </p>
+
+                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                        Not Going: {totalNotGoing}
+                    </p>
+                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                        Maybe: {totalMaybe}
                     </p>
                 </Card>
+            </section>
 
+            <section className={'overflow-x-auto rounded-xl my-8'}>
+
+                <Card href="#" className="max-w-sm">
+                    <h5 className="text-2xl font-bold tracking-tight text-gray-500">
+                        Total Attendance:  {totalTravelers}
+                    </h5>
+                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                    Adult Count: {totalAdults}
+                    </p>
+
+                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                        Children Count: {totalChildren}
+                    </p>
+                </Card>
+            </section>
+
+
+            <section>
+                <form className="flex max-w-md flex-col gap-4">
+                    <div>
+                        <div className="mb-2 block">
+                            <h5 className="text-2xl font-bold tracking-tight text-gray-500">Invite Adult Travelers</h5>
+                        </div>
+
+                        <p className="font-normal text-gray-700 dark:text-gray-400">
+                            Email
+                        </p>
+                        <TextInput id="email2" type="email" placeholder="[name@flowbite.com]" required shadow />
+                        <p className="font-normal text-gray-700 dark:text-gray-400">
+                            Invitation Message
+                        </p>
+                        <TextInput id="email2" type="text" placeholder="[Message for your guest]" required shadow />
+
+                        <p className="font-normal text-gray-700 dark:text-gray-400">
+                           +Add Another Email
+                        </p>
+
+                    </div>
+                    <Button type="submit">Send Invitations</Button>
+                </form>
 
 
 
             </section>
-
-            <h1> Invite adult travelers</h1>
-            <p> Invite adult travelers card goes here</p>
-            <p> will need a button inside card "send invitations"</p>
 
 
         </main>
