@@ -4,15 +4,23 @@ import {Button, Card, TextInput} from "flowbite-react";
 export default function AcceptInvite() {
 
     return (
+
+
 //need to link title for You are invited to text
 <section className={'gap-6 auto rounded-xl my-8'}>
 
-    <Card href="#" className=" hover:bg-[#FFF0F1]">
+    <h1 className={'text-2xl font-bold tracking-tight text-gray-500'}>Accept Invitation</h1>
+
+    <Card href="#" className=" mt-8 hover:bg-[#FFF0F1]">
         <h5 className="text-2xl font-bold tracking-tight text-gray-500">
-                You are invited to{' '}!
+                You are invited!
         </h5>
+
         <p className="font-normal text-gray-700">
-            Invited by {' '}
+            [Trip Name]
+        </p>
+        <p className="font-normal text-gray-700">
+            Invited by [Name]
         </p>
         <div className="flex gap-4">
         <p className="font-normal text-gray-700  ">
@@ -30,7 +38,7 @@ export default function AcceptInvite() {
             <div>
                 <div className="mb-2 block">
                     <h5 className="text-2xl font-bold tracking-tight text-gray-500">Create an account to
-                    accept your invitation and join the ""</h5>
+                    accept your invitation and join the [Title Name]</h5>
                 </div>
 
                 <div className="flex gap-3 mb-2 block">
