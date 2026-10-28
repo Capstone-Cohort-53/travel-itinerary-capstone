@@ -1,22 +1,25 @@
 import {Button, Card, TextInput} from "flowbite-react";
 
 
-export type Organizer =  {
-    userId: string,
-    tripId: string,
-    tripTitle: string,
-    tripDestination: string,
-    tripDates: string,
-    userName: string,
-    phone: number
+export type User =  {
+    id: string,
+    cellNumber: number
     email: string,
-    going: string,
-    children: number,
-    adults: number,
+    name: string,
 }
 
+export type Trip = {
+    userId: string,
+    id: string,
+    title: string,
+    destination: string,
+    startDate: string,
+    endDate: string,
+}
+
+
 export default function AcceptInvite() {
-    const organizer: Organizer = {
+    const organizer: User = {
         userId: 'lsljdlhfsdlfkjd',
         tripId: 'lsfhsljfowon',
         tripTitle: 'Going to Las Vegas for Monica',
@@ -29,7 +32,11 @@ export default function AcceptInvite() {
         children: 5,
         adults: 3,
     };
+const trip: Trip= {
 
+
+
+}
     return (
 
 

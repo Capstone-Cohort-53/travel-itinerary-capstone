@@ -18,6 +18,7 @@ const coralTableTheme = createTheme({
 });
 
 
+//note: travelers is a join of "Users" and "Travelers"
 export type Traveler =  {
     userId: string,
     tripId: string,
@@ -32,6 +33,7 @@ export type Traveler =  {
 
 
 export default function TravelItinerary() {
+    //note: travelers is a join of "Users" and "Travelers"
 const travelers: Traveler[] = [
     {userId: 'ljsljfsljfsldkjfldkjflsdkj',
     tripId: 'ljlkkjlkjlkj',
