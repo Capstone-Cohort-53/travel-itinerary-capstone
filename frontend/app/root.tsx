@@ -10,6 +10,7 @@ import { ThemeInit } from "../.flowbite-react/init";
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import {FooterCap} from "~/components/footer";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -37,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* flowbite-react theme bootstrap; dark mode is off via "dark": false in .flowbite-react/config.json */}
       <ThemeInit />
       {children}
+      <FooterCap/>
       <ScrollRestoration />
       <Scripts />
       </body>
