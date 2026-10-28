@@ -18,7 +18,8 @@ const coralTableTheme = createTheme({
 });
 
 
-export type Traveler =  {userId: string,
+export type Traveler =  {
+    userId: string,
     tripId: string,
     name: string,
     phone: string,

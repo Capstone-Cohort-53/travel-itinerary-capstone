@@ -1,7 +1,34 @@
 import {Button, Card, TextInput} from "flowbite-react";
 
 
+export type Organizer =  {
+    userId: string,
+    tripId: string,
+    tripTitle: string,
+    tripDestination: string,
+    tripDates: string,
+    userName: string,
+    phone: number
+    email: string,
+    going: string,
+    children: number,
+    adults: number,
+}
+
 export default function AcceptInvite() {
+    const organizer: Organizer = {
+        userId: 'lsljdlhfsdlfkjd',
+        tripId: 'lsfhsljfowon',
+        tripTitle: 'Going to Las Vegas for Monica',
+        tripDestination: 'Las Vegas, NV',
+        tripDates: 'Oct thru Nov',
+        userName: 'Monica',
+        phone: 8675307,
+        email: 'email7@email.com',
+        going: 'yes',
+        children: 5,
+        adults: 3,
+    };
 
     return (
 
@@ -17,17 +44,17 @@ export default function AcceptInvite() {
         </h5>
 
         <p className="font-normal text-gray-700">
-            [Trip Name]
+            {organizer.tripTitle}
         </p>
         <p className="font-normal text-gray-700">
-            Invited by [Name]
+            Invited by {organizer.userName}
         </p>
         <div className="flex gap-4">
         <p className="font-normal text-gray-700  ">
-         [Destination]
+            [{organizer.tripDestination}]
         </p>
         <p className="font-normal text-gray-700 ">
-            [Trip Dates]
+            [{organizer.tripDates}]
         </p>
         </div>
     </Card>
@@ -38,7 +65,7 @@ export default function AcceptInvite() {
             <div>
                 <div className="mb-2 block">
                     <h5 className="text-2xl font-bold tracking-tight text-gray-500">Create an account to
-                    accept your invitation and join the [Title Name]</h5>
+                    accept your invitation and join {organizer.tripTitle} !</h5>
                 </div>
 
                 <div className="flex gap-3 mb-2 block">
