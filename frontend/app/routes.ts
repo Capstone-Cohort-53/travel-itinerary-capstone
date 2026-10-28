@@ -10,6 +10,7 @@ export default [
 route('/activity','routes/activity/activity.tsx'),
 
     route('/travel-itinerary', 'routes/travel-itinerary/travel-itinerary.tsx'),
+    route('accept-invitation','routes/accept-invitation/accept-invitation.tsx'),
     // catch-all: any URL with no matching route renders the 404 page
     route("*", "routes/not-found/not-found.tsx"),
 ] satisfies RouteConfig;
