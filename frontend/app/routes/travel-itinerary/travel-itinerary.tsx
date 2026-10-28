@@ -74,11 +74,14 @@ const travelers: Traveler[] = [
     return (
         <main className="min-h-screen">
             <h1 className={'text-2xl font-bold tracking-tight text-gray-500'}>Travelers & Invites</h1>
-                    <p> Need link from My Trips "Name Trip"</p>
-            <h1 className={'text-2xl font-bold tracking-tight text-gray-500'}> Traveler Roster</h1>
+
+            <h2 className={'text-lg text-center font-bold tracking-tight text-gray-600'}> Title of the Trip from Page 4</h2>
+
+
+            <h1 className={'text-2xl font-bold tracking-tight text-gray-500 mt-12'}> Traveler Roster</h1>
 
             <section className={''}>
-                <div className="overflow-x-auto rounded-xl">
+                <div className="overflow-x-auto rounded-xl border border-gray-200">
                 <Table striped theme={coralTableTheme.table}>
                     <TableHead>
                         <TableHeadCell>Traveler Name</TableHeadCell>
@@ -100,47 +103,56 @@ const travelers: Traveler[] = [
             </section>
 
 
-            <section className={'overflow-x-auto rounded-xl my-8'}>
+            <section className={'gap-6 overflow-x-auto flex rounded-xl my-8'}>
 
-                <Card href="#" className="max-w-sm">
+                <Card href="#" className="w-sm hover:bg-[#FFF0F1]">
                     <h5 className="text-2xl font-bold tracking-tight text-gray-500">
-                        Status:
+                        Status 📊:
                     </h5>
                     <p className="font-normal text-gray-700 dark:text-gray-400">
-                        Going: {totalGoing}
+                        🟢 Going: {totalGoing}
                     </p>
 
+
                     <p className="font-normal text-gray-700 dark:text-gray-400">
-                        Not Going: {totalNotGoing}
+                        🔴 Not Going: {totalNotGoing}
                     </p>
                     <p className="font-normal text-gray-700 dark:text-gray-400">
-                        Maybe: {totalMaybe}
+                        ⚪ Maybe: {totalMaybe}
                     </p>
                 </Card>
-            </section>
 
-            <section className={'overflow-x-auto rounded-xl my-8'}>
-
-                <Card href="#" className="max-w-sm">
+                <Card href="#" className="w-sm hover:bg-[#FFF0F1]">
                     <h5 className="text-2xl font-bold tracking-tight text-gray-500">
-                        Total Attendance:  {totalTravelers}
+                        Total Attendance 👥:  {totalTravelers}
                     </h5>
+
                     <p className="font-normal text-gray-700 dark:text-gray-400">
-                    Adult Count: {totalAdults}
+                        Traveler Names:  {travelers.map((traveler:Traveler) =>  traveler.name).join(', ')}
+                    </p>
+
+                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                        Adult Count: {totalAdults}
+
                     </p>
 
                     <p className="font-normal text-gray-700 dark:text-gray-400">
                         Children Count: {totalChildren}
                     </p>
+
+
                 </Card>
+
             </section>
 
 
+
             <section>
+                <Card href="#" className="hover:bg-[#FFF0F1]">
                 <form className="flex max-w-md flex-col gap-4">
                     <div>
                         <div className="mb-2 block">
-                            <h5 className="text-2xl font-bold tracking-tight text-gray-500">Invite Adult Travelers</h5>
+                            <h5 className="text-2xl font-bold tracking-tight text-gray-500">Invite More Adult Travelers</h5>
                         </div>
 
                         <p className="font-normal text-gray-700 dark:text-gray-400">
@@ -157,9 +169,9 @@ const travelers: Traveler[] = [
                         </p>
 
                     </div>
-                    <Button type="submit">Send Invitations</Button>
+                    <Button className= "bg-[#FD6B6C] hover:bg-red-600" type="submit">Send Invitations</Button>
                 </form>
-
+                </Card>
 
 
             </section>
@@ -168,3 +180,11 @@ const travelers: Traveler[] = [
         </main>
     )
 }
+// Might want to incorporate for final submission:
+//Breadcrumbs or a "Back" Button: Since this is a specific trip's roster, a simple link at the very top left (like ← Back to Dashboard or Trips / Summer Vacation / Invites) helps users orient themselves.
+//
+// Table Action Buttons: Your Traveler Roster displays data, but there is no way to manage it. Adding an "Actions" column with Edit (✏️) and Delete (🗑️) icons would allow users to update RSVPs or remove guests.
+//
+// Manual "Add Guest" Option: You have a form to send email invitations, but you may want a button to manually add a traveler to the roster (e.g., for children or guests without email).
+//
+// Success Notifications (Toasts): When a user clicks "Send Invitations," there is currently no placeholder for a success message. Adding a temporary pop-up (toast) confirming the emails were sent provides necessary user feedback.
