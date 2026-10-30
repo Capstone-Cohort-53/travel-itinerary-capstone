@@ -75,7 +75,10 @@ const travelers: Traveler[] = [
     const totalMaybe=travelers.filter(( traveler) => traveler.going ==='maybe').length
 
     return (
-        <main className="min-h-screen">
+
+        <div className="bg-[url('/bg_reduced.jpeg')] bg-cover bg-left bg-no-repeat">
+
+        <main className="min-h-screen container mx-auto max-w-3xl">
             <h1 className={'text-2xl font-bold tracking-tight text-gray-500'}>Travelers & Invites</h1>
 
             <h2 className={'text-lg text-center font-bold tracking-tight text-gray-600'}> Title of the Trip from Page 4</h2>
@@ -181,6 +184,7 @@ const travelers: Traveler[] = [
 
 
         </main>
+        </div>
     )
 }
 // Might want to incorporate for final submission:
