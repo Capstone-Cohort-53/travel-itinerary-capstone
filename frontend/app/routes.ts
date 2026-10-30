@@ -5,6 +5,7 @@ export default [
     // add new pages above this line, e.g. route("about", "routes/about/about.tsx"),
     route('/create-trip','routes/create-trip/create-trip.tsx'),
 route('/activity','routes/activity/activity.tsx'),
+    route('/activity-details','routes/activity-details.tsx'),
 
     // catch-all: any URL with no matching route renders the 404 page
     route("*", "routes/not-found/not-found.tsx"),
