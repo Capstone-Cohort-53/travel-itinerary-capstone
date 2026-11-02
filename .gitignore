@@ -2,5 +2,6 @@
 .idea
 node_modules
 project.env
-.flowbite-react
+frontend/.flowbite-react/class-list.json
+frontend/.flowbite-react/pid
 .react-router
