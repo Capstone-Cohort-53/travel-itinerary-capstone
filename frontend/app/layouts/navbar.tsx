@@ -1,5 +1,6 @@
 import {Button, Navbar, NavbarBrand, NavbarCollapse, NavbarLink, NavbarToggle} from "flowbite-react";
 import { Outlet } from "react-router";
+import {FooterCap} from "~/layouts/footer";
 
 export default function Nav () {
     return <>
@@ -22,5 +23,6 @@ export default function Nav () {
             </NavbarCollapse>
         </Navbar>
 <Outlet/>
+        <FooterCap/>
     </>
 }
