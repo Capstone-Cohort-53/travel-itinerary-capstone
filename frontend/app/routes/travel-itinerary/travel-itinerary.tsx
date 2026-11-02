@@ -18,7 +18,8 @@ const coralTableTheme = createTheme({
 });
 
 
-//note: travelers is a join of "Users" and "Travelers"
+//note: travelers is a join of "Trip", "Users" and "Travelers"
+
 export type Traveler =  {
     userId: string,
     tripId: string,
@@ -76,20 +77,18 @@ const travelers: Traveler[] = [
 
     return (
 
-        <div className="bg-[url('/bg_reduced.jpeg')] bg-cover bg-left bg-no-repeat">
+        <div className="bg-[url('/bg_reduced.jpeg')] bg-cover bg-right bg-no-repeat">
 
         <main className="min-h-screen container mx-auto max-w-3xl">
-            <h1 className={'text-2xl font-bold tracking-tight text-gray-500'}>Travelers & Invites</h1>
+            <h1 className={'text-4xl font-bold tracking-wider text-white mb-6'}>Travelers & Invites</h1>
 
-            <h2 className={'text-lg text-center font-bold tracking-tight text-gray-600'}> Title of the Trip from Page 4</h2>
+            <h1 className={'text-xl font-bold tracking-wider text-white '}></h1>
 
-
-            <h1 className={'text-2xl font-bold tracking-tight text-gray-500 mt-12'}> Traveler Roster</h1>
 
             <section className={''}>
                 <div className="overflow-x-auto rounded-xl border border-gray-200">
                 <Table striped theme={coralTableTheme.table}>
-                    <TableHead>
+                    <TableHead className={'text-bold'}>
                         <TableHeadCell>Traveler Name</TableHeadCell>
                         <TableHeadCell>Phone Number</TableHeadCell>
                         <TableHeadCell> Email </TableHeadCell>
@@ -98,7 +97,7 @@ const travelers: Traveler[] = [
                         <TableHeadCell>Children</TableHeadCell>
                     </TableHead>
 
-                    <TableBody>
+                    <TableBody className={'text-center text-bold text-sm'}>
                         {travelers.map((traveler:Traveler) => <TravelerRow traveler={traveler}/>)}
 
                     </TableBody>
@@ -111,38 +110,38 @@ const travelers: Traveler[] = [
 
             <section className={'gap-6 overflow-x-auto flex rounded-xl my-8'}>
 
-                <Card href="#" className="w-sm hover:bg-[#FFF0F1]">
-                    <h5 className="text-2xl font-bold tracking-tight text-gray-500">
+                <Card href="#" className=" space-y-4 w-sm hover:bg-[#FFF0F1]">
+                    <h5 className="text-2xl font-bold tracking-wider text-gray-500">
                         Status 📊:
                     </h5>
-                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                    <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
                         🟢 Going: {totalGoing}
                     </p>
 
 
-                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                    <p className=" leading-loose font-normal text-gray-700 dark:text-gray-400">
                         🔴 Not Going: {totalNotGoing}
                     </p>
-                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                    <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
                         ⚪ Maybe: {totalMaybe}
                     </p>
                 </Card>
 
                 <Card href="#" className="w-sm hover:bg-[#FFF0F1]">
-                    <h5 className="text-2xl font-bold tracking-tight text-gray-500">
+                    <h5 className="leading-loose text-2xl font-bold tracking-wider text-gray-500">
                         Total Attendance 👥:  {totalTravelers}
                     </h5>
 
-                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                    <p className=" leading-loose font-normal text-gray-700 dark:text-gray-400">
                         Traveler Names:  {travelers.map((traveler:Traveler) =>  traveler.name).join(', ')}
                     </p>
 
-                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                    <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
                         Adult Count: {totalAdults}
 
                     </p>
 
-                    <p className="font-normal text-gray-700 dark:text-gray-400">
+                    <p className=" leading-loose font-normal text-gray-700 dark:text-gray-400">
                         Children Count: {totalChildren}
                     </p>
 
@@ -158,19 +157,19 @@ const travelers: Traveler[] = [
                 <form className="flex max-w-md flex-col gap-4">
                     <div>
                         <div className="mb-2 block">
-                            <h5 className="text-2xl font-bold tracking-tight text-gray-500">Invite More Adult Travelers</h5>
+                            <h5 className=" leading-loose text-2xl font-bold tracking-wider text-gray-500">Invite More Adult Travelers</h5>
                         </div>
 
-                        <p className="font-normal text-gray-700 dark:text-gray-400">
+                        <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
                             Email
                         </p>
                         <TextInput id="email2" type="email" placeholder="[name@flowbite.com]" required shadow />
-                        <p className="font-normal text-gray-700 dark:text-gray-400">
+                        <p className=" leading-loose font-normal text-gray-700 dark:text-gray-400">
                             Invitation Message
                         </p>
                         <TextInput id="email2" type="text" placeholder="[Message for your guest]" required shadow />
 
-                        <p className="font-normal text-gray-700 dark:text-gray-400">
+                        <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
                            +Add Another Email
                         </p>
 
