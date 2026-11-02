@@ -97,7 +97,7 @@ const travelers: Traveler[] = [
                         <TableHeadCell>Children</TableHeadCell>
                     </TableHead>
 
-                    <TableBody className={'text-center text-bold text-sm'}>
+                    <TableBody className={'text-center text-bold text-sm text-gray-700'}>
                         {travelers.map((traveler:Traveler) => <TravelerRow traveler={traveler}/>)}
 
                     </TableBody>
@@ -114,15 +114,15 @@ const travelers: Traveler[] = [
                     <h5 className="text-2xl font-bold tracking-wider text-gray-500">
                         Status 📊:
                     </h5>
-                    <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
+                    <p className="leading-loose font-normal text-gray-700">
                         🟢 Going: {totalGoing}
                     </p>
 
 
-                    <p className=" leading-loose font-normal text-gray-700 dark:text-gray-400">
+                    <p className=" leading-loose font-normal text-gray-700">
                         🔴 Not Going: {totalNotGoing}
                     </p>
-                    <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
+                    <p className="leading-loose font-normal text-gray-700">
                         ⚪ Maybe: {totalMaybe}
                     </p>
                 </Card>
@@ -132,16 +132,16 @@ const travelers: Traveler[] = [
                         Total Attendance 👥:  {totalTravelers}
                     </h5>
 
-                    <p className=" leading-loose font-normal text-gray-700 dark:text-gray-400">
+                    <p className=" leading-loose font-normal text-gray-700">
                         Traveler Names:  {travelers.map((traveler:Traveler) =>  traveler.name).join(', ')}
                     </p>
 
-                    <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
+                    <p className="leading-loose font-normal text-gray-700">
                         Adult Count: {totalAdults}
 
                     </p>
 
-                    <p className=" leading-loose font-normal text-gray-700 dark:text-gray-400">
+                    <p className=" leading-loose font-normal text-gray-700">
                         Children Count: {totalChildren}
                     </p>
 
@@ -160,16 +160,16 @@ const travelers: Traveler[] = [
                             <h5 className=" leading-loose text-2xl font-bold tracking-wider text-gray-500">Invite More Adult Travelers</h5>
                         </div>
 
-                        <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
+                        <p className="leading-loose font-normal text-gray-700">
                             Email
                         </p>
                         <TextInput id="email2" type="email" placeholder="[name@flowbite.com]" required shadow />
-                        <p className=" leading-loose font-normal text-gray-700 dark:text-gray-400">
+                        <p className=" leading-loose font-normal text-gray-700">
                             Invitation Message
                         </p>
                         <TextInput id="email2" type="text" placeholder="[Message for your guest]" required shadow />
 
-                        <p className="leading-loose font-normal text-gray-700 dark:text-gray-400">
+                        <p className="leading-loose font-normal text-gray-700">
                            +Add Another Email
                         </p>
 
