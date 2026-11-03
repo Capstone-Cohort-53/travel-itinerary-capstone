@@ -103,4 +103,4 @@ create table if not exists activity_rsvp (
                                              foreign key (trip_member_id) references trip_member(id) on delete cascade
 );
 create index on activity_rsvp(trip_member_id);
->>>>>>> fe7bb9b0d1e2e5d936ea0de8366a8abfdcbfcfd1
+
