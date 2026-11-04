@@ -12,6 +12,7 @@ create table if not exists profile (
                                        cell_number varchar(20), -- CHANGED: now optional so an invitee can sign up without a phone number
                                        created_at timestamptz not null default now(),
                                        email varchar(255) not null unique,
+                                        image varchar(255) not null,
                                        name varchar(255) not null,
                                        primary key (id)
 );
@@ -23,6 +24,7 @@ create table if not exists trip (
                                     description text,
                                     destination varchar(255),
                                     end_date date,
+                                    image varchar(255),
                                     start_date date,
                                     title varchar(255) not null,
                                     primary key (id),

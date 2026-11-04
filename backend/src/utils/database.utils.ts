@@ -16,3 +16,15 @@ export const sql = postgres({
         }
     }
 })
+// Postgres SQLSTATE for a unique-constraint violation (duplicate value in a UNIQUE column)
+const UNIQUE_VIOLATION = '23505'
+
+/**
+ * Was this error thrown by Postgres because a UNIQUE constraint was violated
+ * (e.g. a duplicate email or name)? Controllers map it to `409 Conflict`.
+ *
+ * @param error anything caught in a controller's catch block
+ */
+export function isUniqueViolation (error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === UNIQUE_VIOLATION
+}
