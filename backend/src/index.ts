@@ -3,6 +3,7 @@ import {createClient} from "redis";
 import type {RedisClientType} from "redis";
 import type { Server } from 'node:http'
 import { sql } from './utils/database.utils.ts'
+import type {Profile} from "./apis/profile/profile.model.ts";
 
 // instantiate new app and pass it a port as an argument to start with (4200)
 export let redisClient : RedisClientType | undefined
@@ -55,4 +56,11 @@ async function shutdown (signal: string): Promise<void> {
 
     console.log('Shutdown complete')
     process.exit(0)
+}
+declare module 'express-session' {
+    export interface SessionData {
+        profile: Profile | undefined
+        signature: string | undefined
+        jwt: string | undefined
+    }
 }
