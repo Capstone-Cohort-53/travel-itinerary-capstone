@@ -23,13 +23,21 @@ export async function insertProfile (profile: Profile): Promise<Profile>{
     const [row]= await sql`
    insert into profile(id, cell_number, created_at, email, name, image) 
    values (${id}, ${cellNumber}, ${createdAt}, ${email}, ${name}, ${image})
-   returning id, cell_number, profile.created_at, email, name, image`
+   returning id, cell_number, created_at, email, name, image`
     return ProfileSchema.parse(row)
     }
 
 export async function selectProfileByProfileEmail (email: string): Promise<Profile | null> {
     const rowList = await sql`
     select id, cell_number, created_at, email, name, image from profile where email=${email}`
+    const result = ProfileSchema.array().max(1).parse(rowList)
+    return result [0] ?? null
+}
+
+export async function selectProfileByProfileId (id: string): Promise<Profile | null> {
+    const rowList = await sql`
+    SELECT id, cell_number, created_at, email, name, image 
+    FROM profile WHERE id = ${id}`
     const result = ProfileSchema.array().max(1).parse(rowList)
     return result [0] ?? null
 }
