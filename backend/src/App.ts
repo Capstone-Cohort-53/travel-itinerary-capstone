@@ -1,6 +1,7 @@
 import express, {type Application } from 'express'
 import type { Server } from 'node:http'
 import morgan from 'morgan'
+import {profileRoute} from './apis/profile/profile.route.ts'
 // Routes
 import session from 'express-session'
 import type {  RedisClientType } from 'redis'
@@ -36,11 +37,12 @@ export class App {
             resave: false
         }))
     }
-    // private method for setting up routes in their basic sense (ie. any route that performs an action on profiles starts with /profiles)
+    // private method for setting up routes in their basic sense (i.e. any route that performs an action on profiles starts with /profiles)
     private routes (): void {
         this.app.use(indexRoute.basePath, indexRoute.router)
         this.app.use(healthRoute.basePath, healthRoute.router)
         this.app.use(signInRoute.basePath, signInRoute.router)
+        this.app.use(profileRoute.basePath, profileRoute.router)
 
     }
 
