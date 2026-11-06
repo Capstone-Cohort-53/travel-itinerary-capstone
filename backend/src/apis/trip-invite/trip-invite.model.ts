@@ -18,9 +18,10 @@ export type TripInvite = z.infer<typeof TripInviteSchema>
 
 
 export const TripInviteRequestSchema = TripInviteSchema.pick({
+   tripId: true,
     email: true,
     cellNumber: true
-}).partial().refine(
+}).partial({email:true, cellNumber:true}).refine(
     (data) => Boolean(data.email || data.cellNumber),
     { message: 'Please provide an email address or cell number.' }
 )
@@ -60,7 +61,7 @@ export async function insertTripInvite (tripInvite: TripInvite): Promise<TripInv
 
 export async function selectTripInviteByToken (token: string): Promise<TripInvite | null> {
     const rowList = await sql`
-    SELECT *
+    SELECT id, invited_by, trip_id, accepted_profile_id, cell_number, created_at, email, expires_at, status, token
     FROM trip_invite
     WHERE token = ${token}
   `
@@ -68,3 +69,21 @@ export async function selectTripInviteByToken (token: string): Promise<TripInvit
     return TripInviteSchema.array().max(1).parse(rowList)[0] ?? null
 }
 
+// write the function to select trip invite by
+// export async function selectTripInvitedBy (invited_by:): Promise<TripInvite > {
+//     const rowList = await sql`
+//         SELECT id,
+//                invited_by,
+//                trip_id,
+//                accepted_profile_id,
+//                cell_number,
+//                created_at,
+//                email,
+//                expires_at,
+//                status,
+//                token
+//         FROM trip_invite
+//         WHERE invited_by = ${invited_by}`
+// }
+//
+// return selectTripInvitedBy().array().max(1).parse(rowList)[0] ?? null

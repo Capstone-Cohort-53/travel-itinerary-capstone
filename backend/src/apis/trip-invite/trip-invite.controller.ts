@@ -30,18 +30,18 @@ export async function postTripInviteController(
             sendZodError(request, response, validationResult.error)
             return
         }
-        const tripIdResult = z.uuidv7().safeParse(request.params.tripId)
 
-        if (!tripIdResult.success) {
-            sendZodError(request, response, tripIdResult.error)
-            return
-        }
         const profileId = request.session.profile?.id
 
         if (!profileId) {
             sendError(request, response, 401, 'You must be logged in to invite someone to a trip.')
             return
         }
+// TODO add check to make sure the person creating trip invite owns the trip
+
+        // Build out trip invite object
+        // Insert trip invite object into the database
+        // Send result to the end user
 
 
 
