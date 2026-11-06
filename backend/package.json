@@ -16,7 +16,6 @@
   "dependencies": {
     "@swc/core": "^1.16.21",
     "@swc/helpers": "^0.5.23",
-    "argon2": "^0.45.2",
     "axios": "^1.21.0",
     "connect-redis": "^9.0.0",
     "express": "^5.3.0",

@@ -9,6 +9,7 @@ import {RedisStore} from 'connect-redis'
 import {indexRoute} from "./apis/index.route.ts";
 import {healthRoute} from "./apis/health/health.route.ts";
 import {signInRoute} from "./apis/sign-in/sign-in.route.ts";
+import {tripRoute} from "./apis/trip/trip.route.ts";
 export class App {
     app: Application
     redisStore : RedisStore
@@ -42,7 +43,11 @@ export class App {
         this.app.use(indexRoute.basePath, indexRoute.router)
         this.app.use(healthRoute.basePath, healthRoute.router)
         this.app.use(signInRoute.basePath, signInRoute.router)
+
         this.app.use(profileRoute.basePath, profileRoute.router)
+
+        this.app.use(tripRoute.basepath, tripRoute.router)
+
 
     }
 
