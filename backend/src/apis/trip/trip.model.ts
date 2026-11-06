@@ -36,11 +36,10 @@ export type Trip = z.infer<typeof TripSchema>;
 export async function insertTrip(trip:Trip) {
         //final check to make sure we have a full trip object before inserting it into the database
         //sql call to insert the tag into the database
-        const{id,ownerId,title, description, destination, startDate, endDate, createdAt} = TripSchema.parse(trip)
-        const[row] = await sql`INSERT INTO trip (SELECT owner_id, title, description, destination, start_date, end_date,  
-        FROM trip) 
-        VALUES(${id}, ${ownerId}, ${title}, ${description}, ${destination}, ${startDate}, ${endDate}, now()) 
-        RETURNING id, owner_id, title, description, destination, start_date, end_date, created_at`
+        const{id,ownerId,title, description, destination, startDate, endDate, createdAt, image} = TripSchema.parse(trip)
+        const[row] = await sql`INSERT INTO trip (id, owner_id, title, description, destination, start_date, end_date, image, created_at)
+        VALUES(${id}, ${ownerId}, ${title}, ${description}, ${destination}, ${startDate}, ${endDate}, ${image}, now()) 
+        RETURNING id, owner_id, title, description, destination, start_date, end_date, created_at, image`
 //parse the inserted trip object and return it so that the information can be displayed to the end user
         return TripSchema.parse(row)
 }

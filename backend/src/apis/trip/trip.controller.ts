@@ -21,19 +21,20 @@ export async function postTripController(request: Request, response: Response) {
             sendError(request, response, 401, 'Please login to create a trip')
             return
         }
-
+const {data} = validationResult
+        const {id, description, destination} = data
 
         //create a trip from the validated result (Redundant but in other cases not all info is sent from the client)
         const trip: Trip = {
-            id: validationResult.data.id,
+            id,
             ownerId: profile.id,
             createdAt: null,
-            description: validationResult.data.description,
-            destination: validationResult.data.destination,
-            title: validationResult.data.title,
-            startDate: validationResult.data.startDate,
-            endDate: validationResult.data.endDate,
-            image: validationResult.data.image,
+            description,
+            destination,
+            title: data.title,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            image: data.image,
 
         }
 

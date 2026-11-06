@@ -1,8 +1,9 @@
 //create route
 
-import {getTargetTriple} from "@swc/core/binding";
+
 import {postTripController} from "./trip.controller.ts";
 import {Router} from "express";
+import {isLoggedInController} from "../../utils/controllers/is-logged-in.controller.ts";
 
 const basepath = '/apis/trip' as const
 const router = Router()
