@@ -107,3 +107,6 @@ create table if not exists activity_rsvp (
 );
 create index on activity_rsvp(trip_member_id);
 
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO itinerary_app;
+
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO itinerary_app;
