@@ -83,7 +83,7 @@ export async function postTripInviteController(
                 const inviteLink: string = `${request.protocol}://${request.hostname}:8080${request.originalUrl}accept-invite/${tripInvite.token}`
                 await sendInviteEmail(email, inviteLink, trip, name, profile.name)
                     .catch(mailError => {
-                        console.error('Activation email failed to send:', mailError)
+                        console.error('Invite email failed to send:', mailError)
                     })
 
             }
@@ -116,6 +116,7 @@ export async function postTripInviteController(
  * @param inviteLink the absolute invite-response URL to embed in the message
  * @param trip the trip the recipient is being invited to (title, destination, and start date appear in the email)
  * @param name the name shown in the email as the person sending the invite
+ * @param organizerName the username sending invite
  * @returns a promise that resolves once Mailgun accepts the message
  */
 async function sendInviteEmail (to: string, inviteLink: string, trip:Trip, name: string, organizerName: string): Promise<void> {

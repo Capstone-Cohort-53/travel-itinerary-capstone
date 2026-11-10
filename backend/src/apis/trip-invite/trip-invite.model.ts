@@ -52,14 +52,13 @@ export async function insertTripInvite (tripInvite: TripInvite): Promise<TripInv
       ${tripInvite.name},      
       ${tripInvite.acceptedProfileId},
       ${tripInvite.cellNumber},
-      ${tripInvite.createdAt},
+      NOW(),
       ${tripInvite.email},
       ${tripInvite.expiresAt},
       ${tripInvite.status},
       ${tripInvite.token}
     )
-    RETURNING 
-  `
+    RETURNING id, invited_by, trip_id, name, accepted_profile_id, cell_number, created_at, email, expires_at, status, token`
   return TripInviteSchema.parse(row)
 
 }
