@@ -42,6 +42,7 @@ create table if not exists trip_invite (
                                            created_at timestamptz not null default now(),
                                            email varchar(255),
                                            expires_at timestamptz,
+                                            name varchar(64) not null,
                                            status varchar(20) not null default 'pending' check (status in ('pending', 'accepted', 'declined', 'expired')),
                                            token varchar(64) not null unique,
                                            primary key (id),

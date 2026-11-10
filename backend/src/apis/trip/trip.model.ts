@@ -45,14 +45,14 @@ export async function insertTrip(trip:Trip) {
 }
 
 
+
 /**
  * select a trip by its id
  * @param id
  */
-export async function selectTripbyTripId(id:string):
+export async function selectTripById(id:string):
 Promise<Trip|null> {
-        const rowList= await sql `SELECT id, name FROM trip WHERE id=?`
-        const result =TripSchema.array().max(1).
-        parse(rowList)
+        const rowList= await sql `SELECT id, owner_id, title, description, destination, start_date, end_date, image, created_at FROM trip WHERE id=${id} `
+        const result = TripSchema.array().max(1).parse(rowList)
         return result[0] ?? null
 }

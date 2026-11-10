@@ -6,8 +6,9 @@ export const TripInviteSchema = z.object({
     invitedBy:z.uuidv7(),
     tripId:z.uuidv7(),
     acceptedProfileId:z.uuidv7().nullable(),
+    name: z.string('please provide a valid name'),
     cellNumber: z.string().max(20).nullable(),
-    createdAt: z.coerce.date(),
+    createdAt: z.coerce.date ('Please provide a valid created at').nullable(),
     email:z.email().nullable(),
     expiresAt: z.coerce.date().nullable(),
     status:z.enum(['pending', 'accepted', 'declined','expired']),
@@ -18,20 +19,24 @@ export type TripInvite = z.infer<typeof TripInviteSchema>
 
 
 export const TripInviteRequestSchema = TripInviteSchema.pick({
-   tripId: true,
+   id: true,
+    tripId: true,
+    name: true,
     email: true,
-    cellNumber: true
+    cellNumber: true,
+    expiresAt: true
 }).partial({email:true, cellNumber:true}).refine(
     (data) => Boolean(data.email || data.cellNumber),
     { message: 'Please provide an email address or cell number.' }
 )
 
-
+// these all need to be in ABC order
 export async function insertTripInvite (tripInvite: TripInvite): Promise<TripInvite> {
     const [row] = await sql`INSERT INTO trip_invite (
        id,
        invited_by,
        trip_id,
+        name,
        accepted_profile_id,                  
        cell_number,                  
        created_at,                  
@@ -44,6 +49,7 @@ export async function insertTripInvite (tripInvite: TripInvite): Promise<TripInv
       ${tripInvite.id},
       ${tripInvite.invitedBy},
       ${tripInvite.tripId},
+      ${tripInvite.name},      
       ${tripInvite.acceptedProfileId},
       ${tripInvite.cellNumber},
       ${tripInvite.createdAt},
@@ -52,7 +58,7 @@ export async function insertTripInvite (tripInvite: TripInvite): Promise<TripInv
       ${tripInvite.status},
       ${tripInvite.token}
     )
-    RETURNING *
+    RETURNING 
   `
   return TripInviteSchema.parse(row)
 
