@@ -12,7 +12,7 @@ export const TripInviteSchema = z.object({
     email:z.email().nullable(),
     expiresAt: z.coerce.date().nullable(),
     status:z.enum(['pending', 'accepted', 'declined','expired']),
-    token:z.string().max(64)
+    token:z.string().length(64)
 })
 
 export type TripInvite = z.infer<typeof TripInviteSchema>

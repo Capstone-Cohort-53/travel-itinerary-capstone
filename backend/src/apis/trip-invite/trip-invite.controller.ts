@@ -7,7 +7,7 @@ import Mailgun from 'mailgun.js'
 import {
     TripInviteRequestSchema,
     insertTripInvite,
-    selectTripInviteByToken, type TripInvite
+    type TripInvite
 
 } from "./trip-invite.model.ts"
 
@@ -17,10 +17,7 @@ import {
     sendZodError
 } from "../../utils/response.utils.ts"
 
-import {isUniqueViolation} from "../../utils/database.utils.ts"
-import {insertTrip, selectTripById, type Trip} from "../trip/trip.model.ts";
-import {token} from "morgan";
-import type {Profile} from "../profile/profile.model.ts";
+import {selectTripById, type Trip} from "../trip/trip.model.ts";
 
 
 export async function postTripInviteController(
@@ -65,7 +62,7 @@ export async function postTripInviteController(
         const tripInvite: TripInvite = {
             id,
             invitedBy: profileId,
-            tripId: tripId,
+            tripId,
             name,
             acceptedProfileId: null,
             cellNumber:cellNumber ?? null,

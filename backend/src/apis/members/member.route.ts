@@ -1,10 +1,11 @@
 import {Router} from 'express'
-import {getMemberController} from './member.controller.ts'
+import {isLoggedInController} from "../../utils/controllers/is-logged-in.controller.ts";
+import {postMemberController} from "./member.controller.ts";
 
 const basePath = '/apis/member' as const
 const router = Router()
 
-router.route('/me')
-    .get(getMemberController)
+router.route('/')
+    .post(isLoggedInController, postMemberController)
 
-export const profileRoute = {basePath, router}
+export const memberRoute = {basePath, router}

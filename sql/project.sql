@@ -2,8 +2,8 @@ set role admins;
 
 drop table if exists activity_rsvp;
 drop table if exists activity;
+drop table if exists member;
 drop table if exists trip_invite;
-drop table if exists trip_member;
 drop table if exists trip;
 drop table if exists profile;
 
@@ -56,20 +56,21 @@ create index on trip_invite(invited_by);
 create index on trip_invite(email) where email is not null;
 create index on trip_invite(cell_number) where cell_number is not null;
 
-create table if not exists trip_member (
+create table if not exists member (
                                            id uuid not null default UUIDV7(),
-                                           profile_id uuid not null,
+                                           invite_id uuid not null,
                                            trip_id uuid not null,
                                            adults integer not null default 1 check (adults >= 0),
                                            children integer not null default 0 check (children >= 0),
                                            going varchar(5) not null default 'maybe' check (going in ('yes', 'no', 'maybe')),
                                            role varchar(10) not null default 'member' check (role in ('owner', 'member')),
                                            primary key (id),
-                                           unique (trip_id, profile_id), -- a person can only join a trip once
+                                           unique (trip_id, invite_id), -- a person can only join a trip once
                                            foreign key (trip_id) references trip(id) on delete cascade,
-                                           foreign key (profile_id) references profile(id)
+                                           foreign key (invite_id) references trip_invite(id)
 );
-create index on trip_member(profile_id); -- the unique constraint already covers lookups by trip_id
+create index on member(invite_id);
+create index on member(trip_id); -- the unique constraint already covers lookups by trip_id
 
 -- ADDED
 create table if not exists activity (
@@ -96,16 +97,16 @@ create index on activity(trip_id);
 create table if not exists activity_rsvp (
                                              id uuid not null default UUIDV7(),
                                              activity_id uuid not null,
-                                             trip_member_id uuid not null,
+                                             member_id uuid not null,
                                              adults integer not null default 1 check (adults >= 0),
                                              children integer not null default 0 check (children >= 0),
                                              going varchar(5) not null default 'maybe' check (going in ('yes', 'no', 'maybe')),
                                              primary key (id),
-                                             unique (activity_id, trip_member_id), -- one RSVP per member per activity
+                                             unique (activity_id, member_id), -- one RSVP per member per activity
                                              foreign key (activity_id) references activity(id) on delete cascade,
-                                             foreign key (trip_member_id) references trip_member(id) on delete cascade
+                                             foreign key (member_id) references member(id) on delete cascade
 );
-create index on activity_rsvp(trip_member_id);
+create index on activity_rsvp(member_id);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO itinerary_app;
 

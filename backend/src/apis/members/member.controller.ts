@@ -1,77 +1,71 @@
-import {type Request, response, type Response} from 'express'
-import {selectMemberById} from "./member.model.ts"
-import {sendError, sendServerError} from "../../utils/response.utils.ts"
-import {request} from "node:http";
+import type {Request, Response} from 'express'
 
-export async function selectMemberById(memberId: string): Promise<Member | null> {
+import {
+    sendError,
+    sendServerError,
+    sendZodError
+} from "../../utils/response.utils.ts"
+import {insertMember, type Member, MemberRequestSchema, MemberSchema} from "./member.model.ts";
+import {sql} from "../../utils/database.utils.ts";
+import {selectTripInviteByToken} from "../trip-invite/trip-invite.model.ts";
+
+export async function postMemberController(
+    request: Request,
+    response: Response
+): Promise<void> {
     try {
-        const memberId = request.session?.memberId
 
-        if (sessionProfile === undefined || sessionProfile === null) {
-            sendError(request, response, 401, 'You must be signed in to view your profile')
-            return
-        }
-        const data = await selectMemberById(memberId)
-        if (memberId === null) {
-            sendError(request, response, 404, 'Profile not found')
+        const validationResult = MemberRequestSchema.safeParse(request.body)
+
+        if (!validationResult.success) {
+            sendZodError(request, response, validationResult.error)
             return
         }
 
+        const profileId = request.session.profile?.id
+        if (!profileId) {
+            sendError(request, response, 401, 'You must be logged in to respond to this invite.')
+            return
+        }
 
-        response.status(200).json(memberId)
-    } catch (error: any) {
-         console.error(error)
-         sendServerError(request, response)
-     }
+        const {data} = validationResult
+        const {id, inviteId, tripId, adults, children, going, role, token} = data
 
+        let tripInvite = await selectTripInviteByToken(token)
+        if (!tripInvite) {
+            sendError(request, response, 401, 'Invite does not exist.')
+            return
+        }
+        //*account for expired, do a check like on 35; check to see tripinvite expiration
 
+        if (going === 'yes') {
+            tripInvite.status = 'accepted'
+        } else if (going === 'no') {
+            tripInvite.status = 'declined'
+        } else {tripInvite.status = 'pending'}
 
+        //Construct member to be inserted into database.
 
+        const member : Member = {
+            id,
+            inviteId,
+            tripId,
+            adults,
+            children,
+            going,
+            role
+        }
+
+        const result:Member = await insertMember(member)
+
+        response
+            .status(201)
+            .location(`/apis/member`)
+            .json(result)
+
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
     }
-    return {
-        memberId,
-        email: 'user@example.com',
-        firstName: 'Alex',
-        lastName: 'Rivera',
-        createdAt: new Date(),
-    };
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// export async function getMemberById (request: Request, response: Response): Promise<void> {
-//     try {
-//         const memberId = request.session?.memberId
-//
-//         if (sessionProfile === undefined || sessionProfile === null) {
-//             sendError(request, response, 401, 'You must be signed in to view your profile')
-//             return
-//         }
-//         const data = await selectMemberById(memberId)
-//         if (memberId === null) {
-//             sendError(request, response, 404, 'Profile not found')
-//             return
-//         }
-//
-//
-//         response.status(200).json(memberId)
-//     } catch (error: any) {
-//         console.error(error)
-//         sendServerError(request, response)
-//     }
-// }
