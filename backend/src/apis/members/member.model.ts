@@ -16,11 +16,12 @@ export const MemberSchema =
 
 export type Member = z.infer<typeof MemberSchema>
 
-export const MemberRequestSchema = MemberSchema.extend ({token:z.string().length(64)})
+export const MemberRequestSchema = MemberSchema.omit({role:true}).extend({token:z.string().length(64)})
 
 export type MemberRequest = z.infer<typeof MemberRequestSchema>
 
 export async function insertMember (member: Member): Promise<Member>  {
+    MemberSchema.parse(member)
     const { id, inviteId, tripId, adults, children, going, role } = member
     const [row] = await sql`INSERT INTO member (id, invite_id, trip_id, adults, children, going, role) VALUES (${id}, ${inviteId}, ${tripId}, ${adults}, ${children}, ${going}, ${role}) RETURNING id, invite_id, trip_id, adults, children, going, role`
     return MemberSchema.parse(row)

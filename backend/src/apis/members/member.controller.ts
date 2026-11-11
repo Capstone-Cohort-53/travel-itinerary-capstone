@@ -7,7 +7,7 @@ import {
 } from "../../utils/response.utils.ts"
 import {insertMember, type Member, MemberRequestSchema, MemberSchema} from "./member.model.ts";
 import {sql} from "../../utils/database.utils.ts";
-import {selectTripInviteByToken} from "../trip-invite/trip-invite.model.ts";
+import {selectTripInviteByToken, updateTripInvite} from "../trip-invite/trip-invite.model.ts";
 
 export async function postMemberController(
     request: Request,
@@ -29,20 +29,32 @@ export async function postMemberController(
         }
 
         const {data} = validationResult
-        const {id, inviteId, tripId, adults, children, going, role, token} = data
+        const {id, inviteId, tripId, adults, children, going, token} = data
 
         let tripInvite = await selectTripInviteByToken(token)
         if (!tripInvite) {
             sendError(request, response, 401, 'Invite does not exist.')
             return
         }
-        //*account for expired, do a check like on 35; check to see tripinvite expiration
+
+        const {expiresAt} = tripInvite
+        if (expiresAt !== null && expiresAt < new Date()) {
+            sendError(request, response, 410, 'This invite has expired.')
+            return
+        }
+
 
         if (going === 'yes') {
             tripInvite.status = 'accepted'
         } else if (going === 'no') {
             tripInvite.status = 'declined'
         } else {tripInvite.status = 'pending'}
+
+        tripInvite.acceptedProfileId = profileId
+
+        await updateTripInvite(tripInvite)
+
+
 
         //Construct member to be inserted into database.
 
@@ -53,7 +65,7 @@ export async function postMemberController(
             adults,
             children,
             going,
-            role
+            role:'member'
         }
 
         const result:Member = await insertMember(member)

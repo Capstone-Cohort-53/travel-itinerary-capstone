@@ -70,7 +70,7 @@ export async function postTripInviteController(
             email: email ?? null,
             expiresAt: expiresAt ?? null,
             status: "pending",
-            token: crypto.randomBytes(16).toString('hex')
+            token: crypto.randomBytes(32).toString('hex')
         }
             if (email) {
 
