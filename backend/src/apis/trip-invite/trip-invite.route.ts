@@ -1,10 +1,24 @@
 import { Router } from 'express'
-import { postTripInviteController} from "./trip-invite.controller.ts"
-import {isLoggedInController} from "../../utils/controllers/is-logged-in.controller.ts";
+import { postTripInviteController, getTripInviteByTokenController } from "./trip-invite.controller.ts"
+import { isLoggedInController } from "../../utils/controllers/is-logged-in.controller.ts"
 
-export const router = Router()
-const basepath = '/apis/trip-invite' as const
-router.route(`/`)
-    .post(isLoggedInController, postTripInviteController)
+// ── Owner-only routes: /apis/trip/:tripId/invite ──
+const tripInviteRouter = Router({ mergeParams: true })
+const basepath = '/apis/trip/:tripId/invite' as const
 
-export const tripInviteRoute = { basepath, router }
+tripInviteRouter.route('/')
+.post(isLoggedInController, postTripInviteController)
+// .get(isLoggedInController, getTripInvitesController)
+
+// tripInviteRouter.route('/:inviteId')
+//     .delete(isLoggedInController, deleteTripInviteController)
+
+export const tripInviteRoute = { basepath, router: tripInviteRouter }
+
+// ── Public route: /apis/trip-invite/:token ──
+const tokenRouter = Router()
+
+tokenRouter.route('/:token')
+     .get(getTripInviteByTokenController)
+
+export const tripInviteTokenRoute = { basepath: '/apis/trip-invite', router: tokenRouter }

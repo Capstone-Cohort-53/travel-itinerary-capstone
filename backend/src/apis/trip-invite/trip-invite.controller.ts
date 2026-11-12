@@ -2,6 +2,8 @@ import type {Request, Response} from 'express'
 import * as crypto from 'crypto'
 import formData from 'form-data'
 import Mailgun from 'mailgun.js'
+import {z} from 'zod/v4'
+
 
 
 import {
@@ -18,8 +20,8 @@ import {
 } from "../../utils/response.utils.ts"
 
 import {isUniqueViolation} from "../../utils/database.utils.ts"
-import {insertTrip, selectTripById, type Trip} from "../trip/trip.model.ts";
-import {token} from "morgan";
+import {selectTripById, type Trip} from "../trip/trip.model.ts";
+import {selectProfileByProfileId} from "../profile/profile.model.ts";
 import type {Profile} from "../profile/profile.model.ts";
 
 
@@ -48,7 +50,8 @@ export async function postTripInviteController(
         // Build out trip invite object
 
         const {data} = validationResult
-        const {id, tripId, name, cellNumber, email, expiresAt} = data
+        const {id, name, cellNumber, email, expiresAt} = data
+        const tripId = String(request.params.tripId)
 
 
         // TODO add check to make sure the person creating trip invite owns the trip
@@ -106,6 +109,53 @@ export async function postTripInviteController(
     }
 }
 
+
+export async function getTripInviteByTokenController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate the token from the URL (16 random bytes = 32 hex characters)
+        const paramsResult = z.object({ token: z.string().length(32) }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+
+        // 2. find the invitation
+        const invite = await selectTripInviteByToken(paramsResult.data.token)
+        if (invite === null) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+
+        // 3. get the trip and the organizer's profile
+        const trip = await selectTripById(invite.tripId)
+        const organizer = await selectProfileByProfileId(invite.invitedBy)
+        if (trip === null || organizer === null) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+
+        // 4. a past expiration date counts as expired
+        const isExpired = invite.expiresAt !== null && invite.expiresAt < new Date()
+
+        // 5. send ONLY what the acceptance page needs: no email, phone, token, or ids
+        response.status(200).json({
+            inviteeName: invite.name,
+            organizerName: organizer.name,
+            status: isExpired ? 'expired' : invite.status,
+            expiresAt: invite.expiresAt,
+            trip: {
+                title: trip.title,
+                destination: trip.destination,
+                startDate: trip.startDate,
+                endDate: trip.endDate,
+                image: trip.image
+            }
+        })
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
 
 /**
  * Builds and sends the trip-invitation email via Mailgun. The returned promise

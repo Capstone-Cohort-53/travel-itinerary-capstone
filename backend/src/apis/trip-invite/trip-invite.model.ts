@@ -20,7 +20,6 @@ export type TripInvite = z.infer<typeof TripInviteSchema>
 
 export const TripInviteRequestSchema = TripInviteSchema.pick({
    id: true,
-    tripId: true,
     name: true,
     email: true,
     cellNumber: true,
@@ -66,7 +65,7 @@ export async function insertTripInvite (tripInvite: TripInvite): Promise<TripInv
 
 export async function selectTripInviteByToken (token: string): Promise<TripInvite | null> {
     const rowList = await sql`
-    SELECT id, invited_by, trip_id, accepted_profile_id, cell_number, created_at, email, expires_at, status, token
+    SELECT id, invited_by, trip_id, name, accepted_profile_id, cell_number, created_at, email, expires_at, status, token
     FROM trip_invite
     WHERE token = ${token}
   `
