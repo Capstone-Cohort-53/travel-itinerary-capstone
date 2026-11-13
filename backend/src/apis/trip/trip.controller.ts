@@ -47,7 +47,7 @@ const {data} = validationResult
         const invite: TripInvite = {id: v7(), tripId: createdTrip.id, invitedBy: profile.id, createdAt: null, acceptedProfileId: profile.id, email: profile.email, cellNumber: profile.cellNumber, name: profile.name, status: 'accepted', token: crypto.randomBytes(32).toString('hex'), expiresAt: null}
         const createdInvite = await insertTripInvite(invite)
         const member: Member = {id: v7(), tripId:createdTrip.id, inviteId: createdInvite.id, role : 'owner', going: 'yes', adults: 1, children: 0}
-        const createdMember = insertMember(member)
+        await insertMember(member)
             //configure and send the response
             response
             .status(201)
