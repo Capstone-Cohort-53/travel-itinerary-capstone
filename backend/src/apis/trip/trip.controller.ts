@@ -1,5 +1,12 @@
 import {sendError, sendServerError, sendZodError} from "../../utils/response.utils.ts";
-import {insertTrip, type Trip, TripSchema} from "./trip.model.ts";
+import {
+    deleteTrip,
+    insertTrip,
+    selectTripDetailById,
+    selectTripsByProfileId,
+    type Trip,
+    TripSchema
+} from "./trip.model.ts";
 import type {Request, Response} from "express";
 import {isUniqueViolation} from "../../utils/database.utils.ts";
 import {insertMember, type Member} from "../members/member.model.ts";
@@ -47,7 +54,7 @@ const {data} = validationResult
         const invite: TripInvite = {id: v7(), tripId: createdTrip.id, invitedBy: profile.id, createdAt: null, acceptedProfileId: profile.id, email: profile.email, cellNumber: profile.cellNumber, name: profile.name, status: 'accepted', token: crypto.randomBytes(32).toString('hex'), expiresAt: null}
         const createdInvite = await insertTripInvite(invite)
         const member: Member = {id: v7(), tripId:createdTrip.id, inviteId: createdInvite.id, role : 'owner', going: 'yes', adults: 1, children: 0}
-        const createdMember = insertMember(member)
+        const createdMember = await insertMember(member)
             //configure and send the response
             response
             .status(201)
@@ -63,4 +70,115 @@ const {data} = validationResult
         sendServerError(request, response)
         }
 
+}
+
+/**
+ * Express controller for Listing trips I own or belong to by user id.
+ * @endpoint GET/apis/trip
+ * @returns  200 with an array of trips, or an ErrorResponse (401/500)
+ */
+
+export async function getMyTripsController(request: Request, response: Response) {
+    // use a try catch block to gracefully handle any errors that might occur
+    // purpose of this function: List trips I own or belong to
+
+    try {
+        //1. Verify the user is logged in and extract their profile ID from the session
+        const profile = request.session?.profile;
+        //if a validation failed return an error telling the user
+        if (profile === undefined || profile === null) {
+            sendZodError(request, response, 401, 'Please login to view your trips');
+            return;
+        }
+        const profileid = profile.id;
+        //2. call your database model to get the trips associated with this profileId.
+        // (You will need to build this function in your trip.model.ts file)
+        //GET
+        const trips = await selectTripsByProfileId(profile.id)
+        response
+            .status(200).json(trips)
+        // do I need .location() , no do not need it for GET just need it for post
+    }catch (error:any) {
+        //the client supplies the id, so a duplicate primary key is a client error
+        if (isUniqueViolation(error)) {
+            sendError (request, response, 409, 'No trips have been found')
+            return
+        }
+        console.error(error)
+        sendServerError(request, response)
+    }
+
+}
+
+//Get one trip's details:
+export async function getOneTripDetailsController(request: Request, response: Response) {
+    // use a try catch block to gracefully handle any errors that might occur
+    // purpose of this function: List one trip's details
+
+    try {
+        //1. Verify the user is logged in and extract their profile ID from the session
+        const profile = request.session?.profile;
+        //if a validation failed return an error telling the user
+        if (profile === undefined || profile === null) {
+            sendZodError(request, response, 401, 'Please login to view this trip');
+            return;
+        }
+        //2. validate the tripId from the URL (/apis/trip/:tripId)
+        const validationResult = TripSchema.pick({id:true}).safeParse({id:request.params.tripId})
+        if (validationResult.success === false) {
+            sendZodError(request,response, validationResult.error)
+            return
+        }
+        const tripId= validationResult.data.id
+
+        //3. get the trip, only if this profile owns it or belongs to it
+        const trip = await selectTripDetailById(tripId, profile.id)
+        if (trip === null) {
+            sendError(request, response, 404, 'Trip not found')
+            return
+        }
+        response
+            .status(200).json(trip)
+        // do I need .location() , no do not need it for GET just need it for post
+    }catch (error:any) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
+
+//Delete a trip for someone who owns the trip
+export async function deleteTripController(request: Request, response: Response) {
+    // use a try catch block to gracefully handle any errors that might occur
+    // purpose of this function: List one trip's details
+
+    try {
+        //1. Verify the user is logged in and extract their profile ID from the session
+        const profile = request.session?.profile;
+        //if a validation failed return an error telling the user
+        if (profile === undefined || profile === null) {
+            sendError(request, response, 401, 'Please login to delete a trip.');
+            return;
+        }
+
+        //2. Validate request.params.tripId and return 400 if it's invalid.
+        const validationResult = TripSchema.pick({id: true}).safeParse({id: request.params.tripId})
+        if (validationResult.success === false) {
+            sendZodError(request, response, validationResult.error)
+            return
+        }
+        const tripId = validationResult.data.id
+
+        //3. Call deleteTrip(tripId, profile.id) and return 404 if the result is null.
+        const deletedTrip = await deleteTrip(tripId, profile.id)
+        if (deletedTrip === null) {
+        sendError(request,response, 404, 'Trip not found')
+        return
+    }
+
+    //4. On success, send 200 with the deleted trip, or 204 with nobody.
+    response.status(200).json(deletedTrip)
+    } catch(error:any) {
+        console.error(error)
+        sendServerError(request, response)
+    }
 }

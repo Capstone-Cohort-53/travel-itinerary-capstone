@@ -56,3 +56,54 @@ Promise<Trip|null> {
         const result = TripSchema.array().max(1).parse(rowList)
         return result[0] ?? null
 }
+
+/**
+ *Endpoint: GET "List a trip I own or belong to" - what the GET translates to in SQL :SELECT
+ */
+
+export async function selectTripsByProfileId(profileId: string) {
+        //sql call to get the trip by profile from  the database
+        const rowList = await sql`
+        SELECT DISTINCT trip.id, trip.owner_id, trip.title, trip.description, trip.destination, trip.start_date, trip.end_date, trip.image, trip.created_at
+        FROM trip
+        LEFT JOIN member ON member.trip_id = trip.id
+        LEFT JOIN trip_invite ON trip_invite.id = member.invite_id
+        WHERE trip.owner_id =${profileId}
+            OR trip_invite.accepted_profile_id = ${profileId}
+            ORDER BY trip.start_date`
+        return TripSchema.array().parse(rowList)
+//parse the inserted trip object and return it so that the information can be displayed to the end user
+}
+
+/**
+ *Endpoint: GET "View the details of a single trip" -
+ * Returns the trip only if the profile owns it or has accepted an invite to it
+ * what the GET translates to in SQL :SELECT
+ */
+
+export async function selectTripDetailById(tripId: string, profileId:string) {
+        //sql call to get the trip by profile from  the database
+        const rowList = await sql`
+        SELECT DISTINCT trip.id, trip.owner_id, trip.title, trip.description, trip.destination, trip.start_date, trip.end_date, trip.image, trip.created_at
+        FROM trip
+        LEFT JOIN member ON member.trip_id = trip.id
+        LEFT JOIN trip_invite ON trip_invite.id = member.invite_id
+        WHERE trip.id =${tripId}
+            AND (trip.owner_id = ${profileId} OR trip_invite.accepted_profile_id=${profileId})`
+        const result = TripSchema.array().max(1).parse(rowList)
+        return result [0] ?? null
+
+}
+
+/**
+ * Endpoint: DELTE "Delete the trip by Id, only if the profile is the owner."
+ */
+
+export async function deleteTrip(tripId: string, profileId:string) {
+        //sql call to get the trip by profile from  the database
+        const rowList = await sql`
+        DELETE FROM trip
+        WHERE id =${tripId}  AND owner_id = ${profileId}`
+
+        return 'successfully deleted trip'
+}

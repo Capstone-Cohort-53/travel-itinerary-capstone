@@ -1,16 +1,21 @@
 //create route
 
-
 import {postTripController} from "./trip.controller.ts";
 import {Router} from "express";
 import {isLoggedInController} from "../../utils/controllers/is-logged-in.controller.ts";
+import {getMyTripsController, getOneTripDetailsController, deleteTripController} from "./trip.controller.ts";
 
 const basepath = '/apis/trip' as const
 const router = Router()
 
 
 router.route(`/`)
+    .get(isLoggedInController, getMyTripsController)
     .post(isLoggedInController, postTripController)
+
+router.route(`/:tripId`)
+    .get(isLoggedInController, getOneTripDetailsController)
+    .delete(isLoggedInController, deleteTripController)
 
 export const tripRoute = { basepath, router }
 
