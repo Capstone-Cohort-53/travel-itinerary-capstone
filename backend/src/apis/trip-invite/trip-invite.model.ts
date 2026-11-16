@@ -20,8 +20,10 @@ export type TripInvite = z.infer<typeof TripInviteSchema>
 
 
 export const TripInviteRequestSchema = TripInviteSchema.pick({
+
     id: true,
     tripId: true,
+
     name: true,
     email: true,
     cellNumber: true,
@@ -64,6 +66,7 @@ export async function insertTripInvite(tripInvite: TripInvite): Promise<TripInvi
 
 export async function selectTripInviteByToken(token: string): Promise<TripInvite | null> {
     const rowList = await sql`
+
         SELECT id,
                invited_by,
                trip_id,
@@ -96,4 +99,44 @@ export async function updateTripInvite(tripInvite: TripInvite): Promise<TripInvi
                             WHERE id = ${id}
                             RETURNING id, invited_by, trip_id, name, accepted_profile_id, cell_number, created_at, email, expires_at, status,token`
     return TripInviteSchema.parse(row)
+    }
+
+// an invite without its secret token: safe to show the trip owner in a list
+export const TripInviteSummarySchema = TripInviteSchema.omit({ token: true })
+export type TripInviteSummary = z.infer<typeof TripInviteSummarySchema>
+
+/**
+ * Select every invitation for a trip, newest first (token left out on purpose).
+ * @param tripId the trip whose invitations to list
+ */
+export async function selectTripInvitesByTripId (tripId: string): Promise<TripInviteSummary[]> {
+    const rowList = await sql`
+    SELECT id, invited_by, trip_id, name, accepted_profile_id, cell_number, created_at, email, expires_at, status
+    FROM trip_invite
+    WHERE trip_id = ${tripId}
+    ORDER BY created_at DESC
+  `
+    return TripInviteSummarySchema.array().parse(rowList)
+}
+
+/**
+ * Select a single invitation by its id.
+ * @param id the invitation's id
+ */
+export async function selectTripInviteById (id: string): Promise<TripInvite | null> {
+    const rowList = await sql`
+    SELECT id, invited_by, trip_id, name, accepted_profile_id, cell_number, created_at, email, expires_at, status, token
+    FROM trip_invite
+    WHERE id = ${id}
+  `
+    return TripInviteSchema.array().max(1).parse(rowList)[0] ?? null
+}
+
+/**
+ * Delete (revoke) an invitation by its id.
+ * @param id the invitation's id
+ */
+export async function deleteTripInvite (id: string): Promise<void> {
+    await sql`DELETE FROM trip_invite WHERE id = ${id}`
+
 }

@@ -1,6 +1,5 @@
 import {z} from "zod/v4";
 import {sql} from "../../utils/database.utils.ts";
-import {TripInviteSchema} from "../trip-invite/trip-invite.model.ts";
 
 
 export const MemberSchema =
@@ -27,21 +26,42 @@ export async function insertMember (member: Member): Promise<Member>  {
     return MemberSchema.parse(row)
 }
 
-//
-// export async function selectMemberById(memberId: string): Promise<Member | null> {
-//     // Replace with your actual database connection pool logic
-//     // const result = await sql`SELECT * FROM members WHERE member_id = ${memberId}`;
-//     // return result[0] ?? null;
-//
-//     return {
-//         memberId,
-//         email: 'user@example.com',
-//         firstName: 'Alex',
-//         lastName: 'Rivera',
-//         createdAt: new Date(),
-//     };
-// }
+export const MemberWithProfileSchema = MemberSchema.extend({
+    profileId: z.uuidv7().nullable(),
+    name: z.string(),
+    image: z.string().nullable()
+})
 
+export type MemberWithProfile = z.infer<typeof MemberWithProfileSchema>
+
+export async function selectMembersByTripId(tripId: string): Promise<MemberWithProfile[]> {
+    const rowList = await sql`
+        SELECT member.id, member.invite_id, member.trip_id, member.adults, member.children, member.going, member.role,
+               trip_invite.accepted_profile_id AS profile_id,
+               COALESCE(profile.name, trip_invite.name) AS name,
+               profile.image
+        FROM member
+            JOIN trip_invite ON member.invite_id = trip_invite.id
+            LEFT JOIN profile ON trip_invite.accepted_profile_id = profile.id
+        WHERE member.trip_id = ${tripId}
+        ORDER BY member.role DESC, name`
+    return MemberWithProfileSchema.array().parse(rowList)
+}
+
+export async function selectMemberById(id: string): Promise<Member | null> {
+    const rowList = await sql`
+        SELECT id, invite_id, trip_id, adults, children, going, role FROM member WHERE id = ${id}`
+    return MemberSchema.array().max(1).parse(rowList)[0] ?? null
+}
+
+export async function deleteMember(id: string): Promise<void> {
+    await sql`DELETE FROM member WHERE id = ${id}`
+}
+
+export async function updateMember (member: Member) : Promise<void> {
+    const {id, going, children, adults} = member
+    await sql`UPDATE member SET going = ${going}, children = ${children}, adults = ${adults} WHERE id = ${id}`
+}
 
 
 
