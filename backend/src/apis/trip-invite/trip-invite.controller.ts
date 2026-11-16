@@ -2,12 +2,19 @@ import type {Request, Response} from 'express'
 import * as crypto from 'crypto'
 import formData from 'form-data'
 import Mailgun from 'mailgun.js'
+import {z} from 'zod/v4'
+
 
 
 import {
     TripInviteRequestSchema,
     insertTripInvite,
-    type TripInvite
+    selectTripInviteByToken, type TripInvite,
+    selectTripInvitesByTripId,
+    selectTripInviteById,
+    deleteTripInvite
+
+
 
 } from "./trip-invite.model.ts"
 
@@ -17,7 +24,12 @@ import {
     sendZodError
 } from "../../utils/response.utils.ts"
 
+
+import {isUniqueViolation} from "../../utils/database.utils.ts"
 import {selectTripById, type Trip} from "../trip/trip.model.ts";
+import {selectProfileByProfileId} from "../profile/profile.model.ts";
+import type {Profile} from "../profile/profile.model.ts";
+
 
 
 export async function postTripInviteController(
@@ -45,15 +57,16 @@ export async function postTripInviteController(
         // Build out trip invite object
 
         const {data} = validationResult
-        const {id, tripId, name, cellNumber, email, expiresAt} = data
+        const {id, name, cellNumber, email, expiresAt} = data
+        const tripId = String(request.params.tripId)
 
 
         // TODO add check to make sure the person creating trip invite owns the trip
         const trip = await selectTripById(tripId)
-            if (trip?.ownerId !== profileId){
-                sendError(request, response, 401, 'You must be the trip owner to send invitations.')
-                return
-            }
+        if (trip?.ownerId !== profileId){
+            sendError(request, response, 401, 'You must be the trip owner to send invitations.')
+            return
+        }
 
 
 
@@ -72,18 +85,18 @@ export async function postTripInviteController(
             status: "pending",
             token: crypto.randomBytes(32).toString('hex')
         }
-            if (email) {
+        if (email) {
 
 // fire off the activation email without awaiting it — a delivery failure is
 // logged via .catch() and never blocks or fails the sign-up response
-                // we need to figure out what accept-invite is going to be
-                const inviteLink: string = `${request.protocol}://${request.hostname}:8080${request.originalUrl}accept-invite/${tripInvite.token}`
-                await sendInviteEmail(email, inviteLink, trip, name, profile.name)
-                    .catch(mailError => {
-                        console.error('Invite email failed to send:', mailError)
-                    })
+            // we need to figure out what accept-invite is going to be
+            const inviteLink: string = `${request.protocol}://${request.hostname}:8080${request.originalUrl}accept-invite/${tripInvite.token}`
+            await sendInviteEmail(email, inviteLink, trip, name, profile.name)
+                .catch(mailError => {
+                    console.error('Invite email failed to send:', mailError)
+                })
 
-            }
+        }
 
         // Insert trip invite object into the database
         const createdTripInvite = await insertTripInvite(tripInvite)
@@ -103,6 +116,125 @@ export async function postTripInviteController(
     }
 }
 
+
+export async function getTripInviteByTokenController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate the token from the URL (16 random bytes = 32 hex characters)
+        const paramsResult = z.object({ token: z.string().length(32) }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+
+        // 2. find the invitation
+        const invite = await selectTripInviteByToken(paramsResult.data.token)
+        if (invite === null) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+
+        // 3. get the trip and the organizer's profile
+        const trip = await selectTripById(invite.tripId)
+        const organizer = await selectProfileByProfileId(invite.invitedBy)
+        if (trip === null || organizer === null) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+
+        // 4. a past expiration date counts as expired
+        const isExpired = invite.expiresAt !== null && invite.expiresAt < new Date()
+
+        // 5. send ONLY what the acceptance page needs: no email, phone, token, or ids
+        response.status(200).json({
+            inviteeName: invite.name,
+            organizerName: organizer.name,
+            status: isExpired ? 'expired' : invite.status,
+            expiresAt: invite.expiresAt,
+            trip: {
+                title: trip.title,
+                destination: trip.destination,
+                startDate: trip.startDate,
+                endDate: trip.endDate,
+                image: trip.image
+            }
+        })
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
+
+
+export async function getTripInvitesController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate the trip id from the URL
+        const paramsResult = z.object({ tripId: z.uuidv7() }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+        const { tripId } = paramsResult.data
+
+        // 2. the trip must exist...
+        const trip = await selectTripById(tripId)
+        if (trip === null) {
+            sendError(request, response, 404, 'Trip not found.')
+            return
+        }
+
+        // 3. ...and belong to the signed-in user
+        if (trip.ownerId !== request.session.profile?.id) {
+            sendError(request, response, 403, 'Only the trip owner can view invitations.')
+            return
+        }
+
+        // 4. send the list (token is left out by the model)
+        const invites = await selectTripInvitesByTripId(tripId)
+        response.status(200).json(invites)
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
+
+
+export async function deleteTripInviteController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate both ids from the URL
+        const paramsResult = z.object({ tripId: z.uuidv7(), inviteId: z.uuidv7() }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+        const { tripId, inviteId } = paramsResult.data
+
+        // 2. the trip must exist and belong to the signed-in user
+        const trip = await selectTripById(tripId)
+        if (trip === null) {
+            sendError(request, response, 404, 'Trip not found.')
+            return
+        }
+        if (trip.ownerId !== request.session.profile?.id) {
+            sendError(request, response, 403, 'Only the trip owner can revoke invitations.')
+            return
+        }
+
+        // 3. the invite must exist AND belong to this trip, so an owner can't
+        //    delete another trip's invite by pairing their trip id with it
+        const invite = await selectTripInviteById(inviteId)
+        if (invite === null || invite.tripId !== tripId) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+
+        // 4. revoke it
+        await deleteTripInvite(inviteId)
+        response.status(200).json({ message: 'Invitation revoked.' })
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
 
 /**
  * Builds and sends the trip-invitation email via Mailgun. The returned promise

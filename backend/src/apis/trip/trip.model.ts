@@ -9,7 +9,7 @@ export const TripSchema =
             .uuidv7('please provide a valid uuid for trip'),
         description: z
             .string('please provide a valid cellNumber')
-            .max(20,'please provide 20 characters').nullable(),
+            .max(40,'please provide 20 characters').nullable(),
         createdAt: z
             .coerce.date('please provide a valid created at').nullable(),
         title:z
@@ -55,4 +55,76 @@ Promise<Trip|null> {
         const rowList= await sql `SELECT id, owner_id, title, description, destination, start_date, end_date, image, created_at FROM trip WHERE id=${id} `
         const result = TripSchema.array().max(1).parse(rowList)
         return result[0] ?? null
+}
+
+/**
+ *Endpoint: GET "List a trip I own or belong to" - what the GET translates to in SQL :SELECT
+ */
+
+export async function selectTripsByProfileId(profileId: string) {
+        //sql call to get the trip by profile from  the database
+        const rowList = await sql`
+        SELECT DISTINCT trip.id, trip.owner_id, trip.title, trip.description, trip.destination, trip.start_date, trip.end_date, trip.image, trip.created_at
+        FROM trip
+        LEFT JOIN member ON member.trip_id = trip.id
+        LEFT JOIN trip_invite ON trip_invite.id = member.invite_id
+        WHERE trip.owner_id =${profileId}
+            OR trip_invite.accepted_profile_id = ${profileId}
+            ORDER BY trip.start_date`
+        return TripSchema.array().parse(rowList)
+//parse the inserted trip object and return it so that the information can be displayed to the end user
+}
+
+/**
+ *Endpoint: GET "View the details of a single trip" -
+ * Returns the trip only if the profile owns it or has accepted an invite to it
+ * what the GET translates to in SQL :SELECT
+ */
+
+export async function selectTripDetailById(tripId: string, profileId:string) {
+        //sql call to get the trip by profile from  the database
+        const rowList = await sql`
+        SELECT DISTINCT trip.id, trip.owner_id, trip.title, trip.description, trip.destination, trip.start_date, trip.end_date, trip.image, trip.created_at
+        FROM trip
+        LEFT JOIN member ON member.trip_id = trip.id
+        LEFT JOIN trip_invite ON trip_invite.id = member.invite_id
+        WHERE trip.id =${tripId}
+            AND (trip.owner_id = ${profileId} OR trip_invite.accepted_profile_id=${profileId})`
+        const result = TripSchema.array().max(1).parse(rowList)
+        return result [0] ?? null
+
+}
+
+/**
+ * Endpoint: DELETE "Delete the trip by Id, only if the profile is the owner."
+ */
+
+export async function deleteTrip(tripId: string, profileId:string) {
+        //sql call to get the trip by profile from  the database
+        const rowList = await sql`
+        DELETE FROM trip
+        WHERE id =${tripId}  AND owner_id = ${profileId}
+        RETURNING id, owner_id, title, description, destination, start_date, end_date, image, created_at`
+        const result= TripSchema.array().max(1).parse(rowList)
+        return result [0] ?? null
+}
+
+export async function updateTrip(
+    tripId: string,
+    profileId: string,
+    trip: Omit <Trip, 'id' | 'ownerId' | 'createdAt'>
+): Promise <Trip | null> {
+        const {title, description, destination, startDate, endDate, image} = trip
+        const rowList = await sql`
+                UPDATE trip
+                SET title= ${title},
+                    description= ${description},
+                    destination= ${destination},
+                    start_date= ${startDate},
+                    end_date= ${endDate},
+                    image= ${image}
+                WHERE id = ${tripId}
+                  AND owner_id = ${profileId} RETURNING id, owner_id, title, description, destination, start_date, end_date, image, created_at`
+                 const result = TripSchema.array().max(1).parse(rowList)
+                  return result [0] ?? null
 }
