@@ -10,8 +10,11 @@ import {indexRoute} from "./apis/index.route.ts";
 import {healthRoute} from "./apis/health/health.route.ts";
 import {signInRoute} from "./apis/sign-in/sign-in.route.ts";
 import {tripRoute} from "./apis/trip/trip.route.ts";
-import {tripInviteRoute} from "./apis/trip-invite/trip-invite.route.ts";
+
+import {tripInviteRoute, tripInviteTokenRoute} from "./apis/trip-invite/trip-invite.route.ts";
+
 import {memberRoute} from "./apis/members/member.route.ts";
+
 
 export class App {
     app: Application
@@ -50,6 +53,8 @@ export class App {
         this.app.use(profileRoute.basePath, profileRoute.router)
 
         this.app.use(tripRoute.basepath, tripRoute.router)
+        this.app.use(tripInviteTokenRoute.basepath, tripInviteTokenRoute.router)
+
 
         this.app.use(tripInviteRoute.basepath, tripInviteRoute.router)
 
