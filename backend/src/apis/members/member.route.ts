@@ -4,7 +4,7 @@ import {
     deleteMemberController,
     getMemberByIdController,
     getMembersByTripIdController,
-    postMemberController
+    postMemberController, putMemberController
 } from "./member.controller.ts";
 
 const basepath = '/apis/member' as const

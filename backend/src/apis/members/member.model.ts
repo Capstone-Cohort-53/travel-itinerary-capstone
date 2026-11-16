@@ -58,7 +58,10 @@ export async function deleteMember(id: string): Promise<void> {
     await sql`DELETE FROM member WHERE id = ${id}`
 }
 
-
+export async function updateMember (member: Member) : Promise<void> {
+    const {id, going, children, adults} = member
+    await sql`UPDATE member SET going = ${going}, children = ${children}, adults = ${adults} WHERE id = ${id}`
+}
 
 
 

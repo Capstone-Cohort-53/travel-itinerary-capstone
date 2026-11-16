@@ -12,9 +12,9 @@ import {
     MemberRequestSchema,
     MemberSchema,
     selectMemberById,
-    selectMembersByTripId
+    selectMembersByTripId, updateMember
 } from "./member.model.ts";
-import {selectTripInviteByToken, updateTripInvite} from "../trip-invite/trip-invite.model.ts";
+import {selectTripInviteById, selectTripInviteByToken, updateTripInvite} from "../trip-invite/trip-invite.model.ts";
 import {selectTripById} from "../trip/trip.model.ts";
 
 export async function postMemberController(
@@ -177,13 +177,19 @@ export async function deleteMemberController (request: Request, response: Respon
 
 export async function putMemberController (request: Request, response: Response): Promise<void> {
     try {
-
+        const bodyValidationResult = MemberSchema.safeParse(request.body)
         const validationResult = MemberSchema.pick({id: true}).safeParse(request.params)
 
         if (!validationResult.success) {
             sendZodError(request, response, validationResult.error)
             return
         }
+
+        if (!bodyValidationResult.success) {
+            sendZodError(request, response, bodyValidationResult.error)
+            return
+        }
+
 
         const id = validationResult.data.id
         const member = await selectMemberById(id)
@@ -199,10 +205,24 @@ export async function putMemberController (request: Request, response: Response)
             return
         }
 
-        const tripInvite = await selectTripInviteBy
+        const tripInvite = await selectTripInviteById(member.inviteId)
 
-        if (profileId !== member.)
+        const {going, children, adults} = bodyValidationResult.data
 
+        member.going = going
+
+        member.children = children
+
+        member.adults = adults
+
+        if (profileId !== tripInvite?.acceptedProfileId) {
+            sendError(request, response, 400, 'You can only update your own status on the trip.')
+            return
+        }
+
+        await updateMember(member)
+
+        response.status(200).json(member)
     }
 
     catch (error: unknown) {
