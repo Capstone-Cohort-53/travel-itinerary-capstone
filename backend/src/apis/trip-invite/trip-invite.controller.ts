@@ -9,8 +9,10 @@ import {z} from 'zod/v4'
 import {
     TripInviteRequestSchema,
     insertTripInvite,
-    selectTripInviteByToken, type TripInvite
-
+    selectTripInviteByToken, type TripInvite,
+    selectTripInvitesByTripId,
+    selectTripInviteById,
+    deleteTripInvite
 } from "./trip-invite.model.ts"
 
 import {
@@ -151,6 +153,78 @@ export async function getTripInviteByTokenController (request: Request, response
                 image: trip.image
             }
         })
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
+
+
+export async function getTripInvitesController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate the trip id from the URL
+        const paramsResult = z.object({ tripId: z.uuidv7() }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+        const { tripId } = paramsResult.data
+
+        // 2. the trip must exist...
+        const trip = await selectTripById(tripId)
+        if (trip === null) {
+            sendError(request, response, 404, 'Trip not found.')
+            return
+        }
+
+        // 3. ...and belong to the signed-in user
+        if (trip.ownerId !== request.session.profile?.id) {
+            sendError(request, response, 403, 'Only the trip owner can view invitations.')
+            return
+        }
+
+        // 4. send the list (token is left out by the model)
+        const invites = await selectTripInvitesByTripId(tripId)
+        response.status(200).json(invites)
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
+
+
+export async function deleteTripInviteController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate both ids from the URL
+        const paramsResult = z.object({ tripId: z.uuidv7(), inviteId: z.uuidv7() }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+        const { tripId, inviteId } = paramsResult.data
+
+        // 2. the trip must exist and belong to the signed-in user
+        const trip = await selectTripById(tripId)
+        if (trip === null) {
+            sendError(request, response, 404, 'Trip not found.')
+            return
+        }
+        if (trip.ownerId !== request.session.profile?.id) {
+            sendError(request, response, 403, 'Only the trip owner can revoke invitations.')
+            return
+        }
+
+        // 3. the invite must exist AND belong to this trip, so an owner can't
+        //    delete another trip's invite by pairing their trip id with it
+        const invite = await selectTripInviteById(inviteId)
+        if (invite === null || invite.tripId !== tripId) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+
+        // 4. revoke it
+        await deleteTripInvite(inviteId)
+        response.status(200).json({ message: 'Invitation revoked.' })
     } catch (error: unknown) {
         console.error(error)
         sendServerError(request, response)

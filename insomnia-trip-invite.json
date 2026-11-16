@@ -1,0 +1,104 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_source": "insomnia.desktop.app:v13.4.0",
+  "resources": [
+    {
+      "_id": "wrk_tripinvite",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Trip Invite Testing",
+      "description": "Run requests 1 to 4 in order. Scripts save the CSRF token and generate uuidv7 ids for you.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_tripinvite_base",
+      "_type": "environment",
+      "parentId": "wrk_tripinvite",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://lauren.ddfullstack.cloud:8080",
+        "google_client_id": "PASTE_GOOGLE_CLIENT_ID_HERE",
+        "google_client_secret": "PASTE_GOOGLE_CLIENT_SECRET_HERE",
+        "invite_email": "PASTE_A_MAILGUN_VERIFIED_EMAIL_HERE",
+        "csrf_token": "",
+        "trip_id": "",
+        "invite_id": ""
+      }
+    },
+    {
+      "_id": "req_1_health",
+      "_type": "request",
+      "parentId": "wrk_tripinvite",
+      "name": "1. Health check",
+      "metaSortKey": 1,
+      "method": "GET",
+      "url": "{{ _.base_url }}/apis/health",
+      "headers": [],
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_2_signin",
+      "_type": "request",
+      "parentId": "wrk_tripinvite",
+      "name": "2. Sign in with Google",
+      "metaSortKey": 2,
+      "method": "POST",
+      "url": "{{ _.base_url }}/apis/sign-in",
+      "headers": [],
+      "body": {},
+      "authentication": {
+        "type": "oauth2",
+        "grantType": "authorization_code",
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+        "accessTokenUrl": "https://oauth2.googleapis.com/token",
+        "clientId": "{{ _.google_client_id }}",
+        "clientSecret": "{{ _.google_client_secret }}",
+        "scope": "openid email profile",
+        "redirectUrl": "http://localhost",
+        "credentialsInBody": true,
+        "tokenPrefix": "Bearer"
+      },
+      "afterResponseScript": "const header = insomnia.response.headers.get('authorization');\nconst token = typeof header === 'string' ? header : header && header.value;\nif (token) {\n  insomnia.environment.set('csrf_token', token);\n  console.log('Saved CSRF token');\n} else {\n  console.log('No authorization header in the response - sign-in failed');\n}"
+    },
+    {
+      "_id": "req_3_trip",
+      "_type": "request",
+      "parentId": "wrk_tripinvite",
+      "name": "3. Create trip",
+      "metaSortKey": 3,
+      "method": "POST",
+      "url": "{{ _.base_url }}/apis/trip",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "{{ _.csrf_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id\": \"{{ _.trip_id }}\",\n  \"title\": \"Test Trip\",\n  \"description\": \"testing invites\",\n  \"destination\": \"Santa Fe\",\n  \"startDate\": \"2026-12-01\",\n  \"endDate\": \"2026-12-05\",\n  \"image\": \"https://example.com/trip.png\"\n}"
+      },
+      "authentication": {},
+      "preRequestScript": "function uuidv7() {\n  const r = () => Math.floor(Math.random() * 16).toString(16);\n  let s = Date.now().toString(16).padStart(12, '0') + '7';\n  for (let i = 0; i < 3; i++) s += r();\n  s += (8 + Math.floor(Math.random() * 4)).toString(16);\n  for (let i = 0; i < 15; i++) s += r();\n  return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' + s.slice(16, 20) + '-' + s.slice(20);\n}\ninsomnia.environment.set('trip_id', uuidv7());"
+    },
+    {
+      "_id": "req_4_invite",
+      "_type": "request",
+      "parentId": "wrk_tripinvite",
+      "name": "4. Send trip invite",
+      "metaSortKey": 4,
+      "method": "POST",
+      "url": "{{ _.base_url }}/apis/trip/{{ _.trip_id }}/invite",
+      "headers": [
+        { "name": "Content-Type", "value": "application/json" },
+        { "name": "Authorization", "value": "{{ _.csrf_token }}" }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id\": \"{{ _.invite_id }}\",\n  \"name\": \"Jane\",\n  \"email\": \"{{ _.invite_email }}\",\n  \"expiresAt\": null\n}"
+      },
+      "authentication": {},
+      "preRequestScript": "function uuidv7() {\n  const r = () => Math.floor(Math.random() * 16).toString(16);\n  let s = Date.now().toString(16).padStart(12, '0') + '7';\n  for (let i = 0; i < 3; i++) s += r();\n  s += (8 + Math.floor(Math.random() * 4)).toString(16);\n  for (let i = 0; i < 15; i++) s += r();\n  return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' + s.slice(16, 20) + '-' + s.slice(20);\n}\ninsomnia.environment.set('invite_id', uuidv7());"
+    }
+  ]
+}
