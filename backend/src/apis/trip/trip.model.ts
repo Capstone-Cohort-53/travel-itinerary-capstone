@@ -9,7 +9,7 @@ export const TripSchema =
             .uuidv7('please provide a valid uuid for trip'),
         description: z
             .string('please provide a valid cellNumber')
-            .max(20,'please provide 20 characters').nullable(),
+            .max(40,'please provide 20 characters').nullable(),
         createdAt: z
             .coerce.date('please provide a valid created at').nullable(),
         title:z
@@ -96,14 +96,35 @@ export async function selectTripDetailById(tripId: string, profileId:string) {
 }
 
 /**
- * Endpoint: DELTE "Delete the trip by Id, only if the profile is the owner."
+ * Endpoint: DELETE "Delete the trip by Id, only if the profile is the owner."
  */
 
 export async function deleteTrip(tripId: string, profileId:string) {
         //sql call to get the trip by profile from  the database
         const rowList = await sql`
         DELETE FROM trip
-        WHERE id =${tripId}  AND owner_id = ${profileId}`
+        WHERE id =${tripId}  AND owner_id = ${profileId}
+        RETURNING id, owner_id, title, description, destination, start_date, end_date, image, created_at`
+        const result= TripSchema.array().max(1).parse(rowList)
+        return result [0] ?? null
+}
 
-        return 'successfully deleted trip'
+export async function updateTrip(
+    tripId: string,
+    profileId: string,
+    trip: Omit <Trip, 'id' | 'ownerId' | 'createdAt'>
+): Promise <Trip | null> {
+        const {title, description, destination, startDate, endDate, image} = trip
+        const rowList = await sql`
+                UPDATE trip
+                SET title= ${title},
+                    description= ${description},
+                    destination= ${destination},
+                    start_date= ${startDate},
+                    end_date= ${endDate},
+                    image= ${image}
+                WHERE id = ${tripId}
+                  AND owner_id = ${profileId} RETURNING id, owner_id, title, description, destination, start_date, end_date, image, created_at`
+                 const result = TripSchema.array().max(1).parse(rowList)
+                  return result [0] ?? null
 }

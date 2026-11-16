@@ -5,7 +5,7 @@ import {
     selectTripDetailById,
     selectTripsByProfileId,
     type Trip,
-    TripSchema
+    TripSchema, updateTrip
 } from "./trip.model.ts";
 import type {Request, Response} from "express";
 import {isUniqueViolation} from "../../utils/database.utils.ts";
@@ -87,7 +87,7 @@ export async function getMyTripsController(request: Request, response: Response)
         const profile = request.session?.profile;
         //if a validation failed return an error telling the user
         if (profile === undefined || profile === null) {
-            sendZodError(request, response, 401, 'Please login to view your trips');
+            sendError(request, response, 401, 'Please login to view your trips');
             return;
         }
         const profileid = profile.id;
@@ -120,7 +120,7 @@ export async function getOneTripDetailsController(request: Request, response: Re
         const profile = request.session?.profile;
         //if a validation failed return an error telling the user
         if (profile === undefined || profile === null) {
-            sendZodError(request, response, 401, 'Please login to view this trip');
+            sendError(request, response, 401, 'Please login to view this trip');
             return;
         }
         //2. validate the tripId from the URL (/apis/trip/:tripId)
@@ -180,5 +180,49 @@ export async function deleteTripController(request: Request, response: Response)
     } catch(error:any) {
         console.error(error)
         sendServerError(request, response)
+    }
+}
+
+/**
+ * Express controller for updating a trip (owner only).
+ * @Endpoint PUT / apis/trip/: tripId
+ * @return 200 with the updated trip, or an ErrorResponse (400/401/404/500)
+ */
+
+export async function putTripController(request: Request, response: Response) {
+    try {
+        //1. Verify the user is logged in and extract their profile ID from the session
+        const profile = request.session?.profile;
+        //if a validation failed return an error telling the user
+        if (profile === undefined || profile === null) {
+            sendError(request, response, 401, 'Please login to update a trip.');
+            return;
+        }
+
+        //2. Validate  the tripId from the URL
+        const paramsResult = TripSchema.pick({id: true}).safeParse({id: request.params.tripId})
+        if (paramsResult.success === false) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+        const tripId = paramsResult.data.id
+
+        //3. validate the new trip data from the body (id, owner and createdAt are never taken from the client)
+        const bodyResult = TripSchema.omit({id: true, ownerId: true, createdAt: true}).safeParse(request.body)
+        if (bodyResult.success === false) {
+            sendZodError(request, response, bodyResult.error)
+            return
+        }
+        //4. update the trip, only if this profile is the owner
+        const updatedTrip = await updateTrip(tripId, profile.id, bodyResult.data)
+        if (updatedTrip === null) {
+            sendError(request, response, 404, 'Trip not found')
+            return
+        }
+        response.status(200).json(updatedTrip)
+    } catch (error:any) {
+        console.error(error)
+        sendServerError(request, response)
+
     }
 }
