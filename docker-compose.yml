@@ -1,6 +1,5 @@
 services:
   redis:
-
     image: 'redis:alpine'
     volumes:
       - 'redis:/data'
@@ -8,6 +7,7 @@ services:
       - ./project.env
     healthcheck:
       test: [ 'CMD', 'redis-cli', 'ping' ]
+
   backend:
     build: backend
     depends_on:
@@ -16,6 +16,10 @@ services:
     env_file:
       - project.env
     user: 'node'
+    environment:
+      # Windows bind mounts don't send file-change events into the container,
+      # so make nodemon poll for changes instead of waiting for events
+      CHOKIDAR_USEPOLLING: 'true'
     volumes:
       - ./backend/src:/home/node/app/src
     healthcheck:
@@ -25,6 +29,34 @@ services:
       retries: 3
       start_period: 40s
 
+  frontend:
+    build: frontend
+    environment:
+      PORT: 3000
+    depends_on:
+      - backend
+
+  # public entry point: /apis/* -> backend, everything else -> frontend.
+  # set DOMAIN in project.env to get automatic HTTPS; without it, serves plain HTTP on port 80
+  caddy:
+    image: 'caddy:2-alpine'
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    env_file:
+      - project.env
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   redis:
     driver: local
+  caddy_data:
+  caddy_config:

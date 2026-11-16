@@ -1,0 +1,15 @@
+# DOMAIN comes from project.env (e.g. DOMAIN=mytrip.example.com).
+# If DOMAIN is not set, Caddy falls back to ":80" (plain HTTP, no certificate).
+{$DOMAIN::80} {
+	encode gzip
+
+	# API requests go to the express backend
+	handle /apis/* {
+		reverse_proxy backend:4200
+	}
+
+	# everything else is the react-router frontend
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

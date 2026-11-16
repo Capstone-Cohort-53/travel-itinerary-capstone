@@ -3,6 +3,7 @@ set role admins;
 drop table if exists activity_rsvp;
 drop table if exists activity;
 drop table if exists member;
+drop table if exists trip_member; -- old name of the member table
 drop table if exists trip_invite;
 drop table if exists trip;
 drop table if exists profile;

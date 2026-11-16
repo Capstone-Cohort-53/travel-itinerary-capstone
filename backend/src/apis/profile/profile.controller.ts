@@ -80,7 +80,7 @@ export async function getProfileByProfileNameController (request: Request, respo
 export async function putProfileController (request: Request, response: Response): Promise<void> {
     try{
         // only these fields can be changed by the user; id, email and createdAt are not trusted from the body
-        const validationResultForRequestBody = ProfileSchema.pick({name: true, image: true, cellNumber: true}).safeParse (request.body)
+        const validationResultForRequestBody = ProfileSchema.pick({name: true, image: true, cellNumber: true}).partial().safeParse (request.body ?? {})
         if (!validationResultForRequestBody.success) {
             sendZodError(request, response, validationResultForRequestBody.error)
             return
@@ -105,9 +105,10 @@ export async function putProfileController (request: Request, response: Response
         }
 
         const {name, image, cellNumber} = validationResultForRequestBody.data
-        profile.name = name
-        profile.image = image
-        profile.cellNumber = cellNumber
+        // only change the fields that were actually sent; anything left out keeps its current value
+        if (name !== undefined) profile.name = name
+        if (image !== undefined) profile.image = image
+        if (cellNumber !== undefined) profile.cellNumber = cellNumber
 
         const updatedProfile = await updateProfile(profile)
 

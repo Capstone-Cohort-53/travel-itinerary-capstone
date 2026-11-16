@@ -56,7 +56,7 @@ export async function selectProfileByProfileId (id: string): Promise<Profile | n
 }
 
 export async function selectProfileByProfileName (name: string): Promise<Profile | null> {
-    const rowList = await sql`SELECT id, cell_number, created_at, email, name, image FROM profile WHERE name=${name}`
+    const rowList = await sql`SELECT id, cell_number, created_at, email, name, image FROM profile WHERE name=${name} LIMIT 1`
     const result = ProfileSchema.array().max(1).parse(rowList)
     return result [0] ?? null
 }

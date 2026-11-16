@@ -8,4 +8,11 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  // in local dev (npm run dev), send /apis calls to the dockerized backend on port 8080
+  // so the frontend can use relative urls like fetch('/apis/profile/me') everywhere
+  server: {
+    proxy: {
+      "/apis": "http://localhost:8080",
+    },
+  },
 });
