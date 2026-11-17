@@ -1,0 +1,64 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_source": "insomnia.desktop.app:v13.4.0",
+  "resources": [
+    {
+      "_id": "wrk_invite_only",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Trip Invite - GETs & POSTs",
+      "description": "",
+      "scope": "collection"
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 6,
+      "body": {},
+      "authentication": {},
+      "_id": "req_invite_get_one",
+      "name": "6. GET one invite by id",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/invite/{{ _.invite_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner only. Returns one invite, without its token."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 7,
+      "body": {},
+      "authentication": {},
+      "_id": "req_invite_decline",
+      "name": "7. POST decline invite (public)",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip-invite/{{ _.invite_token }}/decline",
+      "headers": [],
+      "description": "No login needed. Send twice: 1st = 200 declined, 2nd = 409 already declined."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 8,
+      "body": {},
+      "authentication": {},
+      "_id": "req_invite_revoke",
+      "name": "8. DELETE revoke invite",
+      "method": "DELETE",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/invite/{{ _.invite_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner only. Run last - after this, 6 returns 404."
+    }
+  ]
+}

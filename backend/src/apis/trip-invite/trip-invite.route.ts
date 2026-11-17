@@ -3,7 +3,9 @@ import {
     postTripInviteController,
     getTripInviteByTokenController,
     getTripInvitesController,
-    deleteTripInviteController
+    getTripInviteByIdController,
+    deleteTripInviteController,
+    declineTripInviteController
 } from "./trip-invite.controller.ts"
 import { isLoggedInController } from "../../utils/controllers/is-logged-in.controller.ts"
 
@@ -13,11 +15,12 @@ const basepath = '/apis/trip/:tripId/invite' as const
 
 tripInviteRouter.route('/')
     .post(isLoggedInController, postTripInviteController)
+    .get(isLoggedInController, getTripInvitesController)
 
 
 tripInviteRouter.route('/:inviteId')
     .delete(isLoggedInController, deleteTripInviteController)
-    .get(isLoggedInController, getTripInvitesController)
+    .get(isLoggedInController, getTripInviteByIdController)
 
 export const tripInviteRoute = { basepath, router: tripInviteRouter }
 
@@ -26,5 +29,8 @@ const tokenRouter = Router()
 
 tokenRouter.route('/:token')
      .get(getTripInviteByTokenController)
+
+tokenRouter.route('/:token/decline')
+    .post(declineTripInviteController)
 
 export const tripInviteTokenRoute = { basepath: '/apis/trip-invite', router: tokenRouter }

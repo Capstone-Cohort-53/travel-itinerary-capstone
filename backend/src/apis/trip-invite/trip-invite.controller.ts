@@ -8,11 +8,13 @@ import {z} from 'zod/v4'
 
 import {
     TripInviteRequestSchema,
+    TripInviteSummarySchema,
     insertTripInvite,
     selectTripInviteByToken, type TripInvite,
     selectTripInvitesByTripId,
     selectTripInviteById,
-    deleteTripInvite
+    deleteTripInvite,
+    updateTripInvite
 
 
 
@@ -119,8 +121,8 @@ export async function postTripInviteController(
 
 export async function getTripInviteByTokenController (request: Request, response: Response): Promise<void> {
     try {
-        // 1. validate the token from the URL (16 random bytes = 32 hex characters)
-        const paramsResult = z.object({ token: z.string().length(32) }).safeParse(request.params)
+        // 1. validate the token from the URL (32 random bytes = 64 hex characters)
+        const paramsResult = z.object({ token: z.string().length(64) }).safeParse(request.params)
         if (!paramsResult.success) {
             sendZodError(request, response, paramsResult.error)
             return
@@ -165,6 +167,46 @@ export async function getTripInviteByTokenController (request: Request, response
 }
 
 
+export async function declineTripInviteController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate the token from the URL (32 random bytes = 64 hex characters)
+        const paramsResult = z.object({ token: z.string().length(64) }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+
+        // 2. find the invitation
+        const invite = await selectTripInviteByToken(paramsResult.data.token)
+        if (invite === null) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+
+        // 3. a past expiration date means it can't be answered anymore
+        if (invite.expiresAt !== null && invite.expiresAt < new Date()) {
+            sendError(request, response, 410, 'This invite has expired.')
+            return
+        }
+
+        // 4. only a pending invite can be declined
+        if (invite.status !== 'pending') {
+            sendError(request, response, 409, `This invitation has already been ${invite.status}.`)
+            return
+        }
+
+        // 5. mark it declined and save it
+        await updateTripInvite({ ...invite, status: 'declined' })
+
+        // 6. let the invitee know it worked
+        response.status(200).json({ message: 'Invitation declined.' })
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
+
+
 export async function getTripInvitesController (request: Request, response: Response): Promise<void> {
     try {
         // 1. validate the trip id from the URL
@@ -191,6 +233,44 @@ export async function getTripInvitesController (request: Request, response: Resp
         // 4. send the list (token is left out by the model)
         const invites = await selectTripInvitesByTripId(tripId)
         response.status(200).json(invites)
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
+
+
+export async function getTripInviteByIdController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate both ids from the URL
+        const paramsResult = z.object({ tripId: z.uuidv7(), inviteId: z.uuidv7() }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+        const { tripId, inviteId } = paramsResult.data
+
+        // 2. the trip must exist and belong to the signed-in user
+        const trip = await selectTripById(tripId)
+        if (trip === null) {
+            sendError(request, response, 404, 'Trip not found.')
+            return
+        }
+        if (trip.ownerId !== request.session.profile?.id) {
+            sendError(request, response, 403, 'Only the trip owner can view invitations.')
+            return
+        }
+
+        // 3. the invite must exist AND belong to this trip, so an owner can't
+        //    read another trip's invite by pairing their trip id with it
+        const invite = await selectTripInviteById(inviteId)
+        if (invite === null || invite.tripId !== tripId) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+
+        // 4. send the invite without its secret token
+        response.status(200).json(TripInviteSummarySchema.parse(invite))
     } catch (error: unknown) {
         console.error(error)
         sendServerError(request, response)

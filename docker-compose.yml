@@ -31,8 +31,13 @@ services:
 
   frontend:
     build: frontend
+    # GOOGLE_CLIENT_ID and SESSION_SECRET_1 come from project.env
+    env_file:
+      - project.env
     environment:
       PORT: 3000
+      # the frontend's server-side code calls the backend over the docker network
+      REST_API_URL: http://backend:4200/apis
     depends_on:
       - backend
 

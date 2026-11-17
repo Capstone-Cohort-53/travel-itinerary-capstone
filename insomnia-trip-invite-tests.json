@@ -1,0 +1,189 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_source": "insomnia.desktop.app:v13.4.0",
+  "resources": [
+    {
+      "_id": "wrk_invite_only",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Trip Invite - GETs & POSTs",
+      "description": "Run top to bottom: sign in, create a trip to invite people to, then test the invite routes.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_invite_only",
+      "_type": "environment",
+      "parentId": "wrk_invite_only",
+      "name": "Base Environment",
+      "data": {
+        "base_url": "http://lauren.ddfullstack.cloud:8080",
+        "google_client_id": "PASTE_GOOGLE_CLIENT_ID_HERE",
+        "google_client_secret": "PASTE_GOOGLE_CLIENT_SECRET_HERE",
+        "invite_email": "PASTE_A_MAILGUN_VERIFIED_EMAIL_HERE",
+        "csrf_token": "",
+        "trip_id": "",
+        "invite_id": "",
+        "invite_token": ""
+      }
+    },
+    {
+      "_id": "req_signin_inv",
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "name": "1. Sign in with Google",
+      "description": "Click the Auth tab > Fetch Tokens to log in with Google, then Send. Saves csrf_token, profile_id and profile_name.",
+      "metaSortKey": 1,
+      "method": "POST",
+      "url": "{{ _.base_url }}/apis/sign-in",
+      "headers": [],
+      "body": {},
+      "authentication": {
+        "type": "oauth2",
+        "grantType": "authorization_code",
+        "authorizationUrl": "https://accounts.google.com/o/oauth2/v2/auth",
+        "accessTokenUrl": "https://oauth2.googleapis.com/token",
+        "clientId": "{{ _.google_client_id }}",
+        "clientSecret": "{{ _.google_client_secret }}",
+        "scope": "openid email profile",
+        "redirectUrl": "http://localhost",
+        "credentialsInBody": true,
+        "tokenPrefix": "Bearer"
+      },
+      "afterResponseScript": "const header = insomnia.response.headers.get('authorization');\nconst token = typeof header === 'string' ? header : header && header.value;\nif (token) {\n  insomnia.environment.set('csrf_token', token);\n  console.log('Saved CSRF token');\n} else {\n  console.log('No authorization header in the response - sign-in failed');\n}"
+    },
+    {
+      "_id": "req_trip_post_inv",
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "name": "2. POST create trip (setup)",
+      "description": "Generates a fresh trip_id each time you send.",
+      "metaSortKey": 2,
+      "method": "POST",
+      "url": "{{ _.base_url }}/apis/trip",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id\": \"{{ _.trip_id }}\",\n  \"title\": \"Test Trip\",\n  \"description\": \"testing from Insomnia\",\n  \"destination\": \"Santa Fe\",\n  \"startDate\": \"2026-12-01\",\n  \"endDate\": \"2026-12-05\",\n  \"image\": \"https://example.com/trip.png\"\n}"
+      },
+      "authentication": {},
+      "preRequestScript": "function uuidv7() {\n  const r = () => Math.floor(Math.random() * 16).toString(16);\n  let s = Date.now().toString(16).padStart(12, '0') + '7';\n  for (let i = 0; i < 3; i++) s += r();\n  s += (8 + Math.floor(Math.random() * 4)).toString(16);\n  for (let i = 0; i < 15; i++) s += r();\n  return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' + s.slice(16, 20) + '-' + s.slice(20);\n}\ninsomnia.environment.set('trip_id', uuidv7());"
+    },
+    {
+      "_id": "req_invite_post_inv",
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "name": "3. POST send invite",
+      "description": "Owner only. Needs email or cellNumber. Saves invite_token from the response.",
+      "metaSortKey": 3,
+      "method": "POST",
+      "url": "{{ _.base_url }}/apis/trip/{{ _.trip_id }}/invite",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"id\": \"{{ _.invite_id }}\",\n  \"tripId\": \"{{ _.trip_id }}\",\n  \"name\": \"Jane\",\n  \"email\": \"{{ _.invite_email }}\",\n  \"expiresAt\": null\n}"
+      },
+      "authentication": {},
+      "preRequestScript": "function uuidv7() {\n  const r = () => Math.floor(Math.random() * 16).toString(16);\n  let s = Date.now().toString(16).padStart(12, '0') + '7';\n  for (let i = 0; i < 3; i++) s += r();\n  s += (8 + Math.floor(Math.random() * 4)).toString(16);\n  for (let i = 0; i < 15; i++) s += r();\n  return s.slice(0, 8) + '-' + s.slice(8, 12) + '-' + s.slice(12, 16) + '-' + s.slice(16, 20) + '-' + s.slice(20);\n}\ninsomnia.environment.set('invite_id', uuidv7());",
+      "afterResponseScript": "if (insomnia.response.code >= 200 && insomnia.response.code < 300) {\n  const body = insomnia.response.json();\n  if (body && body.token !== undefined) { insomnia.environment.set('invite_token', body.token); console.log('Saved invite_token'); }\n} else {\n  console.log('Request failed with status ' + insomnia.response.code + ' - nothing saved');\n}"
+    },
+    {
+      "_id": "req_invite_list_inv",
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "name": "4. GET invites for trip",
+      "description": "Owner only. Returns every invite for the trip.",
+      "metaSortKey": 4,
+      "method": "GET",
+      "url": "{{ _.base_url }}/apis/trip/{{ _.trip_id }}/invite",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_invite_token_inv",
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "name": "5. GET invite by token (public)",
+      "description": "No login needed.",
+      "metaSortKey": 5,
+      "method": "GET",
+      "url": "{{ _.base_url }}/apis/trip-invite/{{ _.invite_token }}",
+      "headers": [],
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 6,
+      "body": {},
+      "authentication": {},
+      "_id": "req_invite_get_one",
+      "name": "6. GET one invite by id",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/invite/{{ _.invite_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner only. Returns one invite, without its token."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 7,
+      "body": {},
+      "authentication": {},
+      "_id": "req_invite_decline",
+      "name": "7. POST decline invite (public)",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip-invite/{{ _.invite_token }}/decline",
+      "headers": [],
+      "description": "No login needed. Send twice: 1st = 200 declined, 2nd = 409 already declined."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 8,
+      "body": {},
+      "authentication": {},
+      "_id": "req_invite_revoke",
+      "name": "8. DELETE revoke invite",
+      "method": "DELETE",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/invite/{{ _.invite_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner only. Run last - after this, 6 returns 404."
+    }
+  ]
+}
