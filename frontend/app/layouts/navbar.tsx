@@ -1,8 +1,22 @@
 import {Button, Navbar, NavbarBrand, NavbarCollapse, NavbarLink, NavbarToggle} from "flowbite-react";
-import { Outlet } from "react-router";
-import {FooterCap} from "~/layouts/footer";
+import {Outlet, redirect} from "react-router"
+import {FooterCap} from "~/layouts/footer"
+import {getSession} from "~/utils/session.server"
+import type {Route} from "./+types/navbar"
+import {GoogleSignInButton} from "~/components/google-sign-in";
 
-export default function Nav () {
+export async function loader({ request }: Route.LoaderArgs) {
+    const session = await getSession(request.headers.get("Cookie"));
+
+    if (session.has("profile")) {
+        return { googleClientId: process.env.GOOGLE_CLIENT_ID ?? null , isLoggedIn: true};
+    }
+
+    return { googleClientId: process.env.GOOGLE_CLIENT_ID ?? null , isLoggedIn:false};
+}
+
+export default function Nav (props : Route.ComponentProps) {
+    const {googleClientId, isLoggedIn} = props.loaderData
     return <>
 
         <Navbar fluid rounded>
@@ -11,7 +25,7 @@ export default function Nav () {
                 <span className="self-center whitespace-nowrap text-xl font-semibold dark:text-white">[Company Name]</span>
             </NavbarBrand>
             <div className="flex md:order-2">
-                <Button>Log in with Google</Button>
+                {isLoggedIn? <></>:<GoogleSignInButton clientId={googleClientId as string} text={"signin_with"}></GoogleSignInButton>}
                 <NavbarToggle />
             </div>
             <NavbarCollapse>

@@ -34,6 +34,6 @@ export async function action ({request}: Route.ActionArgs){
     responseHeaders.append('Set-Cookie', await commitSession(session))
     for(const apiCookie of headers.getSetCookie()){
         responseHeaders.append('Set-Cookie', apiCookie)
-    } return redirect ('/', {headers: responseHeaders})
+    } return redirect ('/my-trips', {headers: responseHeaders})
 }
 

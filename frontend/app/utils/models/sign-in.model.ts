@@ -8,7 +8,7 @@ export const GoogleSignInSchema = z.object({
 
 export async function postGoogleSignIn(credential:string): Promise <{status:Status, headers:Headers} > {
     try {
-        const response = await fetch(`${REST_URL}/apis/sign-in`, {
+        const response = await fetch(`${REST_URL}/sign-in`, {
             method: "POST",
             signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
             headers: {
