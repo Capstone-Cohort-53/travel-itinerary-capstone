@@ -14,8 +14,7 @@ import {
     selectTripInvitesByTripId,
     selectTripInviteById,
     deleteTripInvite,
-    updateTripInvite
-
+    updateTripInvite, selectKitchenSinkByTripId
 
 
 } from "./trip-invite.model.ts"
@@ -344,3 +343,21 @@ async function sendInviteEmail (to: string, inviteLink: string, trip:Trip, name:
     })
 }
 
+export async function getTripInvitesKitchenSinkController (request: Request, response: Response): Promise<void> {
+    try {
+        // 1. validate the trip id from the URL
+        const paramsResult = z.object({ tripId: z.uuidv7() }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+        const { tripId } = paramsResult.data
+
+
+        const invites = await selectKitchenSinkByTripId(tripId)
+        response.status(200).json(invites)
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}

@@ -5,6 +5,7 @@ import { Button, Checkbox, Label, TextInput } from "flowbite-react";
 import type {Route} from "./+types/travel-itinerary";
 import {requireSignedInUser} from "~/utils/session.server";
 import {getTripByTripId} from "~/utils/models/trip.model";
+import {getTripInviteKitchenSink} from "~/utils/models/trip-invite.model";
 const coralTableTheme = createTheme({
     table: {
         head: {
@@ -39,30 +40,28 @@ export async function loader ({request, params}: Route.LoaderArgs) {
     // grab the trip by trip Id
 
     const trip = await getTripByTripId(params.id, signedInUser)
-
-    if (trip === null) {
-        return ({trip:null, success:false})
-    }
     console.log('server', trip)
-    return {trip, success:true}
-
-
+    if (trip === null) {
+        return {trip, travelers: []}
+    }
+ const travelers = await getTripInviteKitchenSink(trip.id,signedInUser )
+return {trip, travelers}
 }
 
 
 
 export default function TravelItinerary(props: Route.ComponentProps) {
-const {trip, success} = props.loaderData
+const {trip, travelers } = props.loaderData
     if (trip === null) {
         return <>
         <h1> trip not found</h1>
 
         </>
     }
-    console.log('client', trip)
+    console.log('client', trip, travelers)
 
     //note: travelers is a join of "Users" and "Travelers"
-const travelers: Traveler[] = [
+const oldTravelers: Traveler[] = [
     {userId: 'ljsljfsljfsldkjfldkjflsdkj',
     tripId: 'ljlkkjlkjlkj',
     name: 'Jerry',
@@ -92,15 +91,15 @@ const travelers: Traveler[] = [
     }]
     //filter for Total Travelers
 //sum total travelers
-    const totalTravelers=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.going==='yes' ? (traveler.children+traveler.adults) : 0), 0)
+    const totalTravelers=oldTravelers.reduce ((accumulator, traveler) => accumulator + (traveler.going==='yes' ? (traveler.children+traveler.adults) : 0), 0)
 //sum of adults
-    const totalAdults=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.adults), 0)
+    const totalAdults=oldTravelers.reduce ((accumulator, traveler) => accumulator + (traveler.adults), 0)
     // sum of children
-    const totalChildren=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.children), 0)
+    const totalChildren=oldTravelers.reduce ((accumulator, traveler) => accumulator + (traveler.children), 0)
 // filter for people going-notgoing-maybe
-    const totalGoing=travelers.filter(( traveler) => traveler.going ==='yes').length
-    const totalNotGoing=travelers.filter(( traveler) => traveler.going ==='no').length
-    const totalMaybe=travelers.filter(( traveler) => traveler.going ==='maybe').length
+    const totalGoing=oldTravelers.filter(( traveler) => traveler.going ==='yes').length
+    const totalNotGoing=oldTravelers.filter(( traveler) => traveler.going ==='no').length
+    const totalMaybe=oldTravelers.filter(( traveler) => traveler.going ==='maybe').length
 
     return (
 
@@ -109,7 +108,9 @@ const travelers: Traveler[] = [
         <main className="min-h-screen container mx-auto max-w-3xl">
             <h1 className={'text-4xl font-bold tracking-wider text-white mb-6'}>Travelers & Invites</h1>
 
-            <h1 className={'text-xl font-bold tracking-wider text-white '}></h1>
+            <h1 className={'text-xl font-bold tracking-wider text-white mb-2'}>{trip.title}</h1>
+            <h2 className = {'text-xl font-bold tracking-wider text-white mb-6'}>
+                {trip.destination} · {trip.startDate.toLocaleDateString(undefined, {timeZone:'UTC'})} - {trip.endDate.toLocaleDateString(undefined, {timeZone:'UTC'})}</h2>
 
 
             <section className={''}>
@@ -125,7 +126,7 @@ const travelers: Traveler[] = [
                     </TableHead>
 
                     <TableBody className={'text-center text-bold text-sm text-gray-700'}>
-                        {travelers.map((traveler:Traveler) => <TravelerRow traveler={traveler}/>)}
+                        {oldTravelers.map((traveler:Traveler) => <TravelerRow traveler={traveler}/>)}
 
                     </TableBody>
                 </Table>
@@ -160,7 +161,7 @@ const travelers: Traveler[] = [
                     </h5>
 
                     <p className=" leading-loose font-normal text-gray-700">
-                        Traveler Names:  {travelers.map((traveler:Traveler) =>  traveler.name).join(', ')}
+                        Traveler Names:  {oldTravelers.map((traveler:Traveler) =>  traveler.name).join(', ')}
                     </p>
 
                     <p className="leading-loose font-normal text-gray-700">

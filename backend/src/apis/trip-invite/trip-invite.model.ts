@@ -1,6 +1,8 @@
 import {z} from 'zod/v4'
 import {sql} from "../../utils/database.utils.ts"
 import {token} from "morgan";
+import {MemberSchema} from "../members/member.model.ts";
+import {ProfileSchema} from "../profile/profile.model.ts";
 
 export const TripInviteSchema = z.object({
     id: z.uuidv7(),
@@ -32,7 +34,13 @@ export const TripInviteRequestSchema = TripInviteSchema.pick({
     (data) => Boolean(data.email || data.cellNumber),
     {message: 'Please provide an email address or cell number.'}
 )
+export const TripTravelerSchema = z.object({
+    invite: TripInviteSchema.omit({token: true}),
+    member: MemberSchema.nullable(),
+    profile: ProfileSchema.nullable(),
+})
 
+export type TripTraveler = z.infer<typeof TripTravelerSchema>
 // these all need to be in ABC order
 export async function insertTripInvite(tripInvite: TripInvite): Promise<TripInvite> {
     TripInviteSchema.parse(tripInvite)
@@ -139,4 +147,44 @@ export async function selectTripInviteById (id: string): Promise<TripInvite | nu
 export async function deleteTripInvite (id: string): Promise<void> {
     await sql`DELETE FROM trip_invite WHERE id = ${id}`
 
+}
+
+export async function selectKitchenSinkByTripId(tripId: string): Promise<TripTraveler[]> {
+    const rowList = await sql`
+    SELECT
+        json_build_object(
+            'id', trip_invite.id,
+            'invitedBy', trip_invite.invited_by,
+            'tripId', trip_invite.trip_id,
+            'acceptedProfileId', trip_invite.accepted_profile_id,
+            'name', trip_invite.name,
+            'cellNumber', trip_invite.cell_number,
+            'createdAt', trip_invite.created_at,
+            'email', trip_invite.email,
+            'expiresAt', trip_invite.expires_at,
+            'status', trip_invite.status
+        ) AS invite,
+        CASE WHEN member.id IS NULL THEN NULL ELSE json_build_object(
+            'id', member.id,
+            'inviteId', member.invite_id,
+            'tripId', member.trip_id,
+            'adults', member.adults,
+            'children', member.children,
+            'going', member.going,
+            'role', member.role
+        ) END AS member,
+        CASE WHEN profile.id IS NULL THEN NULL ELSE json_build_object(
+            'id', profile.id,
+            'cellNumber', profile.cell_number,
+            'createdAt', profile.created_at,
+            'email', profile.email,
+            'name', profile.name,
+            'image', profile.image
+        ) END AS profile
+    FROM trip_invite
+    LEFT JOIN member ON member.invite_id = trip_invite.id
+    LEFT JOIN profile ON profile.id = trip_invite.accepted_profile_id
+    WHERE trip_invite.trip_id = ${tripId}
+    ORDER BY member.role DESC NULLS LAST, trip_invite.created_at`
+    return TripTravelerSchema.array().parse(rowList)
 }
