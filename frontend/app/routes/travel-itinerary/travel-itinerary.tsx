@@ -2,7 +2,9 @@ import {createTheme, Table, TableBody, TableCell, TableHead, TableHeadCell, Tabl
 import { Card } from "flowbite-react";
 import {TravelerRow} from "~/routes/travel-itinerary/traveler-row";
 import { Button, Checkbox, Label, TextInput } from "flowbite-react";
-
+import type {Route} from "./+types/travel-itinerary";
+import {requireSignedInUser} from "~/utils/session.server";
+import {getTripByTripId} from "~/utils/models/trip.model";
 const coralTableTheme = createTheme({
     table: {
         head: {
@@ -31,9 +33,34 @@ export type Traveler =  {
     adults: number,
 }
 
+export async function loader ({request, params}: Route.LoaderArgs) {
+// console.log(params.id)
+    const signedInUser= await requireSignedInUser(request)
+    // grab the trip by trip Id
+
+    const trip = await getTripByTripId(params.id, signedInUser)
+
+    if (trip === null) {
+        return ({trip:null, success:false})
+    }
+    console.log('server', trip)
+    return {trip, success:true}
 
 
-export default function TravelItinerary() {
+}
+
+
+
+export default function TravelItinerary(props: Route.ComponentProps) {
+const {trip, success} = props.loaderData
+    if (trip === null) {
+        return <>
+        <h1> trip not found</h1>
+
+        </>
+    }
+    console.log('client', trip)
+
     //note: travelers is a join of "Users" and "Travelers"
 const travelers: Traveler[] = [
     {userId: 'ljsljfsljfsldkjfldkjflsdkj',

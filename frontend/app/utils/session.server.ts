@@ -1,4 +1,4 @@
-import { createCookieSessionStorage } from "react-router";
+import { createCookieSessionStorage, redirect } from "react-router";
 import type { Profile } from "~/utils/models/profile.model";
 
 /**
@@ -40,3 +40,54 @@ const { getSession, commitSession, destroySession } = createCookieSessionStorage
 });
 
 export { getSession, commitSession, destroySession };
+
+/**
+ * What a guarded loader or action knows about the signed-in user.
+ *
+ * - profile: who the user is, for the page to display
+ * - authorization: the CSRF token, sent to the API in the `Authorization` header
+ * - cookie: the `Cookie` header the browser sent. It carries the API's own
+ *   session cookie, which is how the API knows who is making the request
+ */
+export type SignedInUser = { profile: Profile; authorization: string; cookie: string };
+
+/**
+ * Guards a loader or an action: call it first, in every route that needs a
+ * signed-in user. When there is no session it throws a redirect to the sign-in
+ * page, which stops the loader or action right there.
+ *
+ * @param request the request the loader or action received
+ * @returns the signed-in user's profile, plus what the API needs to trust a request
+ */
+export async function requireSignedInUser(request: Request): Promise<SignedInUser> {
+    const cookie = request.headers.get("Cookie") ?? "";
+    const session = await getSession(cookie);
+
+    const profile = session.get("profile");
+    const authorization = session.get("authorization");
+
+    if (!profile || !authorization) {
+        throw redirect("/sign-in");
+    }
+
+    return { profile, authorization, cookie };
+}
+
+/**
+ * Ends the React app's session and sends the user to the sign-in page. For when
+ * the API answers that it no longer knows the user (401 or 403): its session
+ * ended before this one did.
+ *
+ * The session has to be destroyed, not just left behind: the sign-in page sends
+ * anyone who still has one straight back to the feed.
+ *
+ * @param request the request the action received (it carries the current cookies)
+ * @returns a redirect to the sign-in page that also deletes the session cookie
+ */
+export async function endSession(request: Request): Promise<Response> {
+    const session = await getSession(request.headers.get("Cookie"));
+
+    return redirect("/sign-in", {
+        headers: { "Set-Cookie": await destroySession(session) },
+    });
+}
