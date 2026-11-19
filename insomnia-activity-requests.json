@@ -1,0 +1,278 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_source": "insomnia.desktop.app:v13.4.0",
+  "resources": [
+    {
+      "_id": "wrk_invite_only",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Trip Invite - GETs & POSTs",
+      "description": "",
+      "scope": "collection"
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 9,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Museum of International Folk Art\",\n  \"description\": \"Morning at the folk art museum\",\n  \"location\": \"Museum Hill\",\n  \"address\": \"706 Camino Lejo, Santa Fe, NM 87505\",\n  \"cost\": 15.5,\n  \"mandatory\": true,\n  \"lat\": 35.6644,\n  \"lng\": -105.9254,\n  \"startDatetime\": \"2026-12-02T10:00:00-07:00\",\n  \"endDatetime\": \"2026-12-02T12:30:00-07:00\",\n  \"notes\": \"Buy tickets at the door\"\n}"
+      },
+      "authentication": {},
+      "_id": "req_activity_post_full",
+      "name": "A. POST create activity (full)",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner only. Expect 201. Saves the new id into activity_id. Run request 1 (sign in) and 2 (create trip) first.",
+      "afterResponseScript": "if (insomnia.response.code === 201) {\n  const body = insomnia.response.json();\n  insomnia.environment.set('activity_id', body.id);\n  console.log('Saved activity_id');\n} else {\n  console.log('Request failed with status ' + insomnia.response.code + ' - nothing saved');\n}"
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 10,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Free afternoon\"\n}"
+      },
+      "authentication": {},
+      "_id": "req_activity_post_min",
+      "name": "B. POST create activity (name only)",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner only. Expect 201 with cost 0, mandatory false, everything else null. Also saves activity_id.",
+      "afterResponseScript": "if (insomnia.response.code === 201) {\n  const body = insomnia.response.json();\n  insomnia.environment.set('activity_id', body.id);\n  console.log('Saved activity_id');\n} else {\n  console.log('Request failed with status ' + insomnia.response.code + ' - nothing saved');\n}"
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 11,
+      "body": {},
+      "authentication": {},
+      "_id": "req_activity_list",
+      "name": "C. GET all activities for trip",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner or accepted member. Expect 200 with a list, earliest start time first."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 12,
+      "body": {},
+      "authentication": {},
+      "_id": "req_activity_get_one",
+      "name": "D. GET one activity",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity/{{ _.activity_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner or accepted member. Expect 200. After F, expect 404 Activity not found."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 13,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Museum of International Folk Art\",\n  \"description\": \"Morning at the folk art museum\",\n  \"location\": \"Museum Hill\",\n  \"address\": \"706 Camino Lejo, Santa Fe, NM 87505\",\n  \"cost\": 18,\n  \"mandatory\": true,\n  \"lat\": 35.6644,\n  \"lng\": -105.9254,\n  \"startDatetime\": \"2026-12-02T11:00:00-07:00\",\n  \"endDatetime\": \"2026-12-02T13:00:00-07:00\",\n  \"notes\": \"Price went up; arrive at 11\"\n}"
+      },
+      "authentication": {},
+      "_id": "req_activity_put",
+      "name": "E. PUT update activity",
+      "method": "PUT",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity/{{ _.activity_id }}",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner only. Expect 200. PUT replaces EVERY field: send the whole activity, anything left out goes back to its default (cost 0, mandatory false, others null)."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 14,
+      "body": {},
+      "authentication": {},
+      "_id": "req_activity_delete",
+      "name": "F. DELETE activity",
+      "method": "DELETE",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity/{{ _.activity_id }}",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner only. Expect 200 {\"message\": \"Activity deleted.\"}. Then re-send D for a 404."
+    },
+    {
+      "_id": "fld_activity_errors",
+      "_type": "request_group",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 15,
+      "name": "Activity - error checks",
+      "description": "Each request should FAIL with the status in its name."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_errors",
+      "metaSortKey": 1,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"cost\": 5\n}"
+      },
+      "authentication": {},
+      "_id": "req_activity_err_noname",
+      "name": "400 - no name",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 400: name is required."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_errors",
+      "metaSortKey": 2,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Test\",\n  \"cost\": -1\n}"
+      },
+      "authentication": {},
+      "_id": "req_activity_err_cost",
+      "name": "400 - negative cost",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 400: cost cannot be negative."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_errors",
+      "metaSortKey": 3,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Test\",\n  \"startDatetime\": \"2026-12-02T12:00:00Z\",\n  \"endDatetime\": \"2026-12-02T10:00:00Z\"\n}"
+      },
+      "authentication": {},
+      "_id": "req_activity_err_dates",
+      "name": "400 - ends before it starts",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 400: End date and time cannot be before the start date and time."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_errors",
+      "metaSortKey": 4,
+      "body": {},
+      "authentication": {},
+      "_id": "req_activity_err_csrf",
+      "name": "403 - missing CSRF header",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity",
+      "headers": [],
+      "description": "No Authorization header on purpose. Expect 403 Invalid or missing CSRF token (401 if you are not signed in at all)."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_errors",
+      "metaSortKey": 5,
+      "body": {},
+      "authentication": {},
+      "_id": "req_activity_err_notfound",
+      "name": "404 - activity does not exist",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity/01900000-0000-7000-8000-000000000000",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Uses a well-formed id that no activity has. Expect 404 Activity not found."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_errors",
+      "metaSortKey": 6,
+      "body": {},
+      "authentication": {},
+      "_id": "req_activity_err_badid",
+      "name": "400 - badly formed id",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/trip/{{ _.trip_id }}/activity/abc",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "abc is not a uuidv7. Expect 400."
+    }
+  ]
+}
