@@ -1,5 +1,7 @@
 import {z} from "zod/v4";
 import {sql} from "../../utils/database.utils.ts";
+import {TripInviteSchema} from "../trip-invite/trip-invite.model.ts";
+import {MemberSchema} from "../members/member.model.ts";
 
 export const ProfileSchema =
     z.object({
@@ -16,6 +18,8 @@ export const ProfileSchema =
             .max(255,'please provide a valid image (255 characters)')
     })
 export type Profile = z.infer<typeof ProfileSchema>;
+
+
 
 export async function insertProfile (profile: Profile): Promise<Profile>{
     ProfileSchema.parse(profile)
@@ -74,3 +78,4 @@ export async function selectProfilesByTripId (tripId: string): Promise<Profile[]
     WHERE member.trip_id = ${tripId}`
     return ProfileSchema.array().parse(rowList)
 }
+

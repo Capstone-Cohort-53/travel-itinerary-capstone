@@ -1,17 +1,16 @@
 import {TableCell, TableRow} from "flowbite-react";
-import type {Traveler} from "~/routes/travel-itinerary/travel-itinerary";
+import type {TripTraveler} from "~/utils/models/trip-invite.model";
 
-export function TravelerRow({traveler}: {traveler: Traveler}) {
+export function TravelerRow({traveler}: {traveler: TripTraveler}) {
+    const {invite, member, profile} = traveler
     return (
-        <>
         <TableRow>
-            <TableCell>{traveler.name}</TableCell>
-            <TableCell>{traveler.phone}</TableCell>
-            <TableCell>{traveler.email}</TableCell>
-            <TableCell>{traveler.going}</TableCell>
-            <TableCell>{traveler.adults}</TableCell>
-            <TableCell>{traveler.children}</TableCell>
+            <TableCell>{profile?.name ?? invite.name}</TableCell>
+            <TableCell>{profile?.cellNumber ?? invite.cellNumber ?? ''}</TableCell>
+            <TableCell>{profile?.email ?? invite.email ?? ''}</TableCell>
+            <TableCell>{member?.going ?? invite.status}</TableCell>
+            <TableCell>{member?.adults ?? 0}</TableCell>
+            <TableCell>{member?.children ?? 0}</TableCell>
         </TableRow>
-        </>
     )
 }

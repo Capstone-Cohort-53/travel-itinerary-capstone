@@ -5,7 +5,7 @@ import {
     getTripInvitesController,
     getTripInviteByIdController,
     deleteTripInviteController,
-    declineTripInviteController
+    declineTripInviteController, getTripInvitesKitchenSinkController
 } from "./trip-invite.controller.ts"
 import { isLoggedInController } from "../../utils/controllers/is-logged-in.controller.ts"
 
@@ -17,6 +17,8 @@ tripInviteRouter.route('/')
     .post(isLoggedInController, postTripInviteController)
     .get(isLoggedInController, getTripInvitesController)
 
+tripInviteRouter.route('/kitchen-sink')
+    .get(isLoggedInController, getTripInvitesKitchenSinkController)
 
 tripInviteRouter.route('/:inviteId')
     .delete(isLoggedInController, deleteTripInviteController)

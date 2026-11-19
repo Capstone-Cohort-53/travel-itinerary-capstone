@@ -33,7 +33,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <Meta />
         <Links />
       </head>
-      <body>
+      {/* browser extensions such as Grammarly add attributes to <body> before React loads */}
+      <body suppressHydrationWarning>
       {/* flowbite-react theme bootstrap; dark mode is off via "dark": false in .flowbite-react/config.json */}
       <ThemeInit />
       {children}
