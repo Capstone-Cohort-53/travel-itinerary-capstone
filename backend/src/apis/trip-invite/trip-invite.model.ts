@@ -23,8 +23,6 @@ export type TripInvite = z.infer<typeof TripInviteSchema>
 
 export const TripInviteRequestSchema = TripInviteSchema.pick({
 
-    id: true,
-    tripId: true,
 
     name: true,
     email: true,

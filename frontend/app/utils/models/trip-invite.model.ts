@@ -2,7 +2,8 @@ import {z} from "zod";
 import {MemberSchema} from "~/utils/models/member.model";
 import {ProfileSchema} from "~/utils/models/profile.model";
 import type {SignedInUser} from "~/utils/session.server";
-import {getRequest} from "~/utils/request.utils";
+import {getRequest, postRequest} from "~/utils/request.utils";
+import type {Status} from "~/utils/interfaces/Status";
 
 export const TripInviteSchema = z.object({
     id: z.uuidv7(),
@@ -31,4 +32,33 @@ export async function getTripInviteKitchenSink(tripId: string, signedInUser: Sig
     const status = await getRequest(`/trip/${tripId}/invite/kitchen-sink`, signedInUser)
     const validationResult= TripTravelerSchema.array().safeParse(status.data)
     return validationResult.success ? validationResult.data : []
+}
+
+
+/**
+ * What the invite form's inputs hold. Every input is a string, and an empty
+ * string means "not provided". Used by TanStack Form in the browser and again
+ * by the route action on the server.
+ */
+export const TripInviteFormSchema = z.object({
+    name: z.string().trim().min(1, 'Please enter a name.').max(64, 'Name must be 64 characters or fewer.'),
+    email: z.union([z.literal(''), z.email('Please enter a valid email.').max(255, 'Email is too long.')]),
+    cellNumber: z.string().trim().max(20, 'Cell number must be 20 characters or fewer.'),
+    expiresAt: z.union([z.literal(''), z.iso.date('Please pick a valid date.')]),
+}).refine(
+    (data) => data.email !== '' || data.cellNumber !== '',
+    {message: 'Please provide an email or a cell number.', path: ['email']},
+)
+export type TripInviteForm = z.infer<typeof TripInviteFormSchema>
+
+/** The body POST /trip/:tripId/invite expects. */
+export type TripInviteRequest = {
+    name: string,
+    email?: string,
+    cellNumber?: string,
+    expiresAt: string | null,
+}
+
+export async function postTripInvite(tripId: string, body: TripInviteRequest, signedInUser: SignedInUser): Promise<Status> {
+    return postRequest(`/trip/${tripId}/invite`, body, signedInUser)
 }

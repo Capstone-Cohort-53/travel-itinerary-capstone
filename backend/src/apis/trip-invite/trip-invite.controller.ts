@@ -3,6 +3,7 @@ import * as crypto from 'crypto'
 import formData from 'form-data'
 import Mailgun from 'mailgun.js'
 import {z} from 'zod/v4'
+import {v7} from 'uuid'
 
 
 
@@ -58,7 +59,7 @@ export async function postTripInviteController(
         // Build out trip invite object
 
         const {data} = validationResult
-        const {id, name, cellNumber, email, expiresAt} = data
+        const {name, cellNumber, email, expiresAt} = data
         const tripId = String(request.params.tripId)
 
 
@@ -74,7 +75,7 @@ export async function postTripInviteController(
 
         //create a trip from the validated result (Redundant but in other cases not all info is sent from the client)
         const tripInvite: TripInvite = {
-            id,
+            id: v7(),
             invitedBy: profileId,
             tripId,
             name,

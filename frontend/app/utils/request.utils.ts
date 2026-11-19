@@ -108,3 +108,44 @@ export async function getRequest(path: string, user?: SignedInUser): Promise<Sta
         return failedRequestStatus(error);
     }
 }
+
+/**
+ * Writes to the API: sends a POST request with a JSON body and normalizes the
+ * answer into a Status. Like getRequest, it never throws.
+ *
+ * @param path the API path to POST to, e.g. `/trip/123/invite`
+ * @param body the value to send, serialized as JSON
+ * @param user the signed-in user, from requireSignedInUser (guarded routes only)
+ * @returns the response's status with the parsed body in `data` when it is 200 or 201, otherwise the failure's status and message
+ */
+export async function postRequest(path: string, body: unknown, user?: SignedInUser): Promise<Status> {
+    const headers = new Headers({ "Content-Type": "application/json" });
+    if (user) {
+        headers.set("Authorization", user.authorization);
+        headers.set("Cookie", user.cookie);
+    }
+
+    try {
+        const response = await fetch(`${REST_URL}${path}`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+
+        const responseBody = await response.json().catch(() => null);
+
+        if (response.status === 200 || response.status === 201) {
+            return { status: response.status, data: responseBody, message: null };
+        }
+
+        return {
+            status: response.status,
+            data: null,
+            message: responseBody?.message ?? "Failed to save. Please try again.",
+        };
+    } catch (error) {
+        console.error(`POST ${path} failed:`, error);
+        return failedRequestStatus(error);
+    }
+}
