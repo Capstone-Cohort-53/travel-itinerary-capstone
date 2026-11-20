@@ -4,6 +4,7 @@ import {ProfileSchema} from "~/utils/models/profile.model";
 import type {SignedInUser} from "~/utils/session.server";
 import {getRequest, postRequest} from "~/utils/request.utils";
 import type {Status} from "~/utils/interfaces/Status";
+import {TripSchema} from "~/utils/models/trip.model";
 
 export const TripInviteSchema = z.object({
     id: z.uuidv7(),
@@ -61,4 +62,25 @@ export type TripInviteRequest = {
 
 export async function postTripInvite(tripId: string, body: TripInviteRequest, signedInUser: SignedInUser): Promise<Status> {
     return postRequest(`/trip/${tripId}/invite`, body, signedInUser)
+}
+
+
+/**
+ * What the public GET /trip-invite/:token endpoint returns: only what the
+ * accept-invitation page needs (no email, phone, token, or ids).
+ */
+export const InvitationPreviewSchema = z.object({
+    inviteeName: z.string(),
+    organizerName: z.string(),
+    status: z.enum(['pending', 'accepted', 'declined', 'expired']),
+    expiresAt: z.coerce.date().nullable(),
+    trip: TripSchema.pick({title: true, destination: true, startDate: true, endDate: true, image: true}),
+})
+export type InvitationPreview = z.infer<typeof InvitationPreviewSchema>
+
+/** Looks up an invitation by its secret token. Public: no signed-in user needed. */
+export async function getTripInviteByToken(token: string): Promise<InvitationPreview | null> {
+    const status = await getRequest(`/trip-invite/${token}`)
+    const validationResult = InvitationPreviewSchema.safeParse(status.data)
+    return validationResult.success ? validationResult.data : null
 }

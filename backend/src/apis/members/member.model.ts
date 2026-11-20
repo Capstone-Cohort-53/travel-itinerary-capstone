@@ -15,7 +15,10 @@ export const MemberSchema =
 
 export type Member = z.infer<typeof MemberSchema>
 
-export const MemberRequestSchema = MemberSchema.omit({role:true}).extend({token:z.string().length(64)})
+// what the invitee sends to accept: the server derives id, inviteId and tripId from the token
+export const MemberRequestSchema = MemberSchema
+    .pick({adults: true, children: true, going: true})
+    .extend({token: z.string().length(64)})
 
 export type MemberRequest = z.infer<typeof MemberRequestSchema>
 
@@ -51,6 +54,12 @@ export async function selectMembersByTripId(tripId: string): Promise<MemberWithP
 export async function selectMemberById(id: string): Promise<Member | null> {
     const rowList = await sql`
         SELECT id, invite_id, trip_id, adults, children, going, role FROM member WHERE id = ${id}`
+    return MemberSchema.array().max(1).parse(rowList)[0] ?? null
+}
+
+export async function selectMemberByInviteId(inviteId: string): Promise<Member | null> {
+    const rowList = await sql`
+        SELECT id, invite_id, trip_id, adults, children, going, role FROM member WHERE invite_id = ${inviteId}`
     return MemberSchema.array().max(1).parse(rowList)[0] ?? null
 }
 

@@ -10,7 +10,7 @@ route('/activity','routes/activity/activity.tsx'),
     route('/trip-itinerary', 'routes/trip-itinerary/trip-itinerary.tsx'),
 
     route('/travel-itinerary/:id', 'routes/travel-itinerary/travel-itinerary.tsx'),
-    route('accept-invitation','routes/accept-invitation/accept-invitation.tsx'),
+    route('accept-invitation/:token','routes/accept-invitation/accept-invitation.tsx'),
     // catch-all: any URL with no matching route renders the 404 page
     route("*", "routes/not-found/not-found.tsx")
         ]),

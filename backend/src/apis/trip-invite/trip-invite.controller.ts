@@ -91,8 +91,8 @@ export async function postTripInviteController(
 
 // fire off the activation email without awaiting it — a delivery failure is
 // logged via .catch() and never blocks or fails the sign-up response
-            // we need to figure out what accept-invite is going to be
-            const inviteLink: string = `${request.protocol}://${request.hostname}:8080${request.originalUrl}accept-invite/${tripInvite.token}`
+            // points at the frontend's accept-invitation/:token page
+            const inviteLink: string = `${request.protocol}://${request.hostname}:8080/accept-invitation/${tripInvite.token}`
             await sendInviteEmail(email, inviteLink, trip, name, profile.name)
                 .catch(mailError => {
                     console.error('Invite email failed to send:', mailError)

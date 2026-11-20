@@ -8,7 +8,8 @@ import { StatusMessage } from "~/components/StatusMessage"
 /** The wording on the button: "Sign in with Google" or "Sign up with Google". */
 type GoogleButtonText = "signin_with" | "signup_with";
 
-type GoogleSignInButtonProps = { clientId: string; text: GoogleButtonText };
+/** redirectTo: where to land after signing in (a path on this site); defaults to /my-trips. */
+type GoogleSignInButtonProps = { clientId: string; text: GoogleButtonText; redirectTo?: string };
 
 /** Shown when Google itself reports a failure, before our action is ever called. */
 const googleFailedResponse: FormActionResponse = {
@@ -32,7 +33,7 @@ const googleFailedResponse: FormActionResponse = {
  * signing in with Google are the same request.
  */
 export function GoogleSignInButton(props: GoogleSignInButtonProps) {
-    const { clientId, text } = props;
+    const { clientId, text, redirectTo } = props;
 
     // a fetcher posts to an action without leaving the page, and holds what it returned
     const fetcher = useFetcher<typeof action>();
@@ -50,7 +51,7 @@ export function GoogleSignInButton(props: GoogleSignInButtonProps) {
 
         setGoogleFailed(false);
         void fetcher.submit(
-            { credential: credentialResponse.credential },
+            { credential: credentialResponse.credential, redirectTo: redirectTo ?? "" },
             { method: "post", action: "/api/sign-in/" },
         );
     }
