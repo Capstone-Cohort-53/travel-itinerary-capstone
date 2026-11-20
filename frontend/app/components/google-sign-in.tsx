@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useFetcher } from "react-router";
 import { GoogleLogin, GoogleOAuthProvider, type CredentialResponse } from "@react-oauth/google";
-import type { action } from "~/routes/api/sign-in/sign-in/"
+import type { action } from "~/routes/api/sign-in/sign-in"
 import type { FormActionResponse } from "~/utils/interfaces/FormActionResponse"
 import { StatusMessage } from "~/components/StatusMessage"
 

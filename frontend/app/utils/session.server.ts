@@ -67,7 +67,8 @@ export async function requireSignedInUser(request: Request): Promise<SignedInUse
     const authorization = session.get("authorization");
 
     if (!profile || !authorization) {
-        throw redirect("/sign-in");
+        // there is no sign-in page: signing in is the Google button in the navbar on the home page
+        throw redirect("/");
     }
 
     return { profile, authorization, cookie };
@@ -87,7 +88,7 @@ export async function requireSignedInUser(request: Request): Promise<SignedInUse
 export async function endSession(request: Request): Promise<Response> {
     const session = await getSession(request.headers.get("Cookie"));
 
-    return redirect("/sign-in", {
+    return redirect("/", {
         headers: { "Set-Cookie": await destroySession(session) },
     });
 }
