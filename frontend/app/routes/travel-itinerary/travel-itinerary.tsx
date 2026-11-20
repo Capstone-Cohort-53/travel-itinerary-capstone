@@ -123,8 +123,8 @@ const {trip, travelers } = props.loaderData
                     <p className="text-xs sm:text-sm font-bold">Children Count</p>
                 </div>
 
-                {/* orange Status card: spans all three columns so it fills the row under the stat cards */}
-                <div className={`${cardBase} bg-[#FFA06B] col-span-3`}>
+                {/* white Status card (matches the roster card): spans all three columns so it fills the row under the stat cards */}
+                <div className={`${cardBase} bg-white col-span-3`}>
                     <h5 className="text-xs sm:text-sm font-bold mb-2">Status</h5>
                     {/* horizontal: 2x2 on phones, all four counts in one row on tablet and up */}
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
