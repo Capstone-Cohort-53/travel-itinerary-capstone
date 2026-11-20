@@ -1,0 +1,294 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_source": "insomnia.desktop.app:v13.4.0",
+  "resources": [
+    {
+      "_id": "wrk_invite_only",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Trip Invite - GETs & POSTs",
+      "description": "",
+      "scope": "collection"
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 16,
+      "body": {},
+      "authentication": {},
+      "_id": "req_rsvp_list_empty",
+      "name": "R1. GET RSVPs (before answering)",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Owner or member. Expect 200 []. Run 1 (sign in), 2 (create trip) and A (create activity) first so activity_id is set."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 17,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"going\": \"yes\",\n  \"adults\": 2,\n  \"children\": 1\n}"
+      },
+      "authentication": {},
+      "_id": "req_rsvp_post_first",
+      "name": "R2. POST my first answer",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Member only (the owner of a new trip is a member). Expect 201 the first time you answer."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 18,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"going\": \"no\",\n  \"adults\": 0,\n  \"children\": 0\n}"
+      },
+      "authentication": {},
+      "_id": "req_rsvp_post_change",
+      "name": "R3. POST a changed answer",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 200 (replaced, same id as R2). POST replaces your WHOLE answer: always send going, adults and children."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 19,
+      "body": {},
+      "authentication": {},
+      "_id": "req_rsvp_list_one",
+      "name": "R4. GET RSVPs (after answering)",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 200 with one entry showing R3's values and your name."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 20,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{}"
+      },
+      "authentication": {},
+      "_id": "req_rsvp_post_defaults",
+      "name": "R5. POST empty body (defaults)",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 200 with going \"maybe\", adults 1, children 0. Shows that leaving fields out resets them."
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 21,
+      "body": {},
+      "authentication": {},
+      "_id": "req_rsvp_delete",
+      "name": "R6. DELETE my answer",
+      "method": "DELETE",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 200 {\"message\": \"RSVP cleared.\"}"
+    },
+    {
+      "_type": "request",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 22,
+      "body": {},
+      "authentication": {},
+      "_id": "req_rsvp_delete_again",
+      "name": "R7. DELETE again (nothing to clear)",
+      "method": "DELETE",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 404 You have not responded to this activity. Re-send R1 for [] and R2 for 201 again."
+    },
+    {
+      "_id": "fld_activity_rsvp_errors",
+      "_type": "request_group",
+      "parentId": "wrk_invite_only",
+      "metaSortKey": 23,
+      "name": "Activity RSVP - error checks",
+      "description": "Each request should FAIL with the status in its name."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_rsvp_errors",
+      "metaSortKey": 1,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"going\": \"sure\"\n}"
+      },
+      "authentication": {},
+      "_id": "req_rsvp_err_going",
+      "name": "400 - bad going value",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 400: going must be yes, no, or maybe."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_rsvp_errors",
+      "metaSortKey": 2,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"going\": \"yes\",\n  \"adults\": -1\n}"
+      },
+      "authentication": {},
+      "_id": "req_rsvp_err_negative",
+      "name": "400 - negative adults",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 400: adults cannot be negative."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_rsvp_errors",
+      "metaSortKey": 3,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"going\": \"yes\",\n  \"adults\": 1.5\n}"
+      },
+      "authentication": {},
+      "_id": "req_rsvp_err_decimal",
+      "name": "400 - adults not a whole number",
+      "method": "POST",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        },
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Expect 400: adults must be a whole number."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_rsvp_errors",
+      "metaSortKey": 4,
+      "body": {},
+      "authentication": {},
+      "_id": "req_rsvp_err_badid",
+      "name": "400 - badly formed activity id",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/abc/rsvp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "abc is not a uuidv7. Expect 400."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_rsvp_errors",
+      "metaSortKey": 5,
+      "body": {},
+      "authentication": {},
+      "_id": "req_rsvp_err_notfound",
+      "name": "404 - activity does not exist",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/01900000-0000-7000-8000-000000000000/rsvp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "value": "{{ _.csrf_token }}"
+        }
+      ],
+      "description": "Uses a well-formed id that no activity has. Expect 404 Activity not found."
+    },
+    {
+      "_type": "request",
+      "parentId": "fld_activity_rsvp_errors",
+      "metaSortKey": 6,
+      "body": {},
+      "authentication": {},
+      "_id": "req_rsvp_err_csrf",
+      "name": "403 - missing CSRF header",
+      "method": "GET",
+      "url": "http://lauren.ddfullstack.cloud:8080/apis/activity/{{ _.activity_id }}/rsvp",
+      "headers": [],
+      "description": "No Authorization header on purpose. Expect 403 Invalid or missing CSRF token (401 if you are not signed in at all)."
+    }
+  ]
+}

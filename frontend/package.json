@@ -13,6 +13,7 @@
     "@react-router/node": "^8.5.0",
     "@react-router/serve": "^8.5.0",
     "@tanstack/react-form-remix": "^1.33.5",
+    "@tanstack/react-form": "^1.33.5",
     "flowbite-react": "^0.12.17",
     "isbot": "^5.1.36",
     "react": "^19.2.8",

@@ -1,10 +1,12 @@
 import {createTheme, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow} from "flowbite-react";
 import { Card } from "flowbite-react";
 import {TravelerRow} from "~/routes/travel-itinerary/traveler-row";
-import { Button, Checkbox, Label, TextInput } from "flowbite-react";
+import {InviteForm} from "~/routes/travel-itinerary/invite-form";
 import type {Route} from "./+types/travel-itinerary";
 import {requireSignedInUser} from "~/utils/session.server";
 import {getTripByTripId} from "~/utils/models/trip.model";
+import {getTripInviteKitchenSink, postTripInvite, TripInviteFormSchema} from "~/utils/models/trip-invite.model";
+import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 const coralTableTheme = createTheme({
     table: {
         head: {
@@ -20,18 +22,6 @@ const coralTableTheme = createTheme({
 });
 
 
-//note: travelers is a join of "Trip", "Users" and "Travelers"
-
-export type Traveler =  {
-    userId: string,
-    tripId: string,
-    name: string,
-    phone: string,
-    email: string,
-    going: string,
-    children: number,
-    adults: number,
-}
 
 export async function loader ({request, params}: Route.LoaderArgs) {
 // console.log(params.id)
@@ -39,68 +29,57 @@ export async function loader ({request, params}: Route.LoaderArgs) {
     // grab the trip by trip Id
 
     const trip = await getTripByTripId(params.id, signedInUser)
-
     if (trip === null) {
-        return ({trip:null, success:false})
+        return {trip, travelers: []}
     }
-    console.log('server', trip)
-    return {trip, success:true}
+ const travelers = await getTripInviteKitchenSink(trip.id,signedInUser )
+return {trip, travelers}
+}
 
 
+export async function action({request, params}: Route.ActionArgs): Promise<FormActionResponse> {
+    const signedInUser = await requireSignedInUser(request)
+    const formData = Object.fromEntries(await request.formData())
+
+    // never trust the browser: validate again with the same schema the form used
+    const result = TripInviteFormSchema.safeParse(formData)
+    if (!result.success) {
+        return {success: false, status: {status: 400, data: null, message: result.error.issues[0].message}}
+    }
+
+    const {name, email, cellNumber, expiresAt} = result.data
+    const status = await postTripInvite(params.id, {
+        name,
+        email: email || undefined,          // '' means not provided
+        cellNumber: cellNumber || undefined,
+        expiresAt: expiresAt || null,
+    }, signedInUser)
+
+    if (status.status !== 201) {
+        return {success: false, status}
+    }
+    return {success: true, status: {...status, message: `Invitation sent to ${name}!`}}
 }
 
 
 
 export default function TravelItinerary(props: Route.ComponentProps) {
-const {trip, success} = props.loaderData
+const {trip, travelers } = props.loaderData
     if (trip === null) {
         return <>
         <h1> trip not found</h1>
 
         </>
     }
-    console.log('client', trip)
 
-    //note: travelers is a join of "Users" and "Travelers"
-const travelers: Traveler[] = [
-    {userId: 'ljsljfsljfsldkjfldkjflsdkj',
-    tripId: 'ljlkkjlkjlkj',
-    name: 'Jerry',
-    phone: '867-5309',
-    email: 'email@email.com',
-    going: 'yes',
-        children: 5,
-        adults: 3,
-    },
-    {userId: 'iuiuyiuyiuyiouioiopp3',
-        tripId: 'kjiuiyiuoiuiu3',
-        name: 'Timmy',
-        phone: '867-5308',
-        email: '1email@email.com',
-        going: 'no',
-        children: 1,
-        adults: 1,
-    },
-    {userId: 'qerwerwerewrw',
-        tripId: 'adfsfdsfds',
-        name: 'Memaw',
-        phone: '867-5444',
-        email: '2email@email.com',
-        going: 'yes',
-        children: 4,
-        adults: 1,
-    }]
-    //filter for Total Travelers
-//sum total travelers
-    const totalTravelers=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.going==='yes' ? (traveler.children+traveler.adults) : 0), 0)
-//sum of adults
-    const totalAdults=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.adults), 0)
-    // sum of children
-    const totalChildren=travelers.reduce ((accumulator, traveler) => accumulator + (traveler.children), 0)
-// filter for people going-notgoing-maybe
-    const totalGoing=travelers.filter(( traveler) => traveler.going ==='yes').length
-    const totalNotGoing=travelers.filter(( traveler) => traveler.going ==='no').length
-    const totalMaybe=travelers.filter(( traveler) => traveler.going ==='maybe').length
+    const going = travelers.filter((t) => t.member?.going === 'yes')
+    const totalGoing = going.length
+    const totalNotGoing = travelers.filter((t) => t.member?.going === 'no' || t.invite.status === 'declined').length
+    const totalMaybe = travelers.filter((t) => t.member?.going === 'maybe').length
+    const totalPending = travelers.filter((t) => t.invite.status === 'pending').length
+    const totalAdults = going.reduce((sum, t) => sum + (t.member?.adults ?? 0), 0)
+    const totalChildren = going.reduce((sum, t) => sum + (t.member?.children ?? 0), 0)
+    const totalTravelers = totalAdults + totalChildren
 
     return (
 
@@ -109,23 +88,29 @@ const travelers: Traveler[] = [
         <main className="min-h-screen container mx-auto max-w-3xl">
             <h1 className={'text-4xl font-bold tracking-wider text-white mb-6'}>Travelers & Invites</h1>
 
-            <h1 className={'text-xl font-bold tracking-wider text-white '}></h1>
+            <h1 className={'text-xl font-bold tracking-wider text-white mb-2'}>{trip.title}</h1>
+            <h2 className = {'text-xl font-bold tracking-wider text-white mb-6'}>
+                {trip.destination} · {trip.startDate.toLocaleDateString('en-US', {timeZone:'UTC'})} - {trip.endDate.toLocaleDateString('en-US', {timeZone:'UTC'})}</h2>
 
 
             <section className={''}>
                 <div className="overflow-x-auto rounded-xl border border-gray-200">
                 <Table striped theme={coralTableTheme.table}>
                     <TableHead className={'text-bold'}>
-                        <TableHeadCell>Traveler Name</TableHeadCell>
-                        <TableHeadCell>Phone Number</TableHeadCell>
-                        <TableHeadCell> Email </TableHeadCell>
-                        <TableHeadCell>Status</TableHeadCell>
-                        <TableHeadCell>Adults</TableHeadCell>
-                        <TableHeadCell>Children</TableHeadCell>
+                        <TableRow>
+                            <TableHeadCell>Traveler Name</TableHeadCell>
+                            <TableHeadCell>Phone Number</TableHeadCell>
+                            <TableHeadCell> Email </TableHeadCell>
+                            <TableHeadCell>Status</TableHeadCell>
+                            <TableHeadCell>Adults</TableHeadCell>
+                            <TableHeadCell>Children</TableHeadCell>
+                        </TableRow>
                     </TableHead>
 
                     <TableBody className={'text-center text-bold text-sm text-gray-700'}>
-                        {travelers.map((traveler:Traveler) => <TravelerRow traveler={traveler}/>)}
+                        {travelers.length === 0
+                            ? <TableRow><TableCell colSpan={6}>No travelers invited yet</TableCell></TableRow>
+                            : travelers.map((traveler) => <TravelerRow key={traveler.invite.id} traveler={traveler}/>)}
 
                     </TableBody>
                 </Table>
@@ -152,6 +137,9 @@ const travelers: Traveler[] = [
                     <p className="leading-loose font-normal text-gray-700">
                         ⚪ Maybe: {totalMaybe}
                     </p>
+                    <p className="leading-loose font-normal text-gray-700">
+                        ⏳ Pending: {totalPending}
+                    </p>
                 </Card>
 
                 <Card href="#" className="w-sm hover:bg-[#FFF0F1]">
@@ -160,7 +148,7 @@ const travelers: Traveler[] = [
                     </h5>
 
                     <p className=" leading-loose font-normal text-gray-700">
-                        Traveler Names:  {travelers.map((traveler:Traveler) =>  traveler.name).join(', ')}
+                        Traveler Names:  {going.map((t) => t.profile?.name ?? t.invite.name).join(', ')}
                     </p>
 
                     <p className="leading-loose font-normal text-gray-700">
@@ -180,32 +168,7 @@ const travelers: Traveler[] = [
 
 
             <section>
-                <Card href="#" className="hover:bg-[#FFF0F1]">
-                <form className="flex max-w-md flex-col gap-4">
-                    <div>
-                        <div className="mb-2 block">
-                            <h5 className=" leading-loose text-2xl font-bold tracking-wider text-gray-500">Invite More Adult Travelers</h5>
-                        </div>
-
-                        <p className="leading-loose font-normal text-gray-700">
-                            Email
-                        </p>
-                        <TextInput id="email2" type="email" placeholder="[name@flowbite.com]" required shadow />
-                        <p className=" leading-loose font-normal text-gray-700">
-                            Invitation Message
-                        </p>
-                        <TextInput id="email2" type="text" placeholder="[Message for your guest]" required shadow />
-
-                        <p className="leading-loose font-normal text-gray-700">
-                           +Add Another Email
-                        </p>
-
-                    </div>
-                    <Button className= "bg-[#FD6B6C] hover:bg-red-600" type="submit">Send Invitations</Button>
-                </form>
-                </Card>
-
-
+                <InviteForm/>
             </section>
 
 

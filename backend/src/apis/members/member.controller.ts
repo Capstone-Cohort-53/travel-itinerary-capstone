@@ -12,10 +12,12 @@ import {
     MemberRequestSchema,
     MemberSchema,
     selectMemberById,
+    selectMemberByInviteId,
     selectMembersByTripId, updateMember
 } from "./member.model.ts";
 import {selectTripInviteById, selectTripInviteByToken, updateTripInvite} from "../trip-invite/trip-invite.model.ts";
 import {selectTripById} from "../trip/trip.model.ts";
+import {v7} from "uuid";
 
 export async function postMemberController(
     request: Request,
@@ -37,7 +39,7 @@ export async function postMemberController(
         }
 
         const {data} = validationResult
-        const {id, inviteId, tripId, adults, children, going, token} = data
+        const {adults, children, going, token} = data
 
         let tripInvite = await selectTripInviteByToken(token)
         if (!tripInvite) {
@@ -48,6 +50,13 @@ export async function postMemberController(
         const {expiresAt} = tripInvite
         if (expiresAt !== null && expiresAt < new Date()) {
             sendError(request, response, 410, 'This invite has expired.')
+            return
+        }
+
+        // one response per invite: block a second member row or re-opening a declined invite
+        const existingMember = await selectMemberByInviteId(tripInvite.id)
+        if (existingMember !== null || tripInvite.status === 'declined') {
+            sendError(request, response, 409, 'You have already responded to this invitation.')
             return
         }
 
@@ -67,10 +76,11 @@ export async function postMemberController(
 
         //Construct member to be inserted into database.
 
+        // id is created here; inviteId and tripId come from the invite, never the client
         const member: Member = {
-            id,
-            inviteId,
-            tripId,
+            id: v7(),
+            inviteId: tripInvite.id,
+            tripId: tripInvite.tripId,
             adults,
             children,
             going,

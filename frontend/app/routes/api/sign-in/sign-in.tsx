@@ -34,6 +34,10 @@ export async function action ({request}: Route.ActionArgs){
     responseHeaders.append('Set-Cookie', await commitSession(session))
     for(const apiCookie of headers.getSetCookie()){
         responseHeaders.append('Set-Cookie', apiCookie)
-    } return redirect ('/my-trips', {headers: responseHeaders})
+    }
+    // only follow a path on this site ("/x" but not "//evil.com"), so the field can't send users elsewhere
+    const redirectTo = formData.get('redirectTo')
+    const isLocalPath = typeof redirectTo === 'string' && redirectTo.startsWith('/') && !redirectTo.startsWith('//')
+    return redirect (isLocalPath ? redirectTo : '/my-trips', {headers: responseHeaders})
 }
 
