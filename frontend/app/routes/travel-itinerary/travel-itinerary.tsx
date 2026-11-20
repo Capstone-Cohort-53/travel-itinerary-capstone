@@ -1,22 +1,24 @@
 import {createTheme, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow} from "flowbite-react";
-import { Card } from "flowbite-react";
-import {TravelerRow} from "~/routes/travel-itinerary/traveler-row";
+// TravelerRow = table row (tablet/desktop), TravelerCard = stacked row (phones)
+import {TravelerCard, TravelerRow} from "~/routes/travel-itinerary/traveler-row";
 import {InviteForm} from "~/routes/travel-itinerary/invite-form";
 import type {Route} from "./+types/travel-itinerary";
 import {requireSignedInUser} from "~/utils/session.server";
 import {getTripByTripId} from "~/utils/models/trip.model";
 import {getTripInviteKitchenSink, postTripInvite, TripInviteFormSchema} from "~/utils/models/trip-invite.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
-const coralTableTheme = createTheme({
+// table colors from the mockup: navy header with white uppercase text,
+// white rows separated by a thin lavender line (no stripes)
+const navyTableTheme = createTheme({
     table: {
         head: {
-            base: "text-sm text-white",
+            base: "text-xs uppercase text-white",
             cell: {
-                base: "bg-[#FD6B6C] px-6 py-3 text-white"
+                base: "bg-[#0B1533] px-4 py-3 text-white"
             }
         },
         row: {
-            striped: "odd:bg-white even:bg-[#FFF0F1]"
+            base: "bg-white border-b border-[#F7EEF6] text-[#0B1533]"
         }
     }
 });
@@ -81,90 +83,96 @@ const {trip, travelers } = props.loaderData
     const totalChildren = going.reduce((sum, t) => sum + (t.member?.children ?? 0), 0)
     const totalTravelers = totalAdults + totalChildren
 
+    // shared look for every stat card: rounded, navy border and text.
+    // min-w-0 + break-words keep long text (like traveler names) inside the card on small screens
+    const cardBase = 'min-w-0 break-words rounded-2xl border border-[#0B1533] p-3 sm:p-4 text-[#0B1533]'
+
     return (
-
-        <div className="bg-[url('/bg_reduced.jpeg')] bg-cover bg-right bg-no-repeat">
-
-        <main className="min-h-screen container mx-auto max-w-3xl">
-            <h1 className={'text-4xl font-bold tracking-wider text-white mb-6'}>Travelers & Invites</h1>
-
-            <h1 className={'text-xl font-bold tracking-wider text-white mb-2'}>{trip.title}</h1>
-            <h2 className = {'text-xl font-bold tracking-wider text-white mb-6'}>
+        // flat lavender page background (replaces the bg_reduced.jpeg photo)
+        <div className="min-h-screen bg-[#F7EEF6] py-8">
+        {/* px-4 keeps content off the screen edges on phones */}
+        <main className="container mx-auto max-w-3xl px-4 sm:px-0">
+            {/* header: small indigo trip title, big navy page title, then destination and dates */}
+            <p className={'text-sm font-bold tracking-wider text-[#3A4187] mb-1'}>{trip.title}</p>
+            <h1 className={'text-3xl sm:text-4xl font-bold tracking-wider text-[#0B1533] mb-2'}>Travelers & Invites</h1>
+            <h2 className = {'text-base sm:text-xl font-bold tracking-wider text-[#0B1533] mb-6'}>
                 {trip.destination} · {trip.startDate.toLocaleDateString('en-US', {timeZone:'UTC'})} - {trip.endDate.toLocaleDateString('en-US', {timeZone:'UTC'})}</h2>
 
 
-            <section className={''}>
-                <div className="overflow-x-auto rounded-xl border border-gray-200">
-                <Table striped theme={coralTableTheme.table}>
-                    <TableHead className={'text-bold'}>
+            {/* stat cards: three across at every width; Status spans the full row underneath */}
+            <section className={'grid grid-cols-3 items-start gap-2 sm:gap-4 mb-6'}>
+
+                {/* orange card: total attending plus the names of everyone going */}
+                <div className={`${cardBase} bg-[#FFA06B]`}>
+                    <p className="text-2xl sm:text-4xl font-bold">{totalTravelers}</p>
+                    <h5 className="text-xs sm:text-sm font-bold">Total Attendance</h5>
+                    <p className="mt-2 text-xs">
+                        Traveler Names:  {going.map((t) => t.profile?.name ?? t.invite.name).join(', ')}
+                    </p>
+                </div>
+
+                {/* purple card: adults going */}
+                <div className={`${cardBase} bg-[#C19AC5]`}>
+                    <p className="text-2xl sm:text-4xl font-bold">{totalAdults}</p>
+                    <p className="text-xs sm:text-sm font-bold">Adult Count</p>
+                </div>
+
+                {/* coral card: children going */}
+                <div className={`${cardBase} bg-[#FF8A85]`}>
+                    <p className="text-2xl sm:text-4xl font-bold">{totalChildren}</p>
+                    <p className="text-xs sm:text-sm font-bold">Children Count</p>
+                </div>
+
+                {/* white Status card (matches the roster card): spans all three columns so it fills the row under the stat cards */}
+                <div className={`${cardBase} bg-white col-span-3`}>
+                    <h5 className="text-xs sm:text-sm font-bold mb-2">Status</h5>
+                    {/* horizontal: 2x2 on phones, all four counts in one row on tablet and up */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
+                        <p>Going: <span className="font-bold">{totalGoing}</span></p>
+                        <p>Not Going: <span className="font-bold">{totalNotGoing}</span></p>
+                        <p>Maybe: <span className="font-bold">{totalMaybe}</span></p>
+                        <p>Pending: <span className="font-bold">{totalPending}</span></p>
+                    </div>
+                </div>
+            </section>
+
+
+            {/* white roster card with a navy border, like the mockup */}
+            <section className="mb-6 overflow-hidden rounded-2xl border border-[#0B1533] bg-white">
+                <h2 className="px-4 py-4 text-xl sm:text-2xl font-bold text-[#0B1533]">Traveler Roster</h2>
+
+                {/* phones: stacked rows */}
+                <ul className="sm:hidden border-t border-[#0B1533]">
+                    {travelers.length === 0
+                        ? <li className="px-4 py-3 text-sm text-[#0B1533]">No travelers invited yet</li>
+                        : travelers.map((traveler) => <TravelerCard key={traveler.invite.id} traveler={traveler}/>)}
+                </ul>
+
+                {/* tablet and up: full table */}
+                <div className="hidden sm:block overflow-x-auto">
+                <Table theme={navyTableTheme.table}>
+                    <TableHead>
                         <TableRow>
                             <TableHeadCell>Traveler Name</TableHeadCell>
                             <TableHeadCell>Phone Number</TableHeadCell>
                             <TableHeadCell> Email </TableHeadCell>
-                            <TableHeadCell>Status</TableHeadCell>
+                            {/* RSVP = yes/no/maybe; Invite Status = color-coded badge (new column) */}
+                            <TableHeadCell>RSVP</TableHeadCell>
+                            <TableHeadCell>Invite Status</TableHeadCell>
                             <TableHeadCell>Adults</TableHeadCell>
                             <TableHeadCell>Children</TableHeadCell>
                         </TableRow>
                     </TableHead>
 
-                    <TableBody className={'text-center text-bold text-sm text-gray-700'}>
+                    <TableBody className={'text-sm text-[#0B1533]'}>
                         {travelers.length === 0
-                            ? <TableRow><TableCell colSpan={6}>No travelers invited yet</TableCell></TableRow>
+                            ? <TableRow><TableCell colSpan={7 /* 7 columns now that Invite Status was added */}>No travelers invited yet</TableCell></TableRow>
                             : travelers.map((traveler) => <TravelerRow key={traveler.invite.id} traveler={traveler}/>)}
 
                     </TableBody>
                 </Table>
-            </div>
-
-
+                </div>
             </section>
-
-
-            <section className={'gap-6 overflow-x-auto flex rounded-xl my-8'}>
-
-                <Card href="#" className=" space-y-4 w-sm hover:bg-[#FFF0F1]">
-                    <h5 className="text-2xl font-bold tracking-wider text-gray-500">
-                        Status 📊:
-                    </h5>
-                    <p className="leading-loose font-normal text-gray-700">
-                        🟢 Going: {totalGoing}
-                    </p>
-
-
-                    <p className=" leading-loose font-normal text-gray-700">
-                        🔴 Not Going: {totalNotGoing}
-                    </p>
-                    <p className="leading-loose font-normal text-gray-700">
-                        ⚪ Maybe: {totalMaybe}
-                    </p>
-                    <p className="leading-loose font-normal text-gray-700">
-                        ⏳ Pending: {totalPending}
-                    </p>
-                </Card>
-
-                <Card href="#" className="w-sm hover:bg-[#FFF0F1]">
-                    <h5 className="leading-loose text-2xl font-bold tracking-wider text-gray-500">
-                        Total Attendance 👥:  {totalTravelers}
-                    </h5>
-
-                    <p className=" leading-loose font-normal text-gray-700">
-                        Traveler Names:  {going.map((t) => t.profile?.name ?? t.invite.name).join(', ')}
-                    </p>
-
-                    <p className="leading-loose font-normal text-gray-700">
-                        Adult Count: {totalAdults}
-
-                    </p>
-
-                    <p className=" leading-loose font-normal text-gray-700">
-                        Children Count: {totalChildren}
-                    </p>
-
-
-                </Card>
-
-            </section>
-
 
 
             <section>
