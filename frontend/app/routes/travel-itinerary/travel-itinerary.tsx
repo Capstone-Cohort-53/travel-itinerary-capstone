@@ -36,7 +36,7 @@ export async function loader ({request, params}: Route.LoaderArgs) {
     }
 
     const travelers = await getTripInviteKitchenSink(trip.id,signedInUser )
-        return {trip, travelers}
+
 
     const myMember = travelers.find(
         (t) => t.invite.acceptedProfileId === signedInUser.profile.id
