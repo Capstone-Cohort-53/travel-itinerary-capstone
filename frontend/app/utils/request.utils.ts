@@ -149,3 +149,36 @@ export async function postRequest(path: string, body: unknown, user?: SignedInUs
         return failedRequestStatus(error);
     }
 }
+
+
+export async function putRequest(path: string, body: unknown, user?: SignedInUser): Promise<Status> {
+    const headers = new Headers({ "Content-Type": "application/json" });
+    if (user) {
+        headers.set("Authorization", user.authorization);
+        headers.set("Cookie", user.cookie);
+    }
+
+    try {
+        const response = await fetch(`${REST_URL}${path}`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify(body),
+            signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+        });
+
+        const responseBody = await response.json().catch(() => null);
+
+        if (response.status === 200 || response.status === 201) {
+            return { status: response.status, data: responseBody, message: null };
+        }
+
+        return {
+            status: response.status,
+            data: null,
+            message: responseBody?.message ?? "Failed to save. Please try again.",
+        };
+    } catch (error) {
+        console.error(`PUT ${path} failed:`, error);
+        return failedRequestStatus(error);
+    }
+}

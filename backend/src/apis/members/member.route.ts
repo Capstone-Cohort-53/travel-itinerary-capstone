@@ -17,7 +17,6 @@ router.route('/:id')
     .get(isLoggedInController, getMemberByIdController)
     .delete(isLoggedInController, deleteMemberController)
     .put(isLoggedInController, putMemberController)
-    .post(isLoggedInController, postMemberController)
 
 router.route('/trip/:tripId')
     .get(isLoggedInController, getMembersByTripIdController)

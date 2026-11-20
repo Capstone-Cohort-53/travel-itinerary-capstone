@@ -170,13 +170,13 @@ export async function deleteMemberController (request: Request, response: Respon
         }
 
         if (profileId !== trip?.ownerId) {
-            sendError(request, response, 400, 'You must own the trip to remove members.')
+            sendError(request, response, 403, 'You must own the trip to remove members.')
             return
         }
 
         await deleteMember (id)
 
-        response.status(204).send('Member deleted.')
+        response.status(204).send()
 
     } catch (error: unknown) {
         console.error(error)
@@ -187,7 +187,7 @@ export async function deleteMemberController (request: Request, response: Respon
 
 export async function putMemberController (request: Request, response: Response): Promise<void> {
     try {
-        const bodyValidationResult = MemberSchema.safeParse(request.body)
+        const bodyValidationResult = MemberSchema.pick({going:true, adults:true, children:true}).safeParse(request.body)
         const validationResult = MemberSchema.pick({id: true}).safeParse(request.params)
 
         if (!validationResult.success) {
@@ -219,16 +219,16 @@ export async function putMemberController (request: Request, response: Response)
 
         const {going, children, adults} = bodyValidationResult.data
 
+        if (profileId !== tripInvite?.acceptedProfileId) {
+            sendError(request, response, 403, 'You can only update your own status on the trip.')
+            return
+        }
+
         member.going = going
 
         member.children = children
 
         member.adults = adults
-
-        if (profileId !== tripInvite?.acceptedProfileId) {
-            sendError(request, response, 400, 'You can only update your own status on the trip.')
-            return
-        }
 
         await updateMember(member)
 
