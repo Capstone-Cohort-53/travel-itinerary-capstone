@@ -34,6 +34,7 @@ export default function Nav (props : Route.ComponentProps) {
                 {/*</NavbarLink>*/}
                 <NavbarLink href="#">My Trips</NavbarLink>
                 <NavbarLink href="#">Manage Travelers</NavbarLink>
+                {isLoggedIn && <NavbarLink href="/profile">My Profile</NavbarLink>}
             </NavbarCollapse>
         </Navbar>
 <Outlet/>

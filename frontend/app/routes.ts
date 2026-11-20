@@ -8,10 +8,13 @@ route ('/my-trips','routes/my-trips/my-trips.tsx'),
     route('/create-trip','routes/create-trip/create-trip.tsx'),
 route('/travel-itinerary/:id/activity/new','routes/activity/activity.tsx'),
     route('/activity-details','routes/activity-details.tsx'),
-    route('/trip-itinerary', 'routes/trip-itinerary/trip-itinerary.tsx'),
+    route('/trip-itinerary/:tripId', 'routes/trip-itinerary/trip-itinerary.tsx'),
 
     route('/travel-itinerary/:id', 'routes/travel-itinerary/travel-itinerary.tsx'),
+    route('/profile', 'routes/profile/profile.tsx'),
+    route('/profile/:id', 'routes/profile/view-profile.tsx'),
     route('accept-invitation/:token','routes/accept-invitation/accept-invitation.tsx'),
+
     // catch-all: any URL with no matching route renders the 404 page
     route("*", "routes/not-found/not-found.tsx")
         ]),

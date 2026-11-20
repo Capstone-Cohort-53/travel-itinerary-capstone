@@ -65,8 +65,8 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
         return {success: false, status}
     }
 
-    // back to the trip once the activity is saved
-    return redirect(`/travel-itinerary/${params.id}`)
+    // back to the trip's itinerary, which lists its activities
+    return redirect(`/trip-itinerary/${params.id}`)
 }
 
 
@@ -412,9 +412,9 @@ export default function Activity({loaderData, params}: Route.ComponentProps) {
 
                 <div className="flex flex-col-reverse sm:flex-row justify-end gap-4 pb-8">
 
-                    {/* Cancel goes back to the trip */}
+                    {/* Cancel goes back to the trip's itinerary */}
                     <Link
-                        to={`/travel-itinerary/${params.id}`}
+                        to={`/trip-itinerary/${params.id}`}
                         className="px-8 py-3 rounded-lg border-2 border-[#434A90] text-[#434A90] font-semibold text-center hover:bg-gray-100 transition-colors"
                     >
                         Cancel

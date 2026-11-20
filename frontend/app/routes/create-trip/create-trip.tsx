@@ -1,236 +1,291 @@
-import {useState, type ChangeEvent} from "react";
+import {useState} from "react";
+import {Form, Link, redirect, useActionData, useNavigation} from "react-router";
+import {
+    createServerValidate,
+    formOptions,
+    mergeForm,
+    ServerValidateError,
+    useForm,
+    useSelector,
+    useTransform,
+} from "@tanstack/react-form-remix";
+import type {Route} from "./+types/create-trip";
+import {endSession, requireSignedInUser} from "~/utils/session.server";
+import {type NewTrip, NewTripSchema, postTrip} from "~/utils/models/trip.model";
+import {FieldError} from "~/components/FieldError";
+import {StatusMessage} from "~/components/StatusMessage";
 
-type TripFormData = {
-    tripName: string;
-    tripType: string;
-    destination: string;
-    startDate: string;
-    endDate: string;
-    startTime: string;
-    endTime: string;
-    description: string;
-};
+// Retro Sunset colors
+const navy = "#031136";
+const labelClass = "block text-sm font-bold text-[#031136] mb-2";
+const inputClass = "w-full px-4 py-2.5 rounded-xl border-2 border-[#031136] bg-white text-sm text-[#031136] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5903] focus:ring-offset-1";
 
-const tripType = [
-    "Adventure",
-    "Beach",
-    "Cruises",
-    "City Break",
-    "Road Trip",
-    "Hiking",
-    "Family",
-    "Culture and Heritage",
-    "Festival",
-    "Staycation",
-    "Other"
-];
+//STEP 4: the loader. Only signed-in users can create a trip
+export async function loader({request}: Route.LoaderArgs) {
+    await requireSignedInUser(request);
+    return null;
+}
 
-export default function createTrip() {
-const [formData, setFormData] = useState<TripFormData>({
-    tripName:"",
-    tripType:"",
-    destination:"",
-    startDate:"",
-    endDate:"",
-    startTime:"",
-    endTime:"",
-    description:"",
+//STEP 5: form options shared by the browser (useForm) and the server (createServerValidate)
+const defaultValues: NewTrip = {title: "", destination: "", startDate: "", endDate: "", description: ""};
+const formOpts = formOptions({
+    defaultValues,
+    validators: {onChange: NewTripSchema},
 });
 
-const handleChange = (event: ChangeEvent<HTMLInputElement|HTMLSelectElement|HTMLTextAreaElement>
-) => {
-    const {name, value} = event.target;
-    setFormData((prev) =>({... prev, [name]: value}));
-};
+//STEP 6: the server-side validator, for when the form is posted without JavaScript
+const serverValidate = createServerValidate({
+    ...formOpts,
+    onServerValidate: ({value}) => {
+        const validationResult = NewTripSchema.safeParse(value);
+        if (!validationResult.success) {
+            return validationResult.error.issues.map((issue) => issue.message);
+        }
+    },
+});
 
-const handleSubmit= (e:any) => {
-    e.preventDefault();
-    console.log("Saving trip:", formData);
-};
-const handleCancel= () => {
-    setFormData({
-        tripName:"",
-        tripType:"",
-        destination:"",
-        startDate:"",
-        endDate:"",
-        startTime:"",
-        endTime:"",
-        description:"",
-    })
+//STEP 7: the action. Check the user, validate, call the API
+export async function action({request}: Route.ActionArgs) {
+    // outside the try: its thrown redirect has to reach React Router
+    const user = await requireSignedInUser(request);
+    const formData = await request.formData();
+
+    try {
+        const validatedData = await serverValidate(formData);
+        // the API requires an image and the form does not ask for one, so every trip gets the site's background photo
+        const image = new URL("/bg_reduced.jpeg", request.url).href;
+        const status = await postTrip(validatedData, user, image);
+
+        //STEP 8: handle the answer
+        if (status.status === 401 || status.status === 403) {
+            return await endSession(request);
+        }
+
+        if (status.status === 200) {
+            const trip = status.data as { id: string };
+            return redirect(`/trip-itinerary/${trip.id}`);
+        }
+
+        return {success: false, status};
+    } catch (error) {
+        if (error instanceof ServerValidateError) {
+            return error.formState;
+        }
+        throw error;
+    }
 }
+
+export default function CreateTrip() {
+    //STEP 9: create the form and merge in the action's result
+    const actionData = useActionData<typeof action>();
+    // the action returns one of two shapes: tell them apart by a key only one has
+    const serverFormState = actionData && "errorMap" in actionData ? actionData : {};
+    const response = actionData && "success" in actionData ? actionData : undefined;
+
+    const form = useForm({
+        ...formOpts,
+        transform: useTransform((baseForm) => mergeForm(baseForm, serverFormState), [actionData]),
+    });
+
+    const formErrors = useSelector(form.store, (formState) => formState.errors);
+    const serverErrors = formErrors.flatMap((error) => (Array.isArray(error) ? error : []));
+
+    const navigation = useNavigation();
+    const isSaving = navigation.state !== "idle";
+
+    //STEP 11: hide the last result once the user starts editing again
+    const [editedSince, setEditedSince] = useState<typeof actionData>();
+    const visibleResponse = editedSince === actionData ? undefined : response;
+
     return (
-            <>
-                <div className=" bg-gray-50 py-1 px-4 sm:px-6 lg:px-8"/>
-                    <div className="max-w-3xl mx-auto">
-                        {/*header*/}
-                        <div className="mb-6 sm:mb-8">
-                        <h1 className="text-2xl sm:text-3xl font-bold text-[#031136]">
-                        Create Trip
-                        </h1>
+        <div className="bg-[#FBF3FA] min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-5xl mx-auto">
+                <Link to="/my-trips" className="text-sm font-bold text-[#434A90] hover:underline">← My Trips</Link>
+                <h1 className="mt-2 mb-8 text-4xl sm:text-5xl font-extrabold tracking-tight text-[#031136]">Create a New Trip</h1>
 
-                        {/*form*/}
-                        <form
-                            onSubmit={handleSubmit}
-                            className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 sm:p-8 space-y-5 sm:space-y-6">
-                        {/*Start from*/}
+                <div className="grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-start">
+                <Form
+                    method="post"
+                    noValidate
+                    className="bg-white rounded-3xl border-2 border-[#031136] p-6 sm:p-8 space-y-5"
+                    onChange={() => setEditedSince(actionData)}
+                    onSubmit={(event) => {
+                        form.handleSubmit();
+                        if (!NewTripSchema.safeParse(form.state.values).success) {
+                            event.preventDefault();
+                        }
+                    }}
+                >
+                    {serverErrors.map((error) => (
+                        <p key={String(error)} role="alert" className="text-sm text-red-600">{String(error)}</p>
+                    ))}
 
-                            {/*Trip Name*/}
+                    {/*STEP 10: one form.Field per input*/}
+                    <form.Field name="title">
+                        {(field) => (
                             <div>
-                                <label
-                                htmlFor="tripName"
-                                className="block text-sm font-medium text=[#031136] mb-1.5"
-                                >
-                                Trip name
-                                </label>
+                                <label htmlFor="title" className={labelClass}>Trip name</label>
                                 <input
-                                type="text"
-                                id="tripName"
-                                name="tripName"
-                                value={formData.tripName}
-                                onChange={handleChange}
-                                placeholder="Trip name"
-                                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus-ring-[#FF59903] focus:border-tranparent text-sm"
-                                required
+                                    type="text"
+                                    id="title"
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onChange={(event) => field.handleChange(event.target.value)}
+                                    placeholder="e.g., Weekend in Santa Fe"
+                                    className={inputClass}
+                                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                                    aria-describedby="title-error"
                                 />
+                                <FieldError id="title-error" meta={field.state.meta}/>
                             </div>
+                        )}
+                    </form.Field>
 
-                            {/*Trip Type*/}
+                    <form.Field name="destination">
+                        {(field) => (
                             <div>
-                                <label
-                                htmlFor="tripType"
-                                className="block text-sm font-medium text=[#031136] mb-1.5"
-                                >
-                                  Trip type
-                                </label>
-                                <select
-                                    id="tripType"
-                                    name="tripType"
-                                    value={formData.tripType}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF59903] focus:border-tranparent text-sm]"
-                                    required
-                                    >
-                                    <option value="">Select a type</option>
-                                    {tripType.map((type)=>(
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                    </select>
-                            </div>
-                            {/*Destination*/}
-                            <div>
-                                <label
-                                    htmlFor="destination"
-                                    className="block text-sm font-medium text=[#031136] mb-1.5"
-                                    >
-                                    Destination
-                                </label>
+                                <label htmlFor="destination" className={labelClass}>Destination</label>
                                 <input
                                     type="text"
                                     id="destination"
-                                    name="destination"
-                                    value={formData.destination}
-                                    onChange={handleChange}
-                                    placeholder="City or Place"
-                                    className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF59903] focus:border-tranparent text-sm"
-                                    required
-                                    />
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onChange={(event) => field.handleChange(event.target.value)}
+                                    placeholder="City or place"
+                                    className={inputClass}
+                                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                                    aria-describedby="destination-error"
+                                />
+                                <FieldError id="destination-error" meta={field.state.meta}/>
                             </div>
+                        )}
+                    </form.Field>
 
-                            {/*Dates*/}
-                            <div className="grid grid-cols-2 gap-3 sm:gap-4"/>
-
-                                    <div>
-                                    <label htmlFor="startDate"
-                                    className="block text-sm font-medium text-[#031136] mb-1.5"
-                                    >Start date
-                                    </label>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                        <form.Field name="startDate">
+                            {(field) => (
+                                <div>
+                                    <label htmlFor="startDate" className={labelClass}>Start date</label>
                                     <input
                                         type="date"
                                         id="startDate"
-                                        name="startDate"
-                                        value={formData.startDate}
-                                        onChange={handleChange}
-                                        className="w-full px-3 sm:px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#FF59903] focus:border-tranparent text-sm"
-                                        required
+                                        name={field.name}
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(event) => field.handleChange(event.target.value)}
+                                        className={inputClass}
+                                        aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                                        aria-describedby="startDate-error"
                                     />
+                                    <FieldError id="startDate-error" meta={field.state.meta}/>
                                 </div>
-                            <div>
-                                <label
-                                    htmlFor="endDate"
-                                    className="block text-sm font-medium text-[#031136] mb-1.5"
-                                    >End date
-                                </label>
-                                <input
-                                type="date"
-                                id="endDate"
-                                name="endDate"
-                                value={formData.endDate}
-                                onChange={handleChange}
-                                className="w-full px-3 sm:px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-tranparent text-sm"
-                                required
-                                />
-                            </div>
-                        {/*Times*/}
-                        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                        </div>
-                <div>
-                <label htmlFor="startTime"
-                       className="block text-sm font-medium text-[#031136] mb-1.5"
-                        >Start time
-                        </label>
-                    <input
-                    type="time"
-                    id="startTime"
-                    name="startTime"
-                    value={formData.startTime}
-                    onChange={handleChange}
-                    className="w-full px-3 sm:px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-tranparent text-sm"
-                    />
-                </div>
-                <div>
-                    <label htmlFor="endTime"
-                    className="block text-sm font-medium text-[#031136] mb-1.5">
-                    End time
-                    </label>
-                    <input
-                        type="time"
-                        id="endTime"
-                        name="endTime"
-                        value={formData.endTime}
-                        onChange={handleChange}
-                        className="w-full px-3 sm:px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-tranparent text-sm"
-                        />
-                </div>
+                            )}
+                        </form.Field>
 
-                {/*Description*/}
-                <div>
-                    <label
-                        htmlFor="description"
-                        className="block text-sm font-medium text-[#031136] mb-1.5">Description</label>
-                    <textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleChange}
-                        placeholder="What is this trip about?"
-                        className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:border-tranparent text-sm"/>
-                </div>
-                {/*Buttons*/}
-                <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 sm:pt-4">
-                <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="w-full sm:w-auto px-6 py-2.5 rounded-lg border border-[#434A90] text-[#434A90] font-medium hover-bg[#434A90]/5 transition text-sm">Cancel</button>
-                <button
-                    type="submit"
-                    className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#FF5903] text-white font-medium hover-bg[#FF5903]/90 transition shadow-sm text-sm">Save Trip</button>
-                </div>
-                        </form>
+                        <form.Field name="endDate">
+                            {(field) => (
+                                <div>
+                                    <label htmlFor="endDate" className={labelClass}>End date</label>
+                                    <input
+                                        type="date"
+                                        id="endDate"
+                                        name={field.name}
+                                        value={field.state.value}
+                                        onBlur={field.handleBlur}
+                                        onChange={(event) => field.handleChange(event.target.value)}
+                                        className={inputClass}
+                                        aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                                        aria-describedby="endDate-error"
+                                    />
+                                    <FieldError id="endDate-error" meta={field.state.meta}/>
+                                </div>
+                            )}
+                        </form.Field>
+                    </div>
+
+                    <form.Field name="description">
+                        {(field) => (
+                            <div>
+                                <label htmlFor="description" className={labelClass}>Description</label>
+                                <textarea
+                                    id="description"
+                                    name={field.name}
+                                    value={field.state.value}
+                                    onBlur={field.handleBlur}
+                                    onChange={(event) => field.handleChange(event.target.value)}
+                                    placeholder="What is this trip about?"
+                                    maxLength={40}
+                                    rows={4}
+                                    className={inputClass}
+                                    aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
+                                    aria-describedby="description-error"
+                                />
+                                <p className="mt-1 text-xs text-gray-500">{field.state.value.length}/40 characters</p>
+                                <FieldError id="description-error" meta={field.state.meta}/>
+                            </div>
+                        )}
+                    </form.Field>
+
+                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 sm:pt-4">
+                        <button
+                            type="button"
+                            onClick={() => form.reset()}
+                            className="w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] bg-white text-[#031136] font-bold hover:bg-[#031136]/5 transition text-sm"
+                        >
+                            Cancel
+                        </button>
+                        <form.Subscribe selector={(formState) => formState.canSubmit}>
+                            {(canSubmit) => (
+                                <button
+                                    type="submit"
+                                    disabled={!canSubmit || isSaving}
+                                    className="w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] bg-[#FF5903] text-[#031136] font-bold hover:bg-[#FF5903]/90 transition text-sm disabled:opacity-50"
+                                >
+                                    {isSaving ? "Saving..." : "Save Trip"}
+                                </button>
+                            )}
+                        </form.Subscribe>
+                    </div>
+
+                    <StatusMessage actionData={visibleResponse}/>
+                </Form>
+
+                <aside className="space-y-4">
+                    <NextUpCard/>
+                    <p className="rounded-2xl bg-[#C9A3CB] px-5 py-4 text-xs text-[#031136]">
+                        Tip: pick “Re-use a past itinerary” on My Trips to start from a trip you’ve already planned.
+                    </p>
+                </aside>
                 </div>
             </div>
-            </>
-        )
+        </div>
+    );
+}
+
+/** The sunset card beside the form: what happens after the trip is saved. */
+function NextUpCard() {
+    return (
+        <div className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-[#434A90]">
+            {/* a half sun setting behind the horizon, with two coral bands across it */}
+            <svg viewBox="0 0 256 130" className="block w-full bg-[#031136]" aria-hidden="true">
+                <defs>
+                    <clipPath id="sun">
+                        <circle cx="128" cy="130" r="86"/>
+                    </clipPath>
+                </defs>
+                <g clipPath="url(#sun)">
+                    <rect x="0" y="0" width="256" height="130" fill="#FF5903"/>
+                    <rect x="0" y="92" width="256" height="12" fill="#FF6B6C"/>
+                    <rect x="0" y="108" width="256" height="4" fill={navy}/>
+                    <rect x="0" y="112" width="256" height="10" fill="#FF6B6C"/>
+                </g>
+            </svg>
+            <div className="px-5 py-5 text-white">
+                <h2 className="text-xl font-extrabold">Next up</h2>
+                <p className="mt-1 text-sm">After you save, add activities to each day and invite your travelers.</p>
+            </div>
+        </div>
+    );
 }

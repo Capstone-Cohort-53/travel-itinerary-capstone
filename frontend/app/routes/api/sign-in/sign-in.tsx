@@ -12,7 +12,7 @@ export async function action ({request}: Route.ActionArgs){
     const formData= await request.formData()
     let validationResult = GoogleSignInSchema.safeParse(Object.fromEntries(formData))
     if (!validationResult.success){
-        return {success:false, status:400, data:null, message:'sign-in failed.'}
+        return {success:false, status:{status:400, data:null, message:'sign-in failed.'}}
     }
     const signInResult = await postGoogleSignIn(validationResult.data.credential)
     const {status, headers } = signInResult
