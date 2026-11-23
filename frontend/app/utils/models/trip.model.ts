@@ -80,6 +80,28 @@ export async function getTrip(tripId: string, signedInUser: SignedInUser): Promi
     return {status, trip: validationResult.data}
 }
 
+export type TripsResult = { status: Status; trips: Trip[] }
+
+/**
+ * GET /apis/trip: every trip the signed-in user owns or has joined, soonest first.
+ * Never throws: every failure comes back as a Status.
+ */
+export async function getMyTrips(signedInUser: SignedInUser): Promise<TripsResult> {
+    const status = await getRequest('/trip', signedInUser);
+    if (status.status !== 200) {
+        return {status, trips: []}
+    }
+
+    const validationResult = TripSchema.array().safeParse(status.data)
+    if (!validationResult.success) {
+        return {
+            status: {status: 502, data: null, message: 'Could not read your trips. Please try again.'},
+            trips: []
+        }
+    }
+    return {status, trips: validationResult.data}
+}
+
 export async function getTripByTripId(tripId: string, signedInUser:SignedInUser): Promise<Trip | null> {
     const {trip} = await getTrip(tripId, signedInUser)
     return trip

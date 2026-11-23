@@ -18,4 +18,6 @@ route('/activity','routes/activity/activity.tsx'),
     route("*", "routes/not-found/not-found.tsx")
         ]),
     route ('api/sign-in','routes/api/sign-in/sign-in.tsx'),
+    // the navbar's Log out button posts here
+    route('api/sign-out','routes/api/sign-out/sign-out.tsx'),
 ] satisfies RouteConfig;
