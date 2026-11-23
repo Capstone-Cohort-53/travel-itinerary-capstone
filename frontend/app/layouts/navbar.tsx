@@ -59,7 +59,8 @@ export default function Nav (props : Route.ComponentProps) {
     // links change with the trip being viewed, if any
     const navLinks = getNavLinks(getCurrentTripId(useLocation().pathname))
 
-    return <>
+    // a full-height column, so the footer sits at the bottom of the window on short pages
+    return <div className="flex min-h-screen flex-col">
         <header>
             {/* navy bar: logo and links on the left, Log out (or Google sign-in) on the right */}
             <nav className="bg-[#0B1533]">
@@ -134,7 +135,10 @@ export default function Nav (props : Route.ComponentProps) {
                 <div className="h-2 bg-[#3A4187]"/>
             </div>
         </header>
-<Outlet/>
+        {/* the page grows to fill the space between the navbar and the footer */}
+        <div className="flex-1">
+            <Outlet/>
+        </div>
         <FooterCap/>
-    </>
+    </div>
 }
