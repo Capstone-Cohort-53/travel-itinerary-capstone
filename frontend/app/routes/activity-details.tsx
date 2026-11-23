@@ -133,12 +133,12 @@ const tileLabelClass = "text-xs font-bold uppercase tracking-wider text-[#434A90
 // Leaflet only works in a browser, so its code is fetched only after the page mounts there
 const ActivityMap = lazy(() => import("~/routes/activity/activity-map"))
 
-/** The Leaflet map, rendered in the browser only; during server rendering a same-sized placeholder holds its place. */
+/** The Leaflet map, rendered in the browser only; during server rendering a placeholder holds its place. Fills its parent. */
 function ClientOnlyMap(props: { lat: number, lng: number, label: string }) {
     const [isMounted, setIsMounted] = useState(false)
     useEffect(() => setIsMounted(true), [])
 
-    const placeholder = <div className="h-64 w-full bg-[#FBF3FA] sm:h-72" aria-hidden="true"/>
+    const placeholder = <div className="h-full w-full bg-[#FBF3FA]" aria-hidden="true"/>
     if (!isMounted) {
         return placeholder
     }
@@ -209,8 +209,9 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
                         </div>
 
                         {(activity.location || activity.address) && (
-                            <div className={`${cardClass} overflow-hidden`}>
-                            <div className="flex items-center gap-4 p-4">
+                            // phones: the map is a short strip under the address. Wider screens: a small square on the right
+                            <div className={`${cardClass} flex flex-col overflow-hidden sm:flex-row`}>
+                            <div className="flex flex-1 items-center gap-4 p-4">
                                 <span aria-hidden="true"
                                       className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#C9A3CB]">
                                     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="#031136"
@@ -233,7 +234,7 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
                                 </div>
                             </div>
                             {activity.lat !== null && activity.lng !== null && (
-                                <div className="border-t-2 border-[#031136]">
+                                <div className="h-40 shrink-0 border-t-2 border-[#031136] sm:h-auto sm:w-52 sm:aspect-square sm:border-t-0 sm:border-l-2">
                                     <ClientOnlyMap lat={activity.lat} lng={activity.lng}
                                                    label={activity.location ?? activity.address ?? activity.name}/>
                                 </div>
