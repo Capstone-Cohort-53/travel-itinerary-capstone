@@ -13,7 +13,7 @@ export const TripSchema =
             .uuidv7('please provide a valid uuid for trip'),
         description: z
             .string('please provide a valid description')
-            .max(40,'please provide a description of 40 characters or less').nullable(),
+            .max(360,'please provide a description of 360 characters or less').nullable(),
         createdAt: z
             .coerce.date('please provide a valid created at').nullable(),
         title:z
@@ -47,10 +47,10 @@ export const NewTripSchema = z.object({
         .max(255, 'please provide a destination of 255 characters or less'),
     startDate: z.iso.date('please provide a start date'),
     endDate: z.iso.date('please provide an end date'),
-    // the backend allows 40 characters
+    // the backend allows 360 characters
     description: z.string('please provide a valid description')
         .trim()
-        .max(40, 'please keep the description to 40 characters or less'),
+        .max(360, 'please keep the description to 360 characters or less'),
 }).refine(
     // same rule as the database: a trip cannot end before it starts (YYYY-MM-DD compares correctly as text)
     (trip) => trip.endDate >= trip.startDate,

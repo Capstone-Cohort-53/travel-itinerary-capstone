@@ -147,27 +147,27 @@ export default function TripItinerary(props: Route.ComponentProps) {
                     </div>
                 </div>
 
+                {/* About this trip: a full-width card right under the trip's name and dates */}
+                <div className="mt-6">
+                    <TripCard trip={trip}/>
+                </div>
+
                 {/*
-                  phones: one column, in the order attendance, itinerary, trip card.
-                  wide screens: the itinerary on the left, attendance and the trip card stacked on the right.
+                  phones: one column, attendance (organizer only), then the itinerary.
+                  wide screens: the itinerary on the left, attendance on the right.
+                  Non-organizers have no attendance card, so the itinerary takes the full width.
                 */}
-                <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-[1fr_16rem] lg:grid-rows-[auto_1fr] lg:items-start">
+                <div className={`mt-6 sm:mt-8 grid gap-6 lg:items-start ${isOwner ? "lg:grid-cols-[1fr_16rem]" : ""}`}>
                     {isOwner && (
-                        <div className="order-1 lg:col-start-2 lg:row-start-1">
+                        <div className="order-1 lg:order-2">
                             <AttendanceCard counts={null}/>
                         </div>
                     )}
 
                     {/* the itinerary, one section per day */}
-                    <div className="order-2 space-y-6 lg:col-start-1 lg:row-start-1 lg:row-span-2">
+                    <div className="order-2 space-y-6 lg:order-1">
                         {activitiesMessage && (
                             <p role="alert" className="rounded-2xl border-2 border-[#031136] bg-white p-5 text-red-700">{activitiesMessage}</p>
-                        )}
-
-                        {!activitiesMessage && days.length === 0 && (
-                            <p className="rounded-2xl border-2 border-[#031136] bg-white p-5 text-[#031136]">
-                                Nothing is planned for this trip yet.
-                            </p>
                         )}
 
                         {days.map((day) => (
@@ -182,10 +182,6 @@ export default function TripItinerary(props: Route.ComponentProps) {
                                 ))}
                             </section>
                         ))}
-                    </div>
-
-                    <div className="order-3 lg:col-start-2 lg:row-start-2">
-                        <TripCard trip={trip}/>
                     </div>
                 </div>
             </div>
@@ -270,17 +266,16 @@ function AttendanceCard({counts}: { counts: AttendanceCounts | null }) {
     );
 }
 
-/** The card beside the itinerary: the trip's photo and description, under the sunset stripes. */
+/** The full-width card under the trip's header: its description, under the sunset stripes. */
 function TripCard({trip}: { trip: Trip }) {
     return (
-        <aside className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-white">
+        <section className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-white">
             <Stripes/>
-            <img src={trip.image} alt="" className="h-36 w-full object-cover"/>
             <div className="p-5">
                 <h2 className="text-xl font-extrabold text-[#031136]">About this trip</h2>
-                <p className="mt-1 text-sm text-[#434A90]">{trip.description ?? "No description yet."}</p>
+                <p className="mt-1 break-words whitespace-pre-line text-sm text-[#434A90]">{trip.description ?? "No description yet."}</p>
             </div>
-        </aside>
+        </section>
     );
 }
 

@@ -216,13 +216,13 @@ export default function CreateTrip() {
                                     onBlur={field.handleBlur}
                                     onChange={(event) => field.handleChange(event.target.value)}
                                     placeholder="What is this trip about?"
-                                    maxLength={40}
+                                    maxLength={360}
                                     rows={4}
                                     className={inputClass}
                                     aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                                     aria-describedby="description-error"
                                 />
-                                <p className="mt-1 text-xs text-gray-500">{field.state.value.length}/40 characters</p>
+                                <p className="mt-1 text-xs text-gray-500">{field.state.value.length}/360 characters</p>
                                 <FieldError id="description-error" meta={field.state.meta}/>
                             </div>
                         )}
@@ -254,9 +254,6 @@ export default function CreateTrip() {
 
                 <aside className="space-y-4">
                     <NextUpCard/>
-                    <p className="rounded-2xl bg-[#C9A3CB] px-5 py-4 text-xs text-[#031136]">
-                        Tip: pick “Re-use a past itinerary” on My Trips to start from a trip you’ve already planned.
-                    </p>
                 </aside>
                 </div>
             </div>
