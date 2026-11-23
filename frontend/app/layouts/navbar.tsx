@@ -110,8 +110,9 @@ export default function Nav (props : Route.ComponentProps) {
             </nav>
 
         </header>
-        {/* the page grows to fill the space between the navbar and the footer */}
-        <div className="flex-1">
+        {/* the page grows to fill the space between the navbar and the footer;
+            flex-col lets a page's root element use flex-1 to stretch its background down to the footer */}
+        <div className="flex flex-1 flex-col">
             <Outlet/>
         </div>
         <FooterCap/>

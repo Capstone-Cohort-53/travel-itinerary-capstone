@@ -89,7 +89,8 @@ export default function MyTrips({loaderData}: Route.ComponentProps) {
 
     return (
         // same lavender page background as the travel itinerary page
-        <main className="min-h-full bg-[#F7EEF6] text-[#0B1533]">
+        // flex-1 fills the space down to the footer (min-h-full can't, since the parent has no fixed height)
+        <main className="flex-1 bg-[#F7EEF6] text-[#0B1533]">
             <div className="mx-auto max-w-[1248px] px-5 py-6 sm:px-8 lg:py-10">
 
                 {message && (

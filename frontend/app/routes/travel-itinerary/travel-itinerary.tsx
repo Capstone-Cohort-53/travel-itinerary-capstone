@@ -1,3 +1,4 @@
+import {Link} from "react-router";
 import {createTheme, Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow} from "flowbite-react";
 // TravelerRow = table row (tablet/desktop), TravelerCard = stacked row (phones)
 import {TravelerCard, TravelerRow} from "~/routes/travel-itinerary/traveler-row";
@@ -5,7 +6,14 @@ import {InviteForm} from "~/routes/travel-itinerary/invite-form";
 import type {Route} from "./+types/travel-itinerary";
 import {requireSignedInUser} from "~/utils/session.server";
 import {getTripByTripId} from "~/utils/models/trip.model";
-import {getTripInviteKitchenSink, postTripInvite, TripInviteFormSchema} from "~/utils/models/trip-invite.model";
+import {
+    deleteTripInvite,
+    getTripInviteKitchenSink,
+    postTripInvite,
+    putTripInvite,
+    TripInviteEditFormSchema,
+    TripInviteFormSchema
+} from "~/utils/models/trip-invite.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {AcceptInviteFormSchema, putMember} from "~/utils/models/member.model";
 import {UpdateRsvpForm} from "~/routes/travel-itinerary/update-rsvp-form";
@@ -16,7 +24,13 @@ const navyTableTheme = createTheme({
         head: {
             base: "text-xs uppercase text-white",
             cell: {
-                base: "bg-[#0B1533] px-4 py-3 text-white"
+                base: "bg-[#0B1533] px-3 py-3 text-white"
+            }
+        },
+        // less padding than Flowbite's default (px-6 py-4) so the table fits beside the Attendance sidebar
+        body: {
+            cell: {
+                base: "px-3 py-3"
             }
         },
         row: {
@@ -34,7 +48,7 @@ export async function loader ({request, params}: Route.LoaderArgs) {
 
     const trip = await getTripByTripId(params.id, signedInUser)
     if (trip === null) {
-        return {trip, travelers: []}
+        return {trip, travelers: [], myMember: null, isOwner: false}
     }
 
     const travelers = await getTripInviteKitchenSink(trip.id,signedInUser )
@@ -43,13 +57,37 @@ export async function loader ({request, params}: Route.LoaderArgs) {
     const myMember = travelers.find(
         (t) => t.invite.acceptedProfileId === signedInUser.profile.id
     )?.member ?? null
-        return {trip, travelers, myMember}
+    // only the trip owner sees the roster's Edit and Remove buttons
+    const isOwner = trip.ownerId === signedInUser.profile.id
+        return {trip, travelers, myMember, isOwner}
 }
 
 
 export async function action({request, params}: Route.ActionArgs): Promise<FormActionResponse> {
     const signedInUser = await requireSignedInUser(request)
     const formData = Object.fromEntries(await request.formData())
+
+    // roster Edit row: fix a pending invite's name, email or cell number
+    if (formData.intent === 'edit-invite') {
+        const result = TripInviteEditFormSchema.safeParse(formData)
+        if (!result.success) {
+            return {success: false, status: {status: 400, data: null, message: result.error.issues[0].message}}
+        }
+        const status = await putTripInvite(params.id, String(formData.inviteId), result.data, signedInUser)
+        if (status.status !== 200) {
+            return {success: false, status}
+        }
+        return {success: true, status: {...status, message: 'Traveler updated!'}}
+    }
+
+    // roster Remove button: delete the invite (and their spot on the trip, if they accepted)
+    if (formData.intent === 'remove-traveler') {
+        const status = await deleteTripInvite(params.id, String(formData.inviteId), signedInUser)
+        if (status.status !== 200) {
+            return {success: false, status}
+        }
+        return {success: true, status: {...status, message: 'Traveler removed.'}}
+    }
 
     if (formData.intent === 'update-rsvp') {
         const result = AcceptInviteFormSchema.safeParse(formData)
@@ -87,7 +125,7 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
 
 
 export default function TravelItinerary(props: Route.ComponentProps) {
-const {trip, travelers, myMember } = props.loaderData
+const {trip, travelers, myMember, isOwner} = props.loaderData
     if (trip === null) {
         return <>
         <h1> trip not found</h1>
@@ -105,92 +143,79 @@ const {trip, travelers, myMember } = props.loaderData
     const totalChildren = going.reduce((sum, t) => sum + (t.member?.children ?? 0), 0)
     const totalTravelers = totalAdults + totalChildren
 
-    // shared look for every stat card: rounded, navy border and text.
-    // min-w-0 + break-words keep long text (like traveler names) inside the card on small screens
-    const cardBase = 'min-w-0 break-words rounded-2xl border border-[#0B1533] p-3 sm:p-4 text-[#0B1533]'
+    // the four RSVP answers, in the same order and colors as the trip itinerary's Attendance card
+    const segments = [
+        {label: 'Going', value: totalGoing, color: 'bg-[#434A90]'},
+        {label: 'Maybe', value: totalMaybe, color: 'bg-[#C9A3CB]'},
+        {label: 'Not going', value: totalNotGoing, color: 'bg-[#FF6B6C]'},
+        {label: 'No response', value: totalPending, color: 'bg-gray-200 border border-[#031136]'},
+    ]
+    const totalAnswers = segments.reduce((sum, segment) => sum + segment.value, 0)
+    const goingNames = going.map((t) => t.profile?.name ?? t.invite.name).join(', ')
 
     return (
         // flat lavender page background (replaces the bg_reduced.jpeg photo)
         <div className="min-h-screen bg-[#F7EEF6] py-8">
         {/* px-4 keeps content off the screen edges on phones */}
-        <main className="container mx-auto max-w-3xl px-4 sm:px-0">
-            {/* header: small indigo trip title, big navy page title, then destination and dates */}
-            <p className={'text-sm font-bold tracking-wider text-[#3A4187] mb-1'}>{trip.title}</p>
-            <h1 className={'text-3xl sm:text-4xl font-bold tracking-wider text-[#0B1533] mb-2'}>Travelers & Invites</h1>
-            <h2 className = {'text-base sm:text-xl font-bold tracking-wider text-[#0B1533] mb-6'}>
-                {trip.destination} · {trip.startDate.toLocaleDateString('en-US', {timeZone:'UTC'})} - {trip.endDate.toLocaleDateString('en-US', {timeZone:'UTC'})}</h2>
+        {/* wider on large screens to make room for the Attendance sidebar */}
+        <main className="container mx-auto max-w-3xl px-4 sm:px-0 lg:max-w-5xl">
+            {/* header: titles on the left, a button back to the trip's activities on the right.
+                phones: the button sits under the titles at full width */}
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                    {/* small indigo trip title, big navy page title, then destination and dates */}
+                    <p className={'text-sm font-bold tracking-wider text-[#3A4187] mb-1'}>{trip.title}</p>
+                    <h1 className={'text-3xl sm:text-4xl font-bold tracking-wider text-[#0B1533] mb-2'}>Travelers & Invites</h1>
+                    <h2 className = {'text-base sm:text-xl font-bold tracking-wider text-[#0B1533]'}>
+                        {trip.destination} · {trip.startDate.toLocaleDateString('en-US', {timeZone:'UTC'})} - {trip.endDate.toLocaleDateString('en-US', {timeZone:'UTC'})}</h2>
+                </div>
+                {/* white pill, same style as the trip itinerary's "Travelers & Invites" button */}
+                <Link
+                    to={`/trip-itinerary/${trip.id}`}
+                    className="shrink-0 px-4 py-2.5 rounded-full border-2 border-[#031136] bg-white text-center text-sm font-bold text-[#031136] hover:bg-[#031136]/5"
+                >
+                    ← Back to activities
+                </Link>
+            </div>
+            {/* large screens: page content on the left, a narrow Attendance sidebar on the right (like the trip itinerary) */}
+            <div className="grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-start">
+            <div className="min-w-0">
             {myMember && <UpdateRsvpForm member={myMember}/>}
-
-
-            {/* stat cards: three across at every width; Status spans the full row underneath */}
-            <section className={'grid grid-cols-3 items-start gap-2 sm:gap-4 mb-6'}>
-
-                {/* orange card: total attending plus the names of everyone going */}
-                <div className={`${cardBase} bg-[#FFA06B]`}>
-                    <p className="text-2xl sm:text-4xl font-bold">{totalTravelers}</p>
-                    <h5 className="text-xs sm:text-sm font-bold">Total Attendance</h5>
-                    <p className="mt-2 text-xs">
-                        Traveler Names:  {going.map((t) => t.profile?.name ?? t.invite.name).join(', ')}
-                    </p>
-                </div>
-
-                {/* purple card: adults going */}
-                <div className={`${cardBase} bg-[#C19AC5]`}>
-                    <p className="text-2xl sm:text-4xl font-bold">{totalAdults}</p>
-                    <p className="text-xs sm:text-sm font-bold">Adult Count</p>
-                </div>
-
-                {/* coral card: children going */}
-                <div className={`${cardBase} bg-[#FF8A85]`}>
-                    <p className="text-2xl sm:text-4xl font-bold">{totalChildren}</p>
-                    <p className="text-xs sm:text-sm font-bold">Children Count</p>
-                </div>
-
-                {/* white Status card (matches the roster card): spans all three columns so it fills the row under the stat cards */}
-                <div className={`${cardBase} bg-white col-span-3`}>
-                    <h5 className="text-xs sm:text-sm font-bold mb-2">Status</h5>
-                    {/* horizontal: 2x2 on phones, all four counts in one row on tablet and up */}
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-4">
-                        <p>Going: <span className="font-bold">{totalGoing}</span></p>
-                        <p>Not Going: <span className="font-bold">{totalNotGoing}</span></p>
-                        <p>Maybe: <span className="font-bold">{totalMaybe}</span></p>
-                        <p>Pending: <span className="font-bold">{totalPending}</span></p>
-                    </div>
-                </div>
-            </section>
-
 
             {/* white roster card with a navy border, like the mockup */}
             <section className="mb-6 overflow-hidden rounded-2xl border border-[#0B1533] bg-white">
                 <h2 className="px-4 py-4 text-xl sm:text-2xl font-bold text-[#0B1533]">Traveler Roster</h2>
 
-                {/* phones: stacked rows */}
-                <ul className="sm:hidden border-t border-[#0B1533]">
+                {/* phones and small tablets: stacked rows */}
+                <ul className="md:hidden border-t border-[#0B1533]">
                     {travelers.length === 0
                         ? <li className="px-4 py-3 text-sm text-[#0B1533]">No travelers invited yet</li>
-                        : travelers.map((traveler) => <TravelerCard key={traveler.invite.id} traveler={traveler}/>)}
+                        : travelers.map((traveler) => <TravelerCard key={traveler.invite.id} traveler={traveler} isOwner={isOwner}/>)}
                 </ul>
 
-                {/* tablet and up: full table */}
-                <div className="hidden sm:block overflow-x-auto">
+                {/* md and up: full table, sized to fit its card (no sideways scrolling).
+                    the short columns (RSVP, Status, Adults, Children, actions) shrink to their content with w-px,
+                    so the leftover room goes to Traveler and Contact */}
+                <div className="hidden md:block">
                 <Table theme={navyTableTheme.table}>
                     <TableHead>
                         <TableRow>
-                            <TableHeadCell>Traveler Name</TableHeadCell>
-                            <TableHeadCell>Phone Number</TableHeadCell>
-                            <TableHeadCell> Email </TableHeadCell>
-                            {/* RSVP = yes/no/maybe; Invite Status = color-coded badge (new column) */}
-                            <TableHeadCell>RSVP</TableHeadCell>
-                            <TableHeadCell>Invite Status</TableHeadCell>
-                            <TableHeadCell>Adults</TableHeadCell>
-                            <TableHeadCell>Children</TableHeadCell>
+                            <TableHeadCell>Traveler</TableHeadCell>
+                            {/* email and phone share one column, stacked, so the table fits beside the Attendance sidebar */}
+                            <TableHeadCell>Contact</TableHeadCell>
+                            {/* RSVP = yes/no/maybe; Status = color-coded invite badge */}
+                            <TableHeadCell className="w-px whitespace-nowrap">RSVP</TableHeadCell>
+                            <TableHeadCell className="w-px whitespace-nowrap">Status</TableHeadCell>
+                            <TableHeadCell className="w-px whitespace-nowrap text-center">Adults</TableHeadCell>
+                            <TableHeadCell className="w-px whitespace-nowrap text-center">Children</TableHeadCell>
+                            {isOwner && <TableHeadCell className="w-px"><span className="sr-only">Actions</span></TableHeadCell>}
                         </TableRow>
                     </TableHead>
 
                     <TableBody className={'text-sm text-[#0B1533]'}>
                         {travelers.length === 0
-                            ? <TableRow><TableCell colSpan={7 /* 7 columns now that Invite Status was added */}>No travelers invited yet</TableCell></TableRow>
-                            : travelers.map((traveler) => <TravelerRow key={traveler.invite.id} traveler={traveler}/>)}
+                            ? <TableRow><TableCell colSpan={isOwner ? 7 : 6 /* 6 columns, plus Actions for the trip owner */}>No travelers invited yet</TableCell></TableRow>
+                            : travelers.map((traveler) => <TravelerRow key={traveler.invite.id} traveler={traveler} isOwner={isOwner}/>)}
 
                     </TableBody>
                 </Table>
@@ -201,6 +226,55 @@ const {trip, travelers, myMember } = props.loaderData
             <section>
                 <InviteForm/>
             </section>
+            </div>
+
+            {/* Attendance card: white with sunset stripes, matching the trip itinerary's Attendance card.
+                phones and tablets: shown first, above the RSVP form; large screens: a sticky sidebar on the right */}
+            <aside className="order-first overflow-hidden rounded-3xl border-2 border-[#031136] bg-white lg:order-none lg:sticky lg:top-6">
+                <div aria-hidden="true">
+                    <div className="h-2 bg-[#FF5903]"/>
+                    <div className="h-1.5 bg-[#FF6B6C]"/>
+                    <div className="h-1.5 bg-[#C9A3CB]"/>
+                </div>
+                <div className="space-y-4 p-5">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="text-xl font-extrabold text-[#031136]">Attendance</h2>
+                        <span className="rounded-full bg-[#031136] px-2.5 py-1 text-[10px] font-bold uppercase leading-tight text-white">
+                            Organizer only
+                        </span>
+                    </div>
+                    <p className="text-sm text-[#434A90]">Trip RSVPs · {travelers.length} invited</p>
+
+                    {/* one bar split by how people answered; empty grey until someone is invited */}
+                    <div className="flex h-4 overflow-hidden rounded-full border-2 border-[#031136] bg-gray-100">
+                        {totalAnswers > 0 && segments.map((segment) => (
+                            <div key={segment.label} className={segment.color}
+                                 style={{width: `${(segment.value / totalAnswers) * 100}%`}}/>
+                        ))}
+                    </div>
+
+                    {/* 2x2, like the mockup; one row of four on tablets, where the card spans the page */}
+                    <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+                        {segments.map((segment) => (
+                            <div key={segment.label} className="rounded-2xl border-2 border-[#031136] p-3">
+                                <dt className="flex items-center gap-2 text-xs text-[#031136]">
+                                    <span className={`h-3 w-3 shrink-0 rounded-full ${segment.color}`}/>
+                                    {segment.label}
+                                </dt>
+                                <dd className="mt-2 text-lg font-extrabold text-[#031136]">{segment.value}</dd>
+                            </div>
+                        ))}
+                    </dl>
+
+                    {/* headcount of everyone going (was the Total / Adult / Children cards) */}
+                    <p className="break-words text-xs text-gray-500">
+                        Headcount: <span className="font-bold text-[#031136]">{totalTravelers}</span>
+                        {' '}({totalAdults} {totalAdults === 1 ? 'adult' : 'adults'}, {totalChildren} {totalChildren === 1 ? 'child' : 'children'})
+                        {goingNames && <> · {goingNames}</>}
+                    </p>
+                </div>
+            </aside>
+            </div>
 
 
         </main>

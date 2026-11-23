@@ -143,8 +143,43 @@ export async function selectTripInviteById (id: string): Promise<TripInvite | nu
  * @param id the invitation's id
  */
 export async function deleteTripInvite (id: string): Promise<void> {
-    await sql`DELETE FROM trip_invite WHERE id = ${id}`
+    // a traveler who accepted has a member row pointing at this invite (no cascade on that
+    // foreign key), so remove it first; both deletes succeed or neither does.
+    // the member's activity RSVPs go with it (activity_rsvp cascades on member)
+    await sql.begin(async (transaction) => {
+        await transaction`DELETE FROM member WHERE invite_id = ${id}`
+        await transaction`DELETE FROM trip_invite WHERE id = ${id}`
+    })
+}
 
+/** What the trip owner may change on an invite: who it is for and how to reach them. */
+export const TripInviteDetailsSchema = TripInviteSchema.pick({
+    name: true,
+    email: true,
+    cellNumber: true
+}).refine(
+    (data) => Boolean(data.email || data.cellNumber),
+    {message: 'Please provide an email address or cell number.'}
+)
+
+export type TripInviteDetails = z.infer<typeof TripInviteDetailsSchema>
+
+/**
+ * Changes an invite's name, email and cell number, leaving its status and token alone.
+ *
+ * @param id the invitation's id
+ * @param details the new name, email and cell number (null for "none")
+ * @returns the updated invite
+ */
+export async function updateTripInviteDetails (id: string, details: TripInviteDetails): Promise<TripInvite> {
+    const {name, email, cellNumber} = details
+    const [row] = await sql`UPDATE trip_invite
+                            SET name        = ${name},
+                                email       = ${email},
+                                cell_number = ${cellNumber}
+                            WHERE id = ${id}
+                            RETURNING id, invited_by, trip_id, name, accepted_profile_id, cell_number, created_at, email, expires_at, status, token`
+    return TripInviteSchema.parse(row)
 }
 
 export async function selectKitchenSinkByTripId(tripId: string): Promise<TripTraveler[]> {

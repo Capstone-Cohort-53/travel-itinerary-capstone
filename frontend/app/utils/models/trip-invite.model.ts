@@ -2,7 +2,7 @@ import {z} from "zod";
 import {MemberSchema} from "~/utils/models/member.model";
 import {ProfileSchema} from "~/utils/models/profile.model";
 import type {SignedInUser} from "~/utils/session.server";
-import {getRequest, postRequest} from "~/utils/request.utils";
+import {deleteRequest, getRequest, postRequest, putRequest} from "~/utils/request.utils";
 import type {Status} from "~/utils/interfaces/Status";
 import {TripSchema} from "~/utils/models/trip.model";
 
@@ -62,6 +62,34 @@ export type TripInviteRequest = {
 
 export async function postTripInvite(tripId: string, body: TripInviteRequest, signedInUser: SignedInUser): Promise<Status> {
     return postRequest(`/trip/${tripId}/invite`, body, signedInUser)
+}
+
+/**
+ * The roster's Edit row: a pending invite's name, email and cell number.
+ * Same rules as the invite form; an empty string means "not provided".
+ */
+export const TripInviteEditFormSchema = z.object({
+    name: z.string().trim().min(1, 'Please enter a name.').max(64, 'Name must be 64 characters or fewer.'),
+    email: z.union([z.literal(''), z.email('Please enter a valid email.').max(255, 'Email is too long.')]),
+    cellNumber: z.string().trim().max(20, 'Cell number must be 20 characters or fewer.'),
+}).refine(
+    (data) => data.email !== '' || data.cellNumber !== '',
+    {message: 'Please provide an email or a cell number.', path: ['email']},
+)
+export type TripInviteEditForm = z.infer<typeof TripInviteEditFormSchema>
+
+/** Fixes a pending invite's name, email or cell number (trip owner only). */
+export async function putTripInvite(tripId: string, inviteId: string, body: TripInviteEditForm, signedInUser: SignedInUser): Promise<Status> {
+    return putRequest(`/trip/${tripId}/invite/${inviteId}`, {
+        name: body.name,
+        email: body.email || null,          // '' means none
+        cellNumber: body.cellNumber || null,
+    }, signedInUser)
+}
+
+/** Removes a traveler: deletes their invite and, if they accepted, their spot on the trip (trip owner only). */
+export async function deleteTripInvite(tripId: string, inviteId: string, signedInUser: SignedInUser): Promise<Status> {
+    return deleteRequest(`/trip/${tripId}/invite/${inviteId}`, signedInUser)
 }
 
 
