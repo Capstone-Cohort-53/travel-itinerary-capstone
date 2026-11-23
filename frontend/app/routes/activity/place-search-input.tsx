@@ -18,9 +18,9 @@ type PlaceSearchInputProps = {
     value: string,
     onChange: (value: string) => void,
     onPick: (place: PlaceSuggestion) => void,
-    /** a pin on this trip, so nearby places come first; null when there isn't one yet */
+    /** a pin on this trip, to tell apart destinations with the same name; null when there isn't one yet */
     near: Coordinates | null,
-    /** the trip's destination, used to find places when there's no pin yet */
+    /** the trip's destination (e.g. "Cancun, MX"): places there are suggested first */
     destination: string | null,
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'>
 

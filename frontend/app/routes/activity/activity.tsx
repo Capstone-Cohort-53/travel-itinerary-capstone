@@ -40,7 +40,7 @@ export async function loader({request, params}: Route.LoaderArgs) {
     // worked out here, on the server, so the page renders the same date in the browser
     const startDate = defaultActivityDate(toDateString(trip.startDate), toDateString(trip.endDate))
 
-    // place suggestions near the trip's other activities come first
+    // a pin on the trip helps the place search tell apart destinations with the same name
     const {activities} = await getActivitiesByTripId(trip.id, signedInUser)
 
     return {trip, startDate, searchNear: firstPin(activities)}
