@@ -4,17 +4,18 @@ import {TableCell, TableRow} from "flowbite-react";
 import type {TripTraveler} from "~/utils/models/trip-invite.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 
-// invite status -> badge colors: green accepted, light orange pending, light red declined
+// invite status -> badge colors (Royal Decree): lilac accepted, peach pending
+// (the team's peach, kept on Travelers & Invites), royal red declined, mist expired
 const statusBadgeClasses: Record<TripTraveler['invite']['status'], string> = {
-    accepted: 'bg-green-100 text-green-800',
-    pending: 'bg-orange-100 text-orange-800',
-    declined: 'bg-red-100 text-red-800',
-    expired: 'bg-gray-100 text-gray-700',
+    accepted: 'bg-lilac text-navy',
+    pending: 'bg-peach text-navy',
+    declined: 'bg-royal-red text-white',
+    expired: 'bg-mist text-navy',
 }
 
 export function InviteStatusBadge({status}: {status: TripTraveler['invite']['status']}) {
     return (
-        <span className={`inline-block rounded-full px-3 py-0.5 text-xs font-semibold capitalize ${statusBadgeClasses[status]}`}>
+        <span className={`inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ${statusBadgeClasses[status]}`}>
             {status}
         </span>
     )
@@ -22,8 +23,13 @@ export function InviteStatusBadge({status}: {status: TripTraveler['invite']['sta
 
 type EditValues = { name: string, email: string, cellNumber: string }
 
-const inputClass = 'w-full min-w-0 rounded-lg border-2 border-[#0B1533] px-2 py-1 text-sm text-[#0B1533]'
-const smallButton = 'rounded-full border-2 border-[#0B1533] px-3 py-1 text-xs font-bold disabled:opacity-50'
+const inputClass = 'block w-full min-w-0 rounded-xl border-[1.5px] border-navy bg-white px-3 py-2 text-sm text-navy placeholder:text-[#6b6f8f] focus:outline-none focus:ring-2 focus:ring-gold'
+// small roster pills: still 44px tall so they are easy to tap on phones
+const smallButton = 'inline-flex min-h-11 items-center justify-center rounded-full border-[1.5px] px-4 text-[11px] font-bold uppercase tracking-[0.12em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-parchment disabled:cursor-not-allowed disabled:opacity-50'
+const smallOutline = `${smallButton} border-navy bg-white text-navy hover:bg-navy/5 focus-visible:ring-gold`
+const smallPeach = `${smallButton} border-navy bg-peach text-navy hover:brightness-105 focus-visible:ring-navy`
+const smallDanger = `${smallButton} border-royal-red bg-white text-royal-red hover:bg-royal-red/5 focus-visible:ring-royal-red`
+const smallDangerSolid = `${smallButton} border-royal-red bg-royal-red text-white hover:brightness-110 focus-visible:ring-royal-red`
 
 /**
  * What one roster row can do for the trip owner:
@@ -76,11 +82,11 @@ function ActionButtons({actions, name}: { actions: RosterActions, name: string }
         return (
             <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={actions.save} disabled={isSending}
-                        className={`${smallButton} bg-[#FFA06B] text-[#0B1533] hover:bg-[#FF8A55]`}>
+                        className={smallPeach}>
                     {isSending ? 'Saving…' : 'Save'}
                 </button>
                 <button type="button" onClick={actions.cancel} disabled={isSending}
-                        className={`${smallButton} bg-white text-[#0B1533] hover:bg-[#F7EEF6]`}>
+                        className={smallOutline}>
                     Cancel
                 </button>
             </div>
@@ -89,13 +95,13 @@ function ActionButtons({actions, name}: { actions: RosterActions, name: string }
     if (mode === 'confirm-remove') {
         return (
             <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-[#0B1533]">Remove {name}?</span>
+                <span className="text-xs font-bold text-royal-red">Remove {name}?</span>
                 <button type="button" onClick={actions.remove} disabled={isSending}
-                        className={`${smallButton} bg-[#FF6B6C] text-[#0B1533] hover:bg-[#FF5254]`}>
+                        className={smallDangerSolid}>
                     {isSending ? 'Removing…' : 'Yes, remove'}
                 </button>
                 <button type="button" onClick={() => setMode('view')} disabled={isSending}
-                        className={`${smallButton} bg-white text-[#0B1533] hover:bg-[#F7EEF6]`}>
+                        className={smallOutline}>
                     Cancel
                 </button>
             </div>
@@ -105,13 +111,13 @@ function ActionButtons({actions, name}: { actions: RosterActions, name: string }
         <div className="flex flex-wrap gap-2">
             {canEdit && (
                 <button type="button" onClick={() => setMode('edit')} aria-label={`Edit ${name}`}
-                        className={`${smallButton} bg-white text-[#0B1533] hover:bg-[#F7EEF6]`}>
+                        className={smallOutline}>
                     Edit
                 </button>
             )}
             {canRemove && (
                 <button type="button" onClick={() => setMode('confirm-remove')} aria-label={`Remove ${name}`}
-                        className={`${smallButton} border-[#FF6B6C] bg-white text-[#D93F3F] hover:bg-[#FFF0F1]`}>
+                        className={smallDanger}>
                     Remove
                 </button>
             )}
@@ -129,7 +135,8 @@ export function TravelerRow({traveler, isOwner}: { traveler: TripTraveler, isOwn
     const isEditing = actions.mode === 'edit'
     return (
         <TableRow>
-            <TableCell className="font-bold text-[#0B1533]">
+            {/* the name in Playfair, like the design's roster */}
+            <TableCell className="font-display text-base font-semibold text-navy">
                 {isEditing
                     ? <input aria-label="Name" className={inputClass} value={actions.values.name}
                              onChange={(event) => actions.setValue('name', event.target.value)}/>
@@ -148,7 +155,7 @@ export function TravelerRow({traveler, isOwner}: { traveler: TripTraveler, isOwn
                 ) : (
                     <>
                         {email && <p>{email}</p>}
-                        {phone && <p className="whitespace-nowrap text-xs text-[#3A4187]">{phone}</p>}
+                        {phone && <p className="whitespace-nowrap text-xs text-bay">{phone}</p>}
                     </>
                 )}
             </TableCell>
@@ -159,7 +166,7 @@ export function TravelerRow({traveler, isOwner}: { traveler: TripTraveler, isOwn
             {isOwner && (
                 <TableCell>
                     <ActionButtons actions={actions} name={name}/>
-                    {actions.error && <p role="alert" className="mt-1 text-xs text-red-700">{actions.error}</p>}
+                    {actions.error && <p role="alert" className="mt-1 text-xs font-medium text-royal-red">{actions.error}</p>}
                 </TableCell>
             )}
         </TableRow>
@@ -175,7 +182,7 @@ export function TravelerCard({traveler, isOwner}: { traveler: TripTraveler, isOw
     const adults = member?.adults ?? 0
     const children = member?.children ?? 0
     return (
-        <li className="border-b border-[#F7EEF6] px-4 py-3 last:border-b-0">
+        <li className="border-b border-mist px-4 py-4 last:border-b-0">
             {actions.mode === 'edit' ? (
                 // editing on a phone: the three fields stacked
                 <div className="flex flex-col gap-2">
@@ -189,21 +196,21 @@ export function TravelerCard({traveler, isOwner}: { traveler: TripTraveler, isOw
             ) : (
                 <>
                     <div className="flex items-start justify-between gap-2">
-                        <p className="min-w-0 break-words font-bold text-[#0B1533]">{name}</p>
+                        <p className="min-w-0 break-words font-display text-lg font-semibold text-navy">{name}</p>
                         <InviteStatusBadge status={invite.status}/>
                     </div>
-                    {contact && <p className="break-all text-xs text-[#3A4187]">{contact}</p>}
-                    <p className="text-xs text-[#0B1533]">
+                    {contact && <p className="mt-0.5 break-all text-xs text-bay">{contact}</p>}
+                    <p className="mt-0.5 text-xs text-navy">
                         RSVP: {member?.going ?? '—'} · {adults} {adults === 1 ? 'adult' : 'adults'} · {children} {children === 1 ? 'child' : 'children'}
                     </p>
                 </>
             )}
             {(actions.canEdit || actions.canRemove) && (
-                <div className="mt-2">
+                <div className="mt-3">
                     <ActionButtons actions={actions} name={name}/>
                 </div>
             )}
-            {actions.error && <p role="alert" className="mt-1 text-xs text-red-700">{actions.error}</p>}
+            {actions.error && <p role="alert" className="mt-1 text-xs font-medium text-royal-red">{actions.error}</p>}
         </li>
     )
 }

@@ -3,6 +3,11 @@ import {endSession, requireSignedInUser} from "~/utils/session.server";
 import {getTrip, putTrip, toTripForm} from "~/utils/models/trip.model";
 import {TripFormPage} from "~/routes/create-trip/trip-form";
 import {handleTripForm} from "~/routes/create-trip/trip-form.server";
+import {emphasis} from "~/components/royal";
+
+export function meta({}: Route.MetaArgs) {
+    return [{title: "Edit Trip | TripsQueen"}];
+}
 
 /**
  * Only the trip's owner may edit it (the API enforces the same rule). The saved
@@ -45,9 +50,11 @@ export default function EditTrip({loaderData}: Route.ComponentProps) {
     const {tripId, values} = loaderData;
     return (
         <TripFormPage
-            heading="Edit Trip"
+            eyebrowText="Amend the decree"
+            heading={<>Edit <em className={emphasis}>this trip</em></>}
+            intro="Change the name, place, dates or description, then seal it to save."
             defaultValues={values}
-            submitLabel="Save Changes"
+            submitLabel={<>Seal it<br/>Save<br/>changes</>}
             backTo={`/trip-itinerary/${tripId}`}
             backLabel="Back to trip"
         />

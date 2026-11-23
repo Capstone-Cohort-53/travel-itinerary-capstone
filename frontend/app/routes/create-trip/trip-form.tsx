@@ -5,12 +5,15 @@ import {type NewTrip, NewTripSchema} from "~/utils/models/trip.model";
 import {FieldError} from "~/components/FieldError";
 import {StatusMessage} from "~/components/StatusMessage";
 import type {handleTripForm} from "~/routes/create-trip/trip-form.server";
+import {eyebrow, GemDivider, headline, input, label, Parchment, RoyalPage, WaxSealButton} from "~/components/royal";
 
 // The trip form shared by Create Trip and Edit Trip: the same fields, checks and look on both pages.
 // This file runs in the browser; the action's half (handleTripForm) is in trip-form.server.ts.
 
-const labelClass = "block text-sm font-bold text-[#031136] mb-2";
-const inputClass = "w-full px-4 py-2.5 rounded-xl border-2 border-[#031136] bg-white text-sm text-[#031136] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5903] focus:ring-offset-1";
+// TripsQueen form styles (components/royal.tsx): Blue Bay capitals for labels, navy-outlined white boxes with a gold focus ring.
+// 16px text keeps phones from zooming in on focus.
+const labelClass = label;
+const inputClass = `${input} text-base`;
 
 export const emptyTrip: NewTrip = {title: "", destination: "", startDate: "", endDate: "", description: ""};
 
@@ -21,9 +24,15 @@ export const tripFormOpts = formOptions({
 });
 
 type TripFormPageProps = {
-    heading: string;
+    // the small spaced-out capitals above the headline, e.g. "A new decree"
+    eyebrowText: string;
+    // the Playfair headline; wrap a word or two in <em className={emphasis}>
+    heading: ReactNode;
+    // one short line under the headline
+    intro?: string;
     defaultValues: NewTrip;
-    submitLabel: string;
+    // the words inside the wax seal: keep them short, e.g. <>Seal it<br/>Save<br/>trip</>
+    submitLabel: ReactNode;
     // where "← back" and Cancel go
     backTo: string;
     backLabel: string;
@@ -31,7 +40,7 @@ type TripFormPageProps = {
     aside?: ReactNode;
 };
 
-export function TripFormPage({heading, defaultValues, submitLabel, backTo, backLabel, aside}: TripFormPageProps) {
+export function TripFormPage({eyebrowText, heading, intro, defaultValues, submitLabel, backTo, backLabel, aside}: TripFormPageProps) {
     //STEP 9: create the form and merge in the action's result
     const actionData = useActionData<typeof handleTripForm>();
     // the action returns one of two shapes: tell them apart by a key only one has
@@ -55,16 +64,31 @@ export function TripFormPage({heading, defaultValues, submitLabel, backTo, backL
     const visibleResponse = editedSince === actionData ? undefined : response;
 
     return (
-        <div className="bg-[#FBF3FA] min-h-screen py-10 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
-                <Link to={backTo} className="text-sm font-bold text-[#434A90] hover:underline">← {backLabel}</Link>
-                <h1 className="mt-2 mb-8 text-4xl sm:text-5xl font-extrabold tracking-tight break-words text-[#031136]">{heading}</h1>
+        <RoyalPage width={aside ? "max-w-5xl" : "max-w-3xl"}>
+            <Parchment>
+                <Link
+                    to={backTo}
+                    className="inline-flex min-h-11 items-center rounded-md text-sm font-bold text-bay hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
+                >
+                    ← {backLabel}
+                </Link>
 
-                <div className={`grid gap-6 lg:items-start ${aside ? "lg:grid-cols-[1fr_16rem]" : ""}`}>
+                {/* the decree's heading, centered like the design */}
+                <header className="mt-2 flex flex-col items-center gap-3 text-center">
+                    <p className={eyebrow}>{eyebrowText}</p>
+                    <h1 className={`${headline} break-words text-4xl sm:text-5xl lg:text-[57px]`}>{heading}</h1>
+                    {intro && <p className="max-w-xl text-base text-bay">{intro}</p>}
+                </header>
+
+                <div className="my-8">
+                    <GemDivider color="pink"/>
+                </div>
+
+                <div className={`grid gap-8 lg:items-start ${aside ? "lg:grid-cols-[1fr_15rem]" : ""}`}>
                 <Form
                     method="post"
                     noValidate
-                    className="bg-white rounded-3xl border-2 border-[#031136] p-6 sm:p-8 space-y-5"
+                    className="min-w-0 space-y-5"
                     onChange={() => setEditedSince(actionData)}
                     onSubmit={(event) => {
                         form.handleSubmit();
@@ -74,7 +98,7 @@ export function TripFormPage({heading, defaultValues, submitLabel, backTo, backL
                     }}
                 >
                     {serverErrors.map((error) => (
-                        <p key={String(error)} role="alert" className="text-sm text-red-600">{String(error)}</p>
+                        <p key={String(error)} role="alert" className="text-sm font-medium text-royal-red">{String(error)}</p>
                     ))}
 
                     {/*STEP 10: one form.Field per input*/}
@@ -120,7 +144,7 @@ export function TripFormPage({heading, defaultValues, submitLabel, backTo, backL
                         )}
                     </form.Field>
 
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-4">
                         <form.Field name="startDate">
                             {(field) => (
                                 <div>
@@ -175,32 +199,32 @@ export function TripFormPage({heading, defaultValues, submitLabel, backTo, backL
                                     placeholder="What is this trip about?"
                                     maxLength={360}
                                     rows={6}
-                                    className={`${inputClass} text-lg! leading-relaxed`}
+                                    className={`${inputClass} leading-relaxed`}
                                     aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                                     aria-describedby="description-error"
                                 />
-                                <p className="mt-1 text-xs text-gray-500">{field.state.value.length}/360 characters</p>
+                                <p className="mt-1 text-xs text-bay">{field.state.value.length}/360 characters</p>
                                 <FieldError id="description-error" meta={field.state.meta}/>
                             </div>
                         )}
                     </form.Field>
 
-                    <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-2 sm:pt-4">
+                    {/* an italic "cancel" link beside the gold wax seal that saves the trip */}
+                    <div className="flex flex-wrap items-center justify-center gap-6 pt-2 sm:justify-end sm:gap-8">
                         <Link
                             to={backTo}
-                            className="w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] bg-white text-center text-[#031136] font-bold hover:bg-[#031136]/5 transition text-sm"
+                            className="inline-flex min-h-11 items-center rounded-md px-2 font-display text-lg italic text-navy underline decoration-[1.5px] underline-offset-4 hover:text-bay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold"
                         >
-                            Cancel
+                            cancel
                         </Link>
                         <form.Subscribe selector={(formState) => formState.canSubmit}>
                             {(canSubmit) => (
-                                <button
+                                <WaxSealButton
                                     type="submit"
                                     disabled={!canSubmit || isSaving}
-                                    className="w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] bg-[#FF5903] text-[#031136] font-bold hover:bg-[#FF5903]/90 transition text-sm disabled:opacity-50"
                                 >
-                                    {isSaving ? "Saving..." : submitLabel}
-                                </button>
+                                    {isSaving ? <>Sealing…</> : submitLabel}
+                                </WaxSealButton>
                             )}
                         </form.Subscribe>
                     </div>
@@ -210,7 +234,7 @@ export function TripFormPage({heading, defaultValues, submitLabel, backTo, backL
 
                 {aside && <aside className="space-y-4">{aside}</aside>}
                 </div>
-            </div>
-        </div>
+            </Parchment>
+        </RoyalPage>
     );
 }

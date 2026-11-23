@@ -14,6 +14,7 @@ import {commitSession, endSession, getSession, requireSignedInUser} from "~/util
 import {type EditProfile, EditProfileSchema, getProfileMe, type Profile, putProfile} from "~/utils/models/profile.model";
 import {FieldError} from "~/components/FieldError";
 import {StatusMessage} from "~/components/StatusMessage";
+import {Crown, Gem, GemDivider, Parchment, RoyalPage, card, emphasis, eyebrow, goldButton, headline, input, label, outlineButton} from "~/components/royal";
 
 //STEP 4: the loader. Signed-in users only, and it hands the form the current values
 export async function loader({request}: Route.LoaderArgs) {
@@ -116,79 +117,79 @@ export async function action({request}: Route.ActionArgs) {
     }
 }
 
-// same look as the create trip form's inputs
-const inputClass = "w-full px-4 py-2.5 rounded-xl border-2 border-[#031136] bg-white text-sm text-[#031136] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5903] focus:ring-offset-1";
-const labelClass = "mb-1 block text-sm font-bold text-[#031136]";
+// the Royal Decree form look (shared from royal.tsx); labels stay plain words
+const inputClass = input;
+const labelClass = label;
 
 export default function ProfilePage(props: Route.ComponentProps) {
     const {profile, cloudinary, message} = props.loaderData;
 
     return (
-        <main className="min-h-screen bg-[#FBF3FA] px-4 py-10 sm:px-6 lg:px-8">
-            <div className="mx-auto max-w-5xl space-y-6">
+        <RoyalPage width="max-w-5xl">
+            <Parchment>
                 {profile === null
-                    ? <p role="alert" className="rounded-2xl border-2 border-[#031136] bg-white p-5 text-red-700">
+                    ? <p role="alert" className="rounded-xl border-[1.5px] border-royal-red bg-royal-red/5 p-5 font-medium text-royal-red">
                         {message ?? "Could not load your profile."}
                     </p>
-                    : <>
+                    : <div className="space-y-10">
                         <ProfileHero profile={profile}/>
+                        <GemDivider/>
                         <ProfileDetails profile={profile}/>
                         <EditProfileForm profile={profile} cloudinary={cloudinary}/>
-                    </>
+                    </div>
                 }
-            </div>
-        </main>
+            </Parchment>
+        </RoyalPage>
     );
 }
 
-// big white card: greeting and heading on the left, the profile photo on the right
+// greeting and headline on the left, the profile photo in a gold frame on the right
 function ProfileHero({profile}: { profile: Profile }) {
     const firstName = profile.name.split(" ")[0];
     return (
-        <section className="grid items-center gap-8 rounded-3xl border-2 border-[#031136] bg-white p-6 sm:p-10 md:grid-cols-[1fr_auto]">
-            <div>
-                <p className="inline-block rounded-full bg-[#C9A3CB] px-3 py-1 text-xs font-bold text-[#031136]">
+        <section className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
+            <div className="text-center md:text-left">
+                <p className={`${eyebrow} break-words`}>
                     Welcome back, {firstName}!
                 </p>
-                <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-[#031136] sm:text-5xl">
-                    Your travel <span className="text-[#FF5903]">profile</span>
+                <h1 className={`${headline} mt-3 text-4xl sm:text-5xl lg:text-6xl`}>
+                    Your royal <em className={emphasis}>profile</em>
                 </h1>
-                <p className="mt-3 max-w-md text-[#434A90]">
-                    This is how your group sees you on every trip. Keep your name, number and photo up to date.
+                <p className="mx-auto mt-4 max-w-md text-bay md:mx-0">
+                    This is how your court sees you on every trip. Keep your name, number and photo up to date.
                 </p>
-                <a href="#edit-profile"
-                   className="mt-6 inline-block rounded-full border-2 border-[#031136] bg-[#FF5903] px-5 py-2.5 text-sm font-bold text-[#031136] hover:bg-[#FF5903]/90">
+                <a href="#edit-profile" className={`${outlineButton} mt-6`}>
                     Edit my profile
                 </a>
             </div>
 
-            {/* photo framed like the mockup's picture cards, with an offset shadow */}
-            <img src={profile.image} alt={`${profile.name}'s profile photo`}
-                 className="mx-auto h-40 w-40 rounded-2xl border-2 border-[#031136] bg-[#C9A3CB] object-cover shadow-[8px_8px_0_#FF6B6C] sm:h-48 sm:w-48"/>
+            {/* photo in a gold frame with a crown on top */}
+            <div className="relative mx-auto w-fit pt-5">
+                <Crown size={40} className="absolute left-1/2 top-0 z-10 -translate-x-1/2"/>
+                <img src={profile.image} alt={`${profile.name}'s profile photo`}
+                     className="h-40 w-40 rounded-2xl border-4 border-gold bg-lilac object-cover outline outline-[1.5px] outline-offset-2 outline-navy sm:h-48 sm:w-48"/>
+            </div>
         </section>
     );
 }
 
-// three cards with colored stripes on top, like the mockup's numbered step cards
+// three plain cards, each with a gem and a small Blue Bay label
 function ProfileDetails({profile}: { profile: Profile }) {
     const details = [
-        {label: "Email", value: profile.email, color: "text-[#FF5903]", stripes: ["bg-[#FF5903]", "bg-[#FF6B6C]"]},
-        {label: "Cell number", value: profile.cellNumber ?? "No cell number yet", color: "text-[#FF6B6C]", stripes: ["bg-[#FF6B6C]", "bg-[#C9A3CB]"]},
-        {label: "Member since", value: new Date(profile.createdAt).toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"}), color: "text-[#434A90]", stripes: ["bg-[#C9A3CB]", "bg-[#434A90]"]},
+        {label: "Email", value: profile.email, gem: "pink" as const},
+        {label: "Cell number", value: profile.cellNumber ?? "No cell number yet", gem: "lilac" as const},
+        {label: "Member since", value: new Date(profile.createdAt).toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"}), gem: "sapphire" as const},
     ];
 
     return (
-        <section className="grid gap-6 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-3 md:gap-6">
             {details.map((detail) => (
-                <article key={detail.label} className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-white">
-                    <div aria-hidden="true">
-                        <div className={`h-2 ${detail.stripes[0]}`}/>
-                        <div className={`h-1.5 ${detail.stripes[1]}`}/>
+                <article key={detail.label} className={`${card} bg-white`}>
+                    <div className="flex items-center gap-2">
+                        <Gem color={detail.gem} size={18}/>
+                        <h2 className={eyebrow}>{detail.label}</h2>
                     </div>
-                    <div className="p-5">
-                        <h2 className={`text-sm font-bold uppercase tracking-wide ${detail.color}`}>{detail.label}</h2>
-                        <p className="mt-1 break-words text-lg font-extrabold text-[#031136]">{detail.value}</p>
-                    </div>
+                    <p className="mt-2 break-words font-display text-xl font-semibold text-navy">{detail.value}</p>
                 </article>
             ))}
         </section>
@@ -222,14 +223,10 @@ function EditProfileForm({profile, cloudinary}: { profile: Profile; cloudinary: 
     const [isUploading, setIsUploading] = useState(false);
 
     return (
-        <section id="edit-profile" className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-white">
-            <div aria-hidden="true">
-                <div className="h-2 bg-[#FF5903]"/>
-                <div className="h-1.5 bg-[#FF6B6C]"/>
-            </div>
-            <div className="p-6 sm:p-8">
-            <h2 className="text-2xl font-extrabold tracking-tight text-[#031136]">Edit profile</h2>
-            <p className="mt-1 text-sm text-[#434A90]">Changes show up for everyone on your trips.</p>
+        <section id="edit-profile" className={`${card} bg-white sm:p-8`}>
+            <p className={eyebrow}>Royal records</p>
+            <h2 className="mt-1 font-display text-2xl font-bold italic text-navy sm:text-3xl">Edit profile</h2>
+            <p className="mt-1 text-sm text-bay">Changes show up for everyone on your trips.</p>
 
             <Form
                 method="post"
@@ -244,7 +241,7 @@ function EditProfileForm({profile, cloudinary}: { profile: Profile; cloudinary: 
                 }}
             >
                 {serverErrors.map((error) => (
-                    <p key={String(error)} role="alert" className="text-sm text-red-600">{String(error)}</p>
+                    <p key={String(error)} role="alert" className="text-sm font-medium text-royal-red">{String(error)}</p>
                 ))}
 
                 {/*STEP 10: one form.Field per input*/}
@@ -314,7 +311,7 @@ function EditProfileForm({profile, cloudinary}: { profile: Profile; cloudinary: 
                 <form.Subscribe selector={(formState) => formState.canSubmit}>
                     {(canSubmit) => (
                         <button type="submit" disabled={!canSubmit || isSaving || isUploading}
-                                className="self-start rounded-full border-2 border-[#031136] bg-[#FF5903] px-6 py-2.5 text-sm font-bold text-[#031136] hover:bg-[#FF5903]/90 disabled:cursor-not-allowed disabled:opacity-50">
+                                className={`${goldButton} w-full sm:w-auto sm:self-start`}>
                             {isSaving ? "Saving..." : "Save changes"}
                         </button>
                     )}
@@ -322,7 +319,6 @@ function EditProfileForm({profile, cloudinary}: { profile: Profile; cloudinary: 
 
                 <StatusMessage actionData={visibleResponse}/>
             </Form>
-            </div>
         </section>
     );
 }
@@ -373,13 +369,14 @@ function PhotoPicker({cloudinary, name, value, onUploaded, onUploadingChange}: {
     return (
         <div>
             <span className={labelClass}>Profile photo</span>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
                 <img src={value} alt="Your profile photo"
-                     className="h-20 w-20 rounded-2xl border-2 border-[#031136] bg-[#C9A3CB] object-cover"/>
+                     className="h-20 w-20 rounded-2xl border-[3px] border-gold bg-lilac object-cover"/>
 
-                {/* the real file input is hidden; its label is styled as the button */}
+                {/* the real file input is hidden; its label is styled as the button.
+                    the gold focus ring shows on the label when the hidden input has keyboard focus */}
                 <label htmlFor="photo"
-                       className={`cursor-pointer rounded-full border-2 border-[#031136] px-5 py-2 text-sm font-bold text-[#031136] hover:bg-[#FBF3FA] ${isUploading ? "pointer-events-none opacity-50" : ""}`}>
+                       className={`${outlineButton} cursor-pointer has-[+input:focus-visible]:ring-2 has-[+input:focus-visible]:ring-gold ${isUploading ? "pointer-events-none opacity-50" : ""}`}>
                     {isUploading ? "Uploading..." : "Choose a photo"}
                 </label>
                 <input id="photo" type="file" accept="image/*" className="sr-only"
@@ -389,8 +386,8 @@ function PhotoPicker({cloudinary, name, value, onUploaded, onUploadingChange}: {
             {/* what the form actually submits: the uploaded photo's link */}
             <input type="hidden" name={name} value={value}/>
 
-            {error && <p id="photo-error" role="alert" className="mt-1 text-sm text-red-600">{error}</p>}
-            <p className="mt-1 text-xs text-gray-500">Pick a photo, then press Save changes.</p>
+            {error && <p id="photo-error" role="alert" className="mt-1 text-sm font-medium text-royal-red">{error}</p>}
+            <p className="mt-1 text-xs text-bay">Pick a photo, then press Save changes.</p>
         </div>
     );
 }

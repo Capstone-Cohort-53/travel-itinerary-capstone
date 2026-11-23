@@ -17,6 +17,7 @@ import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
 import {geocodeAddress} from "~/utils/geocode.server";
 import {ActivityFormPage, isDuringTrip} from "~/routes/activity/activity-form";
+import {dangerButton, emphasis} from "~/components/royal";
 
 
 /**
@@ -97,9 +98,10 @@ export default function EditActivity({loaderData}: Route.ComponentProps) {
         <ActivityFormPage
             trip={trip}
             defaultValues={values}
-            heading="Edit Activity"
+            eyebrowText="Amend the decree"
+            heading={<>Edit the <em className={emphasis}>activity</em></>}
             intro={`Update “${values.name}” on your shared trip itinerary.`}
-            submitLabel="Save Changes"
+            submitLabel={<>Seal the<br/>changes</>}
             searchNear={searchNear}
             footer={<DeleteActivityButton activityName={values.name}/>}
         />
@@ -113,10 +115,10 @@ function DeleteActivityButton({activityName}: { activityName: string }) {
     const isDeleting = fetcher.state !== 'idle'
 
     return (
-        <section className="flex flex-col gap-3 rounded-3xl border-2 border-dashed border-[#031136]/40 p-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm text-[#031136]">
-                <p className="font-bold">Delete this activity</p>
-                <p>It's removed from the itinerary for everyone. This can't be undone.</p>
+        <section className="flex flex-col gap-4 rounded-2xl border-[1.5px] border-dashed border-royal-red/60 p-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:p-6">
+            <div className="text-sm text-navy">
+                <p className="font-display text-xl font-bold italic">Strike it from the decree</p>
+                <p className="mt-1">It's removed from the itinerary for everyone. This can't be undone.</p>
             </div>
             <fetcher.Form
                 method="post"
@@ -130,7 +132,7 @@ function DeleteActivityButton({activityName}: { activityName: string }) {
                 <button
                     type="submit"
                     disabled={isDeleting}
-                    className="w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] bg-[#FF6B6C] text-[#031136] font-bold text-sm hover:bg-[#FF6B6C]/90 transition disabled:opacity-50"
+                    className={`${dangerButton} min-h-11 w-full sm:w-auto`}
                 >
                     {isDeleting ? 'Deleting…' : 'Delete Activity'}
                 </button>

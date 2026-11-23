@@ -1,6 +1,7 @@
 import {useEffect, useId, useState} from "react";
 import {findTripIdeas, type IdeaCategory, type TripIdea, type TripIdeas} from "~/utils/trip-ideas";
 import type {SearchArea} from "~/utils/place-search";
+import {Gem} from "~/components/royal";
 
 /**
  * "Need ideas?" on the Add Activity page: things to see, do, eat and drink at
@@ -11,6 +12,9 @@ import type {SearchArea} from "~/utils/place-search";
  * Loads in the browser after the page shows, so the form never waits for it.
  * When the destination has no guide (or Wikivoyage can't be reached), the box
  * doesn't appear at all.
+ *
+ * Royal Decree look: a lilac-tinted panel on the parchment, a gold pill for the
+ * chosen tab and parchment idea cards.
  */
 
 const TABS: { category: IdeaCategory, label: string, emoji: string }[] = [
@@ -59,18 +63,19 @@ export function NeedIdeas({near, destination, onPick}: NeedIdeasProps) {
 
     return (
         <section aria-labelledby={`${id}-title`}
-                 className="rounded-3xl border-2 border-[#031136] bg-[#031136] p-6 sm:p-7 text-white shadow-[6px_6px_0_#FF6B6C]">
+                 className="rounded-2xl border-[1.5px] border-navy bg-[#f6eff7] p-5 text-navy shadow-[5px_5px_0_var(--color-lilac)] sm:p-6">
             <div className="flex items-start justify-between gap-4">
-                <div>
-                    <h2 id={`${id}-title`} className="font-display text-2xl font-semibold">
-                        Need ideas? <span aria-hidden="true">✨</span>
+                <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-royal-red">Counsel for the court</p>
+                    <h2 id={`${id}-title`} className="mt-1 flex items-center gap-2 font-display text-2xl font-bold italic">
+                        Need ideas? <Gem color="pink" size={20}/>
                     </h2>
-                    <p className="mt-1 text-sm text-white/80">
+                    <p className="mt-1 text-sm text-bay">
                         Popular things to do in {destination?.trim() || 'this area'}. Pick one to fill in the form, then make it your own.
                     </p>
                 </div>
                 <button type="button" onClick={() => setIsOpen(!isOpen)} aria-expanded={isOpen} aria-controls={`${id}-body`}
-                        className="shrink-0 rounded-full border-2 border-white/60 px-3 py-1 text-xs font-bold hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5903]">
+                        className="inline-flex min-h-11 shrink-0 items-center rounded-full border-[1.5px] border-navy px-4 text-xs font-bold uppercase tracking-[0.14em] text-navy hover:bg-navy/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-parchment">
                     {isOpen ? 'Hide' : 'Show'}
                 </button>
             </div>
@@ -78,7 +83,7 @@ export function NeedIdeas({near, destination, onPick}: NeedIdeasProps) {
             {isOpen && (
                 <div id={`${id}-body`} className="mt-4">
                     {result === 'loading' ? (
-                        <p className="text-sm text-white/70" role="status">Finding ideas…</p>
+                        <p className="text-sm italic text-bay" role="status">Finding ideas…</p>
                     ) : (
                         <>
                             {/* the four tabs; arrow keys move between them, as a tab list should */}
@@ -103,7 +108,7 @@ export function NeedIdeas({near, destination, onPick}: NeedIdeasProps) {
                                                     setTab(category)
                                                     setShowAll(false)
                                                 }}
-                                                className={`rounded-full px-4 py-1.5 text-sm font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5903] focus-visible:ring-offset-2 focus-visible:ring-offset-[#031136] ${selected ? 'bg-[#FF5903] text-[#031136]' : 'bg-white/10 text-white hover:bg-white/20'}`}>
+                                                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border-[1.5px] border-navy px-4 text-sm font-bold text-navy transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2 focus-visible:ring-offset-parchment ${selected ? 'bg-gold shadow-[0_3px_0_var(--color-gold-dark)]' : 'bg-parchment hover:bg-white'}`}>
                                             <span aria-hidden="true">{emoji}</span> {label}
                                         </button>
                                     )
@@ -113,21 +118,21 @@ export function NeedIdeas({near, destination, onPick}: NeedIdeasProps) {
                             <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-tab-${tab}`} className="mt-4">
                                 <ul className="grid gap-3 sm:grid-cols-2">
                                     {shown.map((idea) => (
-                                        <li key={idea.id}>
+                                        <li key={idea.id} className="min-w-0">
                                             <button type="button"
                                                     onClick={() => {
                                                         setPicked(idea.id)
                                                         onPick(idea)
                                                     }}
-                                                    className="group flex h-full w-full flex-col rounded-2xl bg-white px-4 py-3 text-left text-[#031136] transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_#C9A3CB] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5903]">
+                                                    className="group flex h-full min-h-11 w-full flex-col rounded-xl border-[1.5px] border-navy bg-parchment px-4 py-3 text-left text-navy transition hover:-translate-y-0.5 hover:shadow-[4px_4px_0_var(--color-lilac)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-parchment">
                                                 <span className="flex items-start justify-between gap-2">
-                                                    <span className="font-bold leading-snug">{idea.name}</span>
-                                                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${picked === idea.id ? 'bg-[#434A90] text-white' : 'bg-[#FBF3FA] text-[#434A90] group-hover:bg-[#FF5903] group-hover:text-[#031136]'}`}>
+                                                    <span className="min-w-0 break-words font-bold leading-snug">{idea.name}</span>
+                                                    <span className={`shrink-0 rounded-full border border-navy px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-navy ${picked === idea.id ? 'bg-lilac' : 'bg-transparent group-hover:bg-gold'}`}>
                                                         {picked === idea.id ? 'Added ✓' : '+ Use'}
                                                     </span>
                                                 </span>
                                                 {idea.description && (
-                                                    <span className="mt-1 line-clamp-2 text-xs text-[#434A90]">{idea.description}</span>
+                                                    <span className="mt-1 line-clamp-2 text-xs text-bay">{idea.description}</span>
                                                 )}
                                             </button>
                                         </li>
@@ -136,7 +141,7 @@ export function NeedIdeas({near, destination, onPick}: NeedIdeasProps) {
 
                                 {ideas.length > FIRST_SHOWN && (
                                     <button type="button" onClick={() => setShowAll(!showAll)}
-                                            className="mt-3 text-sm font-bold text-[#FF6B6C] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5903]">
+                                            className="mt-2 inline-flex min-h-11 items-center rounded-md px-1 text-sm font-bold text-royal-red underline decoration-[1.5px] underline-offset-4 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
                                         {showAll ? 'Show fewer' : `Show all ${ideas.length}`}
                                     </button>
                                 )}
@@ -148,10 +153,10 @@ export function NeedIdeas({near, destination, onPick}: NeedIdeasProps) {
                             </p>
 
                             {/* Wikivoyage's text is CC BY-SA: credit it and link to the guide */}
-                            <p className="mt-4 text-[11px] text-white/60">
-                                Ideas from the <a href={result.pageUrl} target="_blank" rel="noreferrer" className="underline hover:text-white">
+                            <p className="mt-4 border-t border-lilac pt-3 text-xs text-bay">
+                                Ideas from the <a href={result.pageUrl} target="_blank" rel="noreferrer" className="underline hover:text-navy">
                                 Wikivoyage guide to {result.pageTitle}<span className="sr-only"> (opens in a new tab)</span></a>, shared under{' '}
-                                <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer" className="underline hover:text-white">
+                                <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer" className="underline hover:text-navy">
                                     CC BY-SA<span className="sr-only"> (opens in a new tab)</span></a>.
                             </p>
                         </>

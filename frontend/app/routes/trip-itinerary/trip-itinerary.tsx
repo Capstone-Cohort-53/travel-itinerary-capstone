@@ -5,6 +5,11 @@ import {endSession, requireSignedInUser} from "~/utils/session.server";
 import {getTrip, type Trip} from "~/utils/models/trip.model";
 import {type Activity, getActivitiesByTripId} from "~/utils/models/activity.model";
 import {googleMapsUrl} from "~/utils/google-maps";
+import {chip, emphasis, eyebrow, Gem, goldButton, headline, outlineButton, Parchment, RoyalPage} from "~/components/royal";
+
+export function meta({}: Route.MetaArgs) {
+    return [{title: "Trip Itinerary | TripsQueen"}];
+}
 
 // loads one trip and everything planned for it
 export async function loader({request, params}: Route.LoaderArgs) {
@@ -98,17 +103,31 @@ function groupByDay(activities: Activity[]): Day[] {
     return days;
 }
 
+/** The trip's name as a Playfair headline, its last word in italic watermelon pink like the design ("Weekend in *Santa Fe*"). */
+function TripTitle({title}: { title: string }) {
+    const words = title.trim().split(/\s+/);
+    const last = words.pop() ?? "";
+    return (
+        <h1 className={`${headline} mt-2 break-words text-4xl sm:text-5xl`}>
+            {words.length > 0 && `${words.join(" ")} `}<em className={emphasis}>{last}</em>
+        </h1>
+    );
+}
+
+const backLinkClass = "inline-flex min-h-11 items-center rounded-md text-sm font-bold text-bay hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
+
 export default function TripItinerary(props: Route.ComponentProps) {
     const {trip, activities, isOwner, message, activitiesMessage} = props.loaderData;
 
     if (trip === null) {
         return (
-            <main className="min-h-screen bg-[#FBF3FA] px-4 py-10">
-                <div className="max-w-5xl mx-auto">
-                    <Link to="/my-trips" className="text-sm font-bold text-[#434A90] hover:underline">← My Trips</Link>
-                    <p role="alert" className="mt-4 rounded-2xl border-2 border-[#031136] bg-white p-5 text-red-700">{message}</p>
-                </div>
-            </main>
+            <RoyalPage width="max-w-3xl">
+                <Parchment compact>
+                    <Link to="/my-trips" className={backLinkClass}>← My Trips</Link>
+                    <p className={`${eyebrow} mt-2`}>The royal itinerary</p>
+                    <p role="alert" className="mt-4 rounded-2xl border-[1.5px] border-royal-red bg-royal-red/5 p-5 font-medium text-royal-red">{message}</p>
+                </Parchment>
+            </RoyalPage>
         );
     }
 
@@ -116,39 +135,31 @@ export default function TripItinerary(props: Route.ComponentProps) {
     const length = tripLength(trip);
 
     return (
-        <main className="min-h-screen bg-[#FBF3FA] px-4 py-10 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
+        <RoyalPage>
+            <Parchment>
                 {/* header: back link, title and the trip's details, with the actions on the right */}
                 <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                        <Link to="/my-trips" className="text-sm font-bold text-[#434A90] hover:underline">← My Trips</Link>
-                        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight break-words text-[#031136]">{trip.title}</h1>
-                        <p className="mt-1 text-sm text-[#434A90]">
+                    <div className="min-w-0">
+                        <Link to="/my-trips" className={backLinkClass}>← My Trips</Link>
+                        <p className={`${eyebrow} mt-2`}>The royal itinerary</p>
+                        <TripTitle title={trip.title}/>
+                        <p className="mt-2 text-[15px] text-bay">
                             {trip.destination} · {formatTripDate(trip.startDate)} – {formatTripDate(trip.endDate)} · {length} {length === 1 ? "day" : "days"}
                         </p>
                     </div>
 
-                    {/* phones: Edit trip across the top (organizer only), then two equal buttons; wider screens: side by side on the right */}
-                    <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto">
+                    {/* phones: the buttons stacked full width (Edit trip and Add activity for the organizer only); wider screens: side by side on the right */}
+                    <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap">
                         {isOwner && (
-                            <Link
-                                to={`/trip-itinerary/${trip.id}/edit`}
-                                className="col-span-2 px-4 py-2.5 rounded-full border-2 border-[#031136] bg-white text-center text-sm font-bold text-[#031136] hover:bg-[#031136]/5"
-                            >
-                                ✏️ Edit trip
+                            <Link to={`/trip-itinerary/${trip.id}/edit`} className={outlineButton}>
+                                Edit trip
                             </Link>
                         )}
-                        <Link
-                            to={`/travel-itinerary/${trip.id}`}
-                            className={`${isOwner ? "" : "col-span-2"} px-4 py-2.5 rounded-full border-2 border-[#031136] bg-white text-center text-sm font-bold text-[#031136] hover:bg-[#031136]/5`}
-                        >
-                            👥 Travelers &amp; Invites
+                        <Link to={`/travel-itinerary/${trip.id}`} className={outlineButton}>
+                            Travelers &amp; Invites
                         </Link>
                         {isOwner && (
-                            <Link
-                                to={`/travel-itinerary/${trip.id}/activity/new`}
-                                className="px-4 py-2.5 rounded-full border-2 border-[#031136] bg-[#FF5903] text-center text-sm font-bold text-[#031136] hover:bg-[#FF5903]/90"
-                            >
+                            <Link to={`/travel-itinerary/${trip.id}/activity/new`} className={goldButton}>
                                 + Add activity
                             </Link>
                         )}
@@ -165,7 +176,7 @@ export default function TripItinerary(props: Route.ComponentProps) {
                   wide screens: the itinerary on the left, attendance on the right.
                   Non-organizers have no attendance card, so the itinerary takes the full width.
                 */}
-                <div className={`mt-6 sm:mt-8 grid gap-6 lg:items-start ${isOwner ? "lg:grid-cols-[1fr_16rem]" : ""}`}>
+                <div className={`mt-6 sm:mt-8 grid gap-6 lg:items-start ${isOwner ? "lg:grid-cols-[1fr_18rem]" : ""}`}>
                     {isOwner && (
                         <div className="order-1 lg:order-2">
                             <AttendanceCard counts={null}/>
@@ -173,15 +184,18 @@ export default function TripItinerary(props: Route.ComponentProps) {
                     )}
 
                     {/* the itinerary, one section per day */}
-                    <div className="order-2 space-y-6 lg:order-1">
+                    <div className="order-2 min-w-0 space-y-8 lg:order-1">
                         {activitiesMessage && (
-                            <p role="alert" className="rounded-2xl border-2 border-[#031136] bg-white p-5 text-red-700">{activitiesMessage}</p>
+                            <p role="alert" className="rounded-2xl border-[1.5px] border-royal-red bg-royal-red/5 p-5 font-medium text-royal-red">{activitiesMessage}</p>
                         )}
 
-                        {days.map((day) => (
+                        {days.map((day, index) => (
                             <section key={day.key} className="space-y-3">
-                                <h2 className="inline-block rounded-full bg-[#031136] px-4 py-1 text-xs font-bold uppercase tracking-wider text-white">
-                                    {day.label}
+                                {/* the day's name beside a gem, with a thin rule running to the edge */}
+                                <h2 className="flex items-center gap-2.5 text-[13px] font-bold uppercase tracking-[0.22em] text-navy">
+                                    <Gem color={index % 2 === 0 ? "pink" : "lilac"} size={22}/>
+                                    <span>{day.label}</span>
+                                    <span aria-hidden="true" className="h-px min-w-6 flex-1 bg-navy"/>
                                 </h2>
                                 {day.activities.map((activity) => (
                                     <ActivityCard key={activity.id} activity={activity}
@@ -192,23 +206,12 @@ export default function TripItinerary(props: Route.ComponentProps) {
                         ))}
                     </div>
                 </div>
-            </div>
-        </main>
+            </Parchment>
+        </RoyalPage>
     );
 }
 
 type AttendanceCounts = { going: number; maybe: number; notGoing: number; noResponse: number };
-
-/** The sunset stripes along the top of the side cards. */
-function Stripes() {
-    return (
-        <div aria-hidden="true">
-            <div className="h-2 bg-[#FF5903]"/>
-            <div className="h-1.5 bg-[#FF6B6C]"/>
-            <div className="h-1.5 bg-[#C9A3CB]"/>
-        </div>
-    );
-}
 
 /**
  * RSVP totals across all of the trip's activities.
@@ -219,73 +222,69 @@ function Stripes() {
  */
 function AttendanceCard({counts}: { counts: AttendanceCounts | null }) {
     const total = counts ? counts.going + counts.maybe + counts.notGoing + counts.noResponse : 0;
+    // bar: the segment's color; box: the matching tile, with text dark or light enough to read on it
     const segments = [
-        {label: "Going", value: counts?.going, color: "bg-[#434A90]"},
-        {label: "Maybe", value: counts?.maybe, color: "bg-[#C9A3CB]"},
-        {label: "Not going", value: counts?.notGoing, color: "bg-[#FF6B6C]"},
-        {label: "No response", value: counts?.noResponse, color: "bg-gray-200 border border-[#031136]"},
+        {label: "Going", value: counts?.going, bar: "bg-bay", box: "bg-bay text-white"},
+        {label: "Maybe", value: counts?.maybe, bar: "bg-lilac", box: "bg-lilac text-navy"},
+        {label: "Not going", value: counts?.notGoing, bar: "bg-pink", box: "bg-pink text-navy"},
+        {label: "No response", value: counts?.noResponse, bar: "bg-mist", box: "bg-mist text-navy"},
     ];
 
     return (
-        <aside className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-white">
-            <Stripes/>
-            <div className="p-5 space-y-4">
-                <div className="flex items-center justify-between gap-2 lg:justify-start">
-                    <h2 className="text-xl font-extrabold text-[#031136]">Attendance</h2>
-                    <span className="rounded-full bg-[#031136] px-2.5 py-1 text-[10px] font-bold uppercase leading-tight text-white">
+        <aside className="rounded-2xl border-[1.5px] border-navy bg-lilac/10 p-5">
+            <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="font-display text-2xl font-extrabold text-navy">Royal Headcount</h2>
+                    <span className="inline-flex items-center rounded-full bg-navy px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
                         Organizer only
                     </span>
                 </div>
-                <p className="hidden text-sm text-[#434A90] lg:block">Across all activities · {counts ? total : "#"} invited</p>
+                <p className="hidden text-sm text-bay lg:block">Across all activities · {counts ? total : "#"} invited</p>
 
-                {/* one bar split by how people answered; empty grey until there are RSVPs */}
-                <div className="flex h-4 overflow-hidden rounded-full border-2 border-[#031136] bg-gray-100">
+                {/* one bar split by how people answered; empty mist until there are RSVPs */}
+                <div className="flex h-4 overflow-hidden rounded-full border-[1.5px] border-navy bg-mist">
                     {counts && total > 0 && segments.map((segment) => (
                         <div
                             key={segment.label}
-                            className={segment.color}
+                            className={segment.bar}
                             style={{width: `${((segment.value ?? 0) / total) * 100}%`}}
                         />
                     ))}
                 </div>
 
                 {/* phones: one short line under the bar instead of the four boxes */}
-                <p className="text-xs text-[#434A90] lg:hidden">
+                <p className="text-xs text-bay lg:hidden">
                     {segments.map((segment) => `${segment.value ?? "#"} ${segment.label.toLowerCase()}`).join(" · ")}
                 </p>
 
-                <dl className="hidden grid-cols-2 gap-3 lg:grid">
+                <dl className="hidden grid-cols-2 gap-2.5 lg:grid">
                     {segments.map((segment) => (
-                        <div key={segment.label} className="rounded-2xl border-2 border-[#031136] p-3">
-                            <dt className="flex items-center gap-2 text-xs text-[#031136]">
-                                <span className={`h-3 w-3 shrink-0 rounded-full ${segment.color}`}/>
-                                {segment.label}
-                            </dt>
-                            <dd className="mt-2 text-lg font-extrabold text-[#031136]">{segment.value ?? "#"}</dd>
+                        <div key={segment.label} className={`rounded-xl px-3.5 py-3 ${segment.box}`}>
+                            <dt className="text-[10px] font-bold uppercase tracking-[0.14em]">{segment.label}</dt>
+                            <dd className="mt-1 font-display text-2xl font-extrabold">{segment.value ?? "#"}</dd>
                         </div>
                     ))}
                 </dl>
 
                 {counts === null && (
-                    <p className="text-xs text-gray-500">Totals will show here once travelers can RSVP to activities.</p>
+                    <p className="text-xs text-bay">Totals will show here once travelers can RSVP to activities.</p>
                 )}
             </div>
         </aside>
     );
 }
 
-/** The full-width card under the trip's header: its description, under the sunset stripes. */
+/** The full-width card under the trip's header: its description. */
 function TripCard({trip}: { trip: Trip }) {
     return (
-        <section className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-white">
-            <Stripes/>
-            <div className="p-5">
-                <h2 className="text-xl font-extrabold text-[#031136]">About this trip</h2>
-                <p className="mt-2 break-words whitespace-pre-line text-xl leading-relaxed text-[#434A90]">{trip.description ?? "No description yet."}</p>
-            </div>
+        <section className="rounded-2xl border-[1.5px] border-navy bg-white p-5 sm:p-6">
+            <h2 className={eyebrow}>About this trip</h2>
+            <p className="mt-2 break-words whitespace-pre-line text-lg leading-relaxed text-navy">{trip.description ?? "No description yet."}</p>
         </section>
     );
 }
+
+const activityLinkClass = "inline-flex min-h-11 items-center rounded-md underline underline-offset-2 hover:text-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold";
 
 function ActivityCard({activity, detailsTo, editTo}: { activity: Activity; detailsTo: string; editTo?: string }) {
     const start = formatTime(activity.startDatetime);
@@ -298,12 +297,13 @@ function ActivityCard({activity, detailsTo, editTo}: { activity: Activity; detai
     return (
         // phones: the time on its own line above the name, with Required beside it.
         // wider screens: the time in a column on the left and Required on the far right.
-        <article className="flex flex-col gap-1 rounded-2xl border-2 border-[#031136] bg-white px-4 py-4 sm:flex-row sm:gap-5 sm:px-5">
+        <article className="flex flex-col gap-1 rounded-2xl border-[1.5px] border-navy bg-white px-4 py-4 sm:flex-row sm:gap-5 sm:px-5">
             <div className="flex items-start justify-between gap-2 sm:block sm:w-20 sm:shrink-0">
-                <p className="pt-0.5 text-sm font-bold text-[#FF5903]">
+                {/* the time in Playfair italic, royal red so it stays readable at this size */}
+                <p className="pt-0.5 font-display text-lg font-semibold italic text-royal-red">
                     {start ?? "—"}
                     {end && (
-                        <span className="sm:block sm:text-xs sm:font-medium">
+                        <span className="sm:block sm:text-sm sm:font-medium">
                             <span className="sm:hidden"> – </span>
                             <span className="hidden sm:inline">to </span>
                             {end}
@@ -311,31 +311,33 @@ function ActivityCard({activity, detailsTo, editTo}: { activity: Activity; detai
                     )}
                 </p>
                 {activity.mandatory && (
-                    <span className="rounded-full bg-[#C9A3CB] px-3 py-1 text-xs font-bold text-[#031136] sm:hidden">Required</span>
+                    <span className={`${chip} sm:hidden`}>Required</span>
                 )}
             </div>
 
             <div className="min-w-0 flex-1 space-y-1">
                 {/* the name opens the activity's details page, where its map is */}
-                <h3 className="font-bold text-[#031136]"><Link to={detailsTo} className="hover:underline">{activity.name}</Link></h3>
-                <p className="text-sm text-[#434A90]">
+                <h3 className="break-words font-display text-[22px] font-semibold leading-tight text-navy">
+                    <Link to={detailsTo} className="rounded-sm hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">{activity.name}</Link>
+                </h3>
+                <p className="text-sm text-bay">
                     {mapsUrl && (
-                        <a href={mapsUrl} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2 hover:decoration-solid">
+                        <a href={mapsUrl} target="_blank" rel="noreferrer" className="rounded-sm underline decoration-dotted underline-offset-2 hover:decoration-solid focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
                             📍 {place}<span className="sr-only"> (opens Google Maps in a new tab)</span>
                         </a>
                     )}
                     {mapsUrl && " · "}{formatCost(activity.cost)}
                 </p>
-                {activity.description && <p className="text-sm text-gray-700">{activity.description}</p>}
-                {activity.notes && <p className="text-sm italic text-gray-500">Note: {activity.notes}</p>}
-                <div className="flex gap-4 pt-1 text-sm font-bold text-[#434A90]">
-                    <Link to={detailsTo} className="underline">View details &amp; map</Link>
-                    {editTo && <Link to={editTo} className="underline">Edit</Link>}
+                {activity.description && <p className="text-sm text-navy">{activity.description}</p>}
+                {activity.notes && <p className="text-sm italic text-bay">Note: {activity.notes}</p>}
+                <div className="flex flex-wrap gap-x-5 text-sm font-bold text-bay">
+                    <Link to={detailsTo} className={activityLinkClass}>View details &amp; map</Link>
+                    {editTo && <Link to={editTo} className={activityLinkClass}>Edit</Link>}
                 </div>
             </div>
 
             {activity.mandatory && (
-                <span className="hidden self-start rounded-full bg-[#C9A3CB] px-3 py-1 text-xs font-bold text-[#031136] sm:inline-block">Required</span>
+                <span className="hidden self-start sm:block"><span className={chip}>Required</span></span>
             )}
         </article>
     );

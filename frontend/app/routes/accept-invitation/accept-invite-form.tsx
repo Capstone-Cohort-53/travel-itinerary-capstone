@@ -1,9 +1,9 @@
 import {useFetcher} from "react-router";
 import {useForm} from "@tanstack/react-form";
-import {Button, HelperText, Label, Radio, TextInput} from "flowbite-react";
 import {AcceptInviteFormSchema} from "~/utils/models/member.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
+import {WaxSealButton, eyebrow, input, label} from "~/components/royal";
 
 type AcceptInviteFormValues = { going: 'yes' | 'no' | 'maybe', adults: string, children: string }
 
@@ -15,6 +15,10 @@ const goingOptions = [
     {value: 'maybe', label: 'Maybe'},
     {value: 'no', label: 'No'},
 ] as const
+
+// each answer is a pill (44px tall); the chosen one turns lilac
+const radioPill = 'flex min-h-11 cursor-pointer items-center gap-2 rounded-full border-[1.5px] border-navy bg-white px-5 text-sm font-bold text-navy transition hover:bg-navy/5 has-[:checked]:bg-lilac has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold has-[:focus-visible]:ring-offset-2'
+const fieldError = 'mt-1 text-sm font-medium text-royal-red'
 
 type AcceptInviteFormProps = { tripTitle: string, signedInName: string }
 
@@ -38,109 +42,102 @@ export function AcceptInviteForm(props: AcceptInviteFormProps) {
     })
 
     return (
-        // indigo card with a navy border, same as the travel itinerary invite form (replaces the Flowbite Card);
-        // overflow-hidden clips the stripes to the rounded corners
-        <div className="overflow-hidden rounded-2xl border border-[#0B1533] bg-[#3A4187]">
-            {/* decorative stripes along the top, matching the invite form */}
-            <div aria-hidden="true">
-                <div className="h-1.5 bg-[#FF5A1F]"/>
-                <div className="h-1.5 bg-[#FF8A85]"/>
-                <div className="h-1.5 bg-[#FFB3A7]"/>
-                <div className="h-1.5 bg-[#C19AC5]"/>
+        // sits right on the parchment, centered under the summons, like the design
+        <form
+            className="flex flex-col gap-5"
+            noValidate
+            onSubmit={(event) => {
+                event.preventDefault()
+                event.stopPropagation()
+                void form.handleSubmit()
+            }}
+        >
+            <div className="text-center">
+                <p className={`${eyebrow} break-words`}>RSVP for {tripTitle}</p>
+                <h2 className="mt-2 font-display text-2xl font-bold italic text-navy sm:text-[26px]">Will you attend, Your Majesty?</h2>
+                <p className="mt-1 break-words text-sm text-bay">Signed in as {signedInName}</p>
             </div>
-            <form
-                // full-width fields; a bit less padding on phones
-                className="flex flex-col gap-4 p-4 sm:p-6"
-                noValidate
-                onSubmit={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    void form.handleSubmit()
+
+            <form.Field name="going">
+                {(field) => {
+                    const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
+                    return (
+                        <fieldset aria-describedby={error ? `${field.name}-error` : undefined}>
+                            {/* pills wrap onto a second line on very narrow phones */}
+                            <legend className={label}>Are you going?</legend>
+                            <div className="flex flex-wrap gap-2 sm:gap-3">
+                                {goingOptions.map((option) => (
+                                    <label key={option.value} htmlFor={`going-${option.value}`} className={radioPill}>
+                                        <input type="radio" id={`going-${option.value}`} name={field.name} value={option.value}
+                                               className="h-4 w-4 accent-navy"
+                                               checked={field.state.value === option.value}
+                                               onBlur={field.handleBlur}
+                                               onChange={() => field.handleChange(option.value)}/>
+                                        {option.label}
+                                    </label>
+                                ))}
+                            </div>
+                            {error && <p id={`${field.name}-error`} className={fieldError}>{error}</p>}
+                        </fieldset>
+                    )
                 }}
-            >
-                {/* white title, light lavender "signed in" line: readable on indigo */}
-                <h5 className="break-words text-xl sm:text-2xl font-bold tracking-wider text-white">RSVP for {tripTitle}</h5>
-                <p className="break-words text-[#F7EEF6]">Signed in as {signedInName}</p>
+            </form.Field>
 
-                <form.Field name="going">
-                    {(field) => {
-                        const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
-                        return (
-                            <fieldset aria-describedby={error ? `${field.name}-error` : undefined}>
-                                {/* white legend; radios wrap onto a second line on very narrow phones */}
-                                <legend className="mb-2 text-sm font-bold text-white">Are you going?</legend>
-                                <div className="flex flex-wrap gap-4 sm:gap-6">
-                                    {goingOptions.map((option) => (
-                                        <div key={option.value} className="flex items-center gap-2">
-                                            <Radio id={`going-${option.value}`} name={field.name} value={option.value}
-                                                   checked={field.state.value === option.value}
-                                                   onBlur={field.handleBlur}
-                                                   onChange={() => field.handleChange(option.value)}/>
-                                            <Label htmlFor={`going-${option.value}`} className="text-white">{option.label}</Label>
-                                        </div>
-                                    ))}
-                                </div>
-                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
-                            </fieldset>
-                        )
-                    }}
-                </form.Field>
+            <form.Field name="adults">
+                {(field) => {
+                    const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
+                    return (
+                        <div>
+                            <label htmlFor={field.name} className={label}>Number of Adults (including you)</label>
+                            <input id={field.name} name={field.name} type="number" min={1} max={100}
+                                   className={`${input} ${error ? 'border-royal-red' : ''}`}
+                                   value={field.state.value}
+                                   onBlur={field.handleBlur}
+                                   onChange={(event) => field.handleChange(event.target.value)}
+                                   aria-invalid={error ? true : undefined}
+                                   aria-describedby={error ? `${field.name}-error` : undefined}/>
+                            {error && <p id={`${field.name}-error`} className={fieldError}>{error}</p>}
+                        </div>
+                    )
+                }}
+            </form.Field>
 
-                {/* labels are white and errors light red (text-red-200) so both are readable on indigo */}
-                <form.Field name="adults">
-                    {(field) => {
-                        const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
-                        return (
-                            <div>
-                                <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Number of Adults (including you)</Label>
-                                <TextInput id={field.name} name={field.name} type="number" min={1} max={100} shadow
-                                           value={field.state.value}
-                                           onBlur={field.handleBlur}
-                                           onChange={(event) => field.handleChange(event.target.value)}
-                                           color={error ? 'failure' : undefined}
-                                           aria-invalid={error ? true : undefined}
-                                           aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
-                            </div>
-                        )
-                    }}
-                </form.Field>
+            <form.Field name="children">
+                {(field) => {
+                    const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
+                    return (
+                        <div>
+                            <label htmlFor={field.name} className={label}>Number of Children</label>
+                            <input id={field.name} name={field.name} type="number" min={0} max={10}
+                                   className={`${input} ${error ? 'border-royal-red' : ''}`}
+                                   value={field.state.value}
+                                   onBlur={field.handleBlur}
+                                   onChange={(event) => field.handleChange(event.target.value)}
+                                   aria-invalid={error ? true : undefined}
+                                   aria-describedby={error ? `${field.name}-error` : undefined}/>
+                            {error && <p id={`${field.name}-error`} className={fieldError}>{error}</p>}
+                        </div>
+                    )
+                }}
+            </form.Field>
 
-                <form.Field name="children">
-                    {(field) => {
-                        const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
-                        return (
-                            <div>
-                                <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Number of Children</Label>
-                                <TextInput id={field.name} name={field.name} type="number" min={0} max={10} shadow
-                                           value={field.state.value}
-                                           onBlur={field.handleBlur}
-                                           onChange={(event) => field.handleChange(event.target.value)}
-                                           color={error ? 'failure' : undefined}
-                                           aria-invalid={error ? true : undefined}
-                                           aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
-                            </div>
-                        )
-                    }}
-                </form.Field>
+            {/* the gold wax seal is the page's one big action */}
+            <form.Subscribe selector={(state) => state.canSubmit}>
+                {(canSubmit) => (
+                    <div className="mt-2 flex justify-center">
+                        <WaxSealButton type="submit" disabled={!canSubmit || isSending}
+                                       aria-label={isSending ? 'Sending RSVP' : 'Send RSVP'}>
+                            {isSending ? <>Sending…</> : <>Send<br/>my<br/>RSVP</>}
+                        </WaxSealButton>
+                    </div>
+                )}
+            </form.Subscribe>
 
-                <form.Subscribe selector={(state) => state.canSubmit}>
-                    {(canSubmit) => (
-                        // orange pill button with navy text: full width on phones, normal width on tablet and up
-                        <Button className="w-full sm:w-auto rounded-full border border-[#0B1533] bg-[#FFA06B] font-bold text-[#0B1533] hover:bg-[#FF8A55] focus:ring-[#FFB3A7]" type="submit" disabled={!canSubmit || isSending}>
-                            {isSending ? 'Sending…' : 'Send RSVP'}
-                        </Button>
-                    )}
-                </form.Subscribe>
+            <p className="text-center font-display text-[15px] italic text-bay">
+                After you RSVP, you'll be taken to the trip to view the itinerary and attendance.
+            </p>
 
-                {/* light lavender helper text on indigo */}
-                <p className="text-[#F7EEF6]">
-                    After you RSVP, you'll be taken to the trip to view the itinerary and attendance.
-                </p>
-
-                <StatusMessage actionData={fetcher.data}/>
-            </form>
-        </div>
+            <StatusMessage actionData={fetcher.data}/>
+        </form>
     )
 }

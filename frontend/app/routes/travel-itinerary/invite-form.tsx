@@ -1,12 +1,20 @@
 import {useEffect} from "react";
 import {useFetcher} from "react-router";
 import {useForm} from "@tanstack/react-form";
-import {Button, HelperText, Label, TextInput} from "flowbite-react";
 import {TripInviteFormSchema, type TripInviteForm} from "~/utils/models/trip-invite.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
+import {Crown} from "~/components/royal";
 
 const defaultValues: TripInviteForm = {name: '', email: '', cellNumber: '', expiresAt: ''}
+
+// the design's "Summon thy girls" panel: navy, with lilac labels and white fields
+const labelOnNavy = 'mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-lilac'
+const inputOnNavy = 'block w-full min-w-0 rounded-xl border-[1.5px] bg-white px-3.5 py-2.5 text-base text-navy placeholder:text-[#6b6f8f] focus:outline-none focus:ring-2 focus:ring-gold'
+// errors on navy: watermelon pink reads well on the dark panel
+const errorOnNavy = 'mt-1 text-sm font-medium text-pink'
+// the team's peach send button (kept on Travelers & Invites), same shape as goldButton
+const peachButton = 'inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-peach px-7 text-[13px] font-bold uppercase tracking-[0.14em] text-navy shadow-[0_4px_0_#d9784a] transition hover:brightness-105 active:translate-y-[2px] active:shadow-[0_2px_0_#d9784a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-navy disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto'
 
 /**
  * Invites one traveler to the trip. TanStack Form validates with the Zod
@@ -34,18 +42,11 @@ export function InviteForm() {
     }, [fetcher.state, fetcher.data, form])
 
     return (
-        // indigo card with a navy border (replaces the Flowbite Card); overflow-hidden clips the stripes to the rounded corners
-        <div className="overflow-hidden rounded-2xl border border-[#0B1533] bg-[#3A4187]">
-            {/* decorative stripes along the top, as in the mockup */}
-            <div aria-hidden="true">
-                <div className="h-1.5 bg-[#FF5A1F]"/>
-                <div className="h-1.5 bg-[#FF8A85]"/>
-                <div className="h-1.5 bg-[#FFB3A7]"/>
-                <div className="h-1.5 bg-[#C19AC5]"/>
-            </div>
+        <>
+        {/* navy panel with a thin lilac inner frame, as in the design */}
+        <div className="rounded-[20px] bg-navy p-1.5 text-white">
             <form
-                // full-width fields; a bit less padding on phones
-                className="flex flex-col gap-4 p-4 sm:p-6"
+                className="flex flex-col gap-4 rounded-2xl border border-lilac p-5 sm:p-6"
                 noValidate
                 onSubmit={(event) => {
                     event.preventDefault()
@@ -53,97 +54,108 @@ export function InviteForm() {
                     void form.handleSubmit()
                 }}
             >
-                {/* white title on the indigo card */}
-                <h5 className="text-xl sm:text-2xl font-bold tracking-wider text-white">Invite a Traveler</h5>
+                <div className="flex items-center gap-3">
+                    <Crown size={30} outline="#ffffff"/>
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-lilac">Invite a traveler</p>
+                        <h2 className="font-display text-2xl font-bold italic text-white">Summon thy girls</h2>
+                    </div>
+                </div>
 
-                {/* labels are white and errors light red (text-red-200) so both are readable on indigo */}
-                <form.Field name="name">
-                    {(field) => {
-                        const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
-                        return (
-                            <div>
-                                <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Name</Label>
-                                <TextInput id={field.name} name={field.name} type="text" placeholder="First Last" shadow
+                {/* two columns on tablet and up, stacked on phones */}
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <form.Field name="name">
+                        {(field) => {
+                            const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
+                            return (
+                                <div>
+                                    <label htmlFor={field.name} className={labelOnNavy}>Name</label>
+                                    <input id={field.name} name={field.name} type="text" placeholder="First Last"
+                                           className={`${inputOnNavy} ${error ? 'border-pink' : 'border-white'}`}
                                            value={field.state.value}
                                            onBlur={field.handleBlur}
                                            onChange={(event) => field.handleChange(event.target.value)}
-                                           color={error ? 'failure' : undefined}
                                            aria-invalid={error ? true : undefined}
                                            aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
-                            </div>
-                        )
-                    }}
-                </form.Field>
+                                    {error && <p id={`${field.name}-error`} className={errorOnNavy}>{error}</p>}
+                                </div>
+                            )
+                        }}
+                    </form.Field>
 
-                <form.Field name="email">
-                    {(field) => {
-                        const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
-                        return (
-                            <div>
-                                <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Email</Label>
-                                <TextInput id={field.name} name={field.name} type="email" placeholder="name@example.com" shadow
+                    <form.Field name="email">
+                        {(field) => {
+                            const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
+                            return (
+                                <div>
+                                    <label htmlFor={field.name} className={labelOnNavy}>Email</label>
+                                    <input id={field.name} name={field.name} type="email" placeholder="name@example.com"
+                                           className={`${inputOnNavy} ${error ? 'border-pink' : 'border-white'}`}
                                            value={field.state.value}
                                            onBlur={field.handleBlur}
                                            onChange={(event) => field.handleChange(event.target.value)}
-                                           color={error ? 'failure' : undefined}
                                            aria-invalid={error ? true : undefined}
                                            aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
-                            </div>
-                        )
-                    }}
-                </form.Field>
+                                    {error && <p id={`${field.name}-error`} className={errorOnNavy}>{error}</p>}
+                                </div>
+                            )
+                        }}
+                    </form.Field>
 
-                <form.Field name="cellNumber">
-                    {(field) => {
-                        const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
-                        return (
-                            <div>
-                                <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Cell Number</Label>
-                                <TextInput id={field.name} name={field.name} type="tel" placeholder="555-123-4567" shadow
+                    <form.Field name="cellNumber">
+                        {(field) => {
+                            const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
+                            return (
+                                <div>
+                                    <label htmlFor={field.name} className={labelOnNavy}>Cell Number</label>
+                                    <input id={field.name} name={field.name} type="tel" placeholder="555-123-4567"
+                                           className={`${inputOnNavy} ${error ? 'border-pink' : 'border-white'}`}
                                            value={field.state.value}
                                            onBlur={field.handleBlur}
                                            onChange={(event) => field.handleChange(event.target.value)}
-                                           color={error ? 'failure' : undefined}
                                            aria-invalid={error ? true : undefined}
                                            aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
-                            </div>
-                        )
-                    }}
-                </form.Field>
+                                    {error && <p id={`${field.name}-error`} className={errorOnNavy}>{error}</p>}
+                                </div>
+                            )
+                        }}
+                    </form.Field>
 
-                <form.Field name="expiresAt">
-                    {(field) => {
-                        const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
-                        return (
-                            <div>
-                                <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Invite Expires (optional)</Label>
-                                <TextInput id={field.name} name={field.name} type="date" shadow
+                    <form.Field name="expiresAt">
+                        {(field) => {
+                            const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
+                            return (
+                                <div>
+                                    <label htmlFor={field.name} className={labelOnNavy}>Invite Expires (optional)</label>
+                                    <input id={field.name} name={field.name} type="date"
+                                           className={`${inputOnNavy} ${error ? 'border-pink' : 'border-white'}`}
                                            value={field.state.value}
                                            onBlur={field.handleBlur}
                                            onChange={(event) => field.handleChange(event.target.value)}
-                                           color={error ? 'failure' : undefined}
                                            aria-invalid={error ? true : undefined}
                                            aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
-                            </div>
-                        )
-                    }}
-                </form.Field>
+                                    {error && <p id={`${field.name}-error`} className={errorOnNavy}>{error}</p>}
+                                </div>
+                            )
+                        }}
+                    </form.Field>
+                </div>
 
-                {/* orange pill button with navy text: full width on phones, normal width on tablet and up */}
-                <form.Subscribe selector={(state) => state.canSubmit}>
-                    {(canSubmit) => (
-                        <Button className="w-full sm:w-auto rounded-full border border-[#0B1533] bg-[#FFA06B] font-bold text-[#0B1533] hover:bg-[#FF8A55] focus:ring-[#FFB3A7]" type="submit" disabled={!canSubmit || isSending}>
-                            {isSending ? 'Sending…' : 'Send Invitation'}
-                        </Button>
-                    )}
-                </form.Subscribe>
-
-                <StatusMessage actionData={fetcher.data}/>
+                {/* peach pill: full width on phones, normal width on tablet and up */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                    <form.Subscribe selector={(state) => state.canSubmit}>
+                        {(canSubmit) => (
+                            <button className={peachButton} type="submit" disabled={!canSubmit || isSending}>
+                                {isSending ? 'Sending…' : 'Send Royal Invitation'}
+                            </button>
+                        )}
+                    </form.Subscribe>
+                    <p className="text-sm text-[#e3e1f0]">Sent invitations appear as Pending.</p>
+                </div>
             </form>
         </div>
+        {/* the result shows just under the panel, on parchment, so its navy / royal red text stays readable */}
+        <StatusMessage actionData={fetcher.data}/>
+        </>
     )
 }

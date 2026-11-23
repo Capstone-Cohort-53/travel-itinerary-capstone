@@ -70,15 +70,24 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     stack = error.stack;
   }
 
+  // shown when a page crashes; the navbar may not have loaded, so this paints its own navy page
   return (
-      <main className="pt-16 p-4 container mx-auto">
-        <h1>{message}</h1>
-        <p>{details}</p>
-        {stack && (
-            <pre className="w-full p-4 overflow-x-auto">
-          <code>{stack}</code>
-        </pre>
-        )}
+      <main className="min-h-screen bg-navy px-3 py-10 sm:px-8">
+        <div className="mx-auto max-w-3xl rounded-3xl bg-parchment p-2.5 text-navy sm:p-4">
+          <div className="rounded-2xl border-2 border-navy px-6 py-10 sm:px-10">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-bay">Alas, Your Majesty</p>
+            <h1 className="mt-2 font-display text-4xl font-extrabold sm:text-5xl">{message}</h1>
+            <p className="mt-3 text-bay">{details}</p>
+            <a href="/" className="mt-6 inline-flex rounded-full bg-gold px-6 py-3 text-[13px] font-bold uppercase tracking-[0.14em] text-navy shadow-[0_4px_0_var(--color-gold-dark)]">
+              Back to TripsQueen
+            </a>
+            {stack && (
+                <pre className="mt-6 w-full overflow-x-auto rounded-xl bg-mist p-4 text-xs">
+              <code>{stack}</code>
+            </pre>
+            )}
+          </div>
+        </div>
       </main>
   );
 }

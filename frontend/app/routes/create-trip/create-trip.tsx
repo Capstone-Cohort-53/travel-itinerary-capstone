@@ -3,9 +3,11 @@ import {requireSignedInUser} from "~/utils/session.server";
 import {postTrip} from "~/utils/models/trip.model";
 import {emptyTrip, TripFormPage} from "~/routes/create-trip/trip-form";
 import {handleTripForm} from "~/routes/create-trip/trip-form.server";
+import {Crown, emphasis} from "~/components/royal";
 
-// Retro Sunset colors
-const navy = "#031136";
+export function meta({}: Route.MetaArgs) {
+    return [{title: "Create Trip | TripsQueen"}];
+}
 
 //STEP 4: the loader. Only signed-in users can create a trip
 export async function loader({request}: Route.LoaderArgs) {
@@ -28,9 +30,11 @@ export async function action({request}: Route.ActionArgs) {
 export default function CreateTrip() {
     return (
         <TripFormPage
-            heading="Create a New Trip"
+            eyebrowText="A new decree"
+            heading={<>Proclaim a <em className={emphasis}>new trip</em></>}
+            intro="Name it, place it, date it. Activities and invitations come next."
             defaultValues={emptyTrip}
-            submitLabel="Save Trip"
+            submitLabel={<>Seal it<br/>Save<br/>trip</>}
             backTo="/my-trips"
             backLabel="My Trips"
             aside={<NextUpCard/>}
@@ -38,28 +42,13 @@ export default function CreateTrip() {
     );
 }
 
-/** The sunset card beside the form: what happens after the trip is saved. */
+/** The small card beside the form: what happens after the trip is saved. */
 function NextUpCard() {
     return (
-        <div className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-[#434A90]">
-            {/* a half sun setting behind the horizon, with two coral bands across it */}
-            <svg viewBox="0 0 256 130" className="block w-full bg-[#031136]" aria-hidden="true">
-                <defs>
-                    <clipPath id="sun">
-                        <circle cx="128" cy="130" r="86"/>
-                    </clipPath>
-                </defs>
-                <g clipPath="url(#sun)">
-                    <rect x="0" y="0" width="256" height="130" fill="#FF5903"/>
-                    <rect x="0" y="92" width="256" height="12" fill="#FF6B6C"/>
-                    <rect x="0" y="108" width="256" height="4" fill={navy}/>
-                    <rect x="0" y="112" width="256" height="10" fill="#FF6B6C"/>
-                </g>
-            </svg>
-            <div className="px-5 py-5 text-white">
-                <h2 className="text-xl font-extrabold">Next up</h2>
-                <p className="mt-1 text-sm">After you save, add activities to each day and invite your travelers.</p>
-            </div>
+        <div className="rounded-2xl border-[1.5px] border-navy bg-lilac/25 p-5">
+            <Crown size={28}/>
+            <h2 className="mt-2 font-display text-xl font-extrabold text-navy">Next up</h2>
+            <p className="mt-1 text-sm text-navy">After you save, add activities to each day and invite your travelers.</p>
         </div>
     );
 }

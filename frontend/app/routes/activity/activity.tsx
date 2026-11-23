@@ -19,6 +19,7 @@ import {
     isDuringTrip,
     toDateString
 } from "~/routes/activity/activity-form";
+import {emphasis} from "~/components/royal";
 
 
 /**
@@ -86,9 +87,10 @@ export default function Activity({loaderData}: Route.ComponentProps) {
             trip={trip}
             // starts on the default day at 9:00 AM; the organizer can change or clear it
             defaultValues={{...emptyActivityValues, startDatetime: `${startDate}T09:00`}}
-            heading="Add Activity"
+            eyebrowText="Add to the decree"
+            heading={<>Add an <em className={emphasis}>activity</em></>}
             intro="Add an event to your shared trip itinerary."
-            submitLabel="Save Activity"
+            submitLabel={<>Add to<br/>the<br/>decree</>}
             searchNear={searchNear}
             showIdeas
         />

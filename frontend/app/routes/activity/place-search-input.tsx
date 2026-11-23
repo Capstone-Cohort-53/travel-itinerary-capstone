@@ -112,7 +112,7 @@ export function PlaceSearchInput({value, onChange, onPick, near, destination, on
 
             {showList && (
                 <ul id={listId} role="listbox" aria-label="Suggested places"
-                    className="absolute z-[1000] mt-1 max-h-72 w-full overflow-auto rounded-xl border-2 border-[#031136] bg-white py-1 shadow-[4px_4px_0_#C9A3CB]">
+                    className="absolute z-[1000] mt-1 max-h-72 w-full overflow-auto rounded-xl border-[1.5px] border-navy bg-parchment py-1 shadow-[4px_4px_0_var(--color-lilac)]">
                     {suggestions.map((place, index) => (
                         <li key={place.id}
                             id={`${listId}-${index}`}
@@ -124,16 +124,21 @@ export function PlaceSearchInput({value, onChange, onPick, near, destination, on
                                 pick(place)
                             }}
                             onMouseEnter={() => setActiveIndex(index)}
-                            className={`flex cursor-pointer items-start gap-3 px-3 py-2.5 ${index === activeIndex ? 'bg-[#FBF3FA]' : ''}`}>
-                            <span aria-hidden="true" className="mt-0.5 text-[#FF5903]">📍</span>
+                            className={`flex min-h-11 cursor-pointer items-start gap-3 px-3 py-2.5 ${index === activeIndex ? 'bg-lilac/40' : ''}`}>
+                            {/* a small map pin: pink with a navy outline */}
+                            <svg aria-hidden="true" viewBox="0 0 24 24" className="mt-0.5 h-4 w-4 shrink-0" fill="#FD6B6C" stroke="#031136"
+                                 strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>
+                                <circle cx="12" cy="10" r="2.5" fill="#FFFAF7"/>
+                            </svg>
                             <span className="min-w-0">
-                                <span className="block truncate text-sm font-bold text-[#031136]">{place.name}</span>
-                                {place.detail && <span className="block truncate text-xs text-[#434A90]">{place.detail}</span>}
+                                <span className="block truncate text-sm font-bold text-navy">{place.name}</span>
+                                {place.detail && <span className="block truncate text-xs text-bay">{place.detail}</span>}
                             </span>
                         </li>
                     ))}
                     {/* Photon's data comes from OpenStreetMap, which asks for this credit */}
-                    <li role="presentation" className="border-t border-[#ECE9F3] px-3 pt-1.5 pb-1 text-[10px] text-gray-500">
+                    <li role="presentation" className="border-t border-lilac px-3 pt-1.5 pb-1 text-[11px] text-bay">
                         Suggestions by Photon · © OpenStreetMap contributors
                     </li>
                 </ul>

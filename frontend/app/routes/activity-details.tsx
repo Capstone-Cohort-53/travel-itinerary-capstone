@@ -19,6 +19,7 @@ import {
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
 import {googleMapsUrl} from "~/utils/google-maps";
+import {card, chip, Crown, emphasis, eyebrow, Gem, GemDivider, headline, input, outlineButton, Parchment, RoyalPage, WaxSealButton} from "~/components/royal";
 
 
 /**
@@ -127,8 +128,14 @@ function describeCost(cost: number): string {
 
 // ── shared pieces ──
 
-const cardClass = "rounded-3xl border-2 border-[#031136] bg-white"
-const tileLabelClass = "text-xs font-bold uppercase tracking-wider text-[#434A90]"
+const tileClass = "rounded-[14px] border-[1.5px] border-navy bg-white"
+const tileLabelClass = "text-[10px] font-bold uppercase tracking-[0.18em] text-bay"
+const linkFocus = "rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-parchment"
+// the navy side panels: a navy card with a thin lilac inner frame, like the design
+const navyPanelClass = "rounded-[20px] bg-navy p-1.5 text-white"
+const navyPanelInnerClass = "rounded-2xl border border-lilac p-5"
+// "Not going" carries diagonal stripes, so it doesn't depend on hue alone to tell it from "Maybe"
+const notGoingStripes = {backgroundImage: 'repeating-linear-gradient(135deg, rgba(3,17,54,0.35) 0 3px, transparent 3px 7px)'}
 
 // Leaflet only works in a browser, so its code is fetched only after the page mounts there
 const ActivityMap = lazy(() => import("~/routes/activity/activity-map"))
@@ -138,7 +145,7 @@ function ClientOnlyMap(props: { lat: number, lng: number, label: string }) {
     const [isMounted, setIsMounted] = useState(false)
     useEffect(() => setIsMounted(true), [])
 
-    const placeholder = <div className="h-full w-full bg-[#FBF3FA]" aria-hidden="true"/>
+    const placeholder = <div className="h-full w-full bg-mist" aria-hidden="true"/>
     if (!isMounted) {
         return placeholder
     }
@@ -149,21 +156,20 @@ function ClientOnlyMap(props: { lat: number, lng: number, label: string }) {
     )
 }
 
-function SunsetStripes() {
-    return (
-        <div aria-hidden="true">
-            <div className="h-1.5 bg-[#FF5903]"/>
-            <div className="h-1.5 bg-[#FF6B6C]"/>
-            <div className="h-1.5 bg-[#C9A3CB]"/>
-        </div>
-    )
+/** The activity's name as a Playfair headline, with its last word in italic watermelon pink. */
+function ActivityName({name}: { name: string }) {
+    const split = name.trimEnd().lastIndexOf(' ')
+    if (split <= 0) {
+        return <>{name}</>
+    }
+    return <>{name.slice(0, split + 1)}<em className={emphasis}>{name.slice(split + 1)}</em></>
 }
 
 function InfoTile({label, value}: { label: string, value: string }) {
     return (
-        <div className={`${cardClass} px-4 py-3`}>
+        <div className={`${tileClass} px-4 py-3`}>
             <p className={tileLabelClass}>{label}</p>
-            <p className="mt-1 font-bold text-[#031136]">{value}</p>
+            <p className="mt-1 font-display text-lg font-semibold leading-snug text-navy">{value}</p>
         </div>
     )
 }
@@ -174,35 +180,40 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
     const typeLabel = activity.mandatory ? 'Required' : 'Optional'
 
     return (
-        <div className="bg-[#FBF3FA] min-h-screen py-10 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
+        <RoyalPage>
+            <Parchment>
 
                 {/* ── heading ── */}
-                <Link to={`/trip-itinerary/${trip.id}`} className="text-sm font-bold text-[#434A90] hover:underline">
+                <Link to={`/trip-itinerary/${trip.id}`}
+                      className={`inline-flex min-h-11 items-center text-sm font-bold text-bay hover:underline ${linkFocus}`}>
                     ← Back to itinerary
                 </Link>
 
-                <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <span className={`inline-block rounded-full border-2 border-[#031136] px-3 py-0.5 text-xs font-bold text-[#031136] ${activity.mandatory ? 'bg-[#FF5903]' : 'bg-[#C9A3CB]'}`}>
+                <div className="mt-2 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="min-w-0">
+                        <span className={activity.mandatory ? chip.replace('bg-lilac', 'bg-gold') : chip}>
                             {typeLabel}
                         </span>
-                        <h1 className="mt-2 font-display text-4xl sm:text-6xl font-bold tracking-tight break-words text-[#031136]">{activity.name}</h1>
-                        <p className="mt-1 text-sm text-[#434A90]">{trip.title}</p>
+                        <h1 className={`${headline} mt-3 text-4xl break-words sm:text-[54px]`}>
+                            <ActivityName name={activity.name}/>
+                        </h1>
+                        <p className="mt-2 text-[15px] text-bay">{trip.title}</p>
                     </div>
                     {isOrganizer && (
                         <Link to={`/travel-itinerary/${trip.id}/activity/${activity.id}/edit`}
-                              className="w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] bg-white text-center text-sm font-bold text-[#031136] hover:bg-[#031136]/5 transition">
+                              className={`${outlineButton} w-full shrink-0 sm:w-auto`}>
                             Edit Activity
                         </Link>
                     )}
                 </div>
 
-                <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_17rem] lg:items-start">
+                <div className="my-8"><GemDivider/></div>
+
+                <div className="grid gap-6 lg:grid-cols-[1fr_minmax(17rem,24rem)] lg:items-start">
 
                     {/* ── the activity ── */}
-                    <div className="space-y-5">
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+                    <div className="min-w-0 space-y-6">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                             <InfoTile label="Date" value={describeDate(activity)}/>
                             <InfoTile label="Time" value={describeTime(activity)}/>
                             <div className="hidden sm:block"><InfoTile label="Type" value={typeLabel}/></div>
@@ -210,10 +221,10 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
 
                         {(activity.location || activity.address) && (
                             // phones: the map is a short strip under the address. Wider screens: a small square on the right
-                            <div className={`${cardClass} flex flex-col overflow-hidden sm:flex-row`}>
+                            <div className={`${tileClass} flex flex-col overflow-hidden sm:flex-row`}>
                             <div className="flex flex-1 items-center gap-4 p-4">
                                 <span aria-hidden="true"
-                                      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#C9A3CB]">
+                                      className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-[1.5px] border-navy bg-lilac">
                                     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="#031136"
                                          strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>
@@ -222,19 +233,19 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
                                 </span>
                                 {/* the name and address open the place in Google Maps (the app, on phones) */}
                                 <div className="min-w-0">
-                                    <p className={tileLabelClass}>Location</p>
+                                    <p className={tileLabelClass}>Where</p>
                                     <a href={googleMapsUrl(activity.location, activity.address) ?? undefined}
-                                       target="_blank" rel="noreferrer" className="group block">
-                                        {activity.location && <p className="font-display text-2xl font-semibold text-[#031136] break-words group-hover:underline">{activity.location}</p>}
-                                        {activity.address && <p className="text-sm text-[#031136] whitespace-pre-line group-hover:underline">{activity.address}</p>}
-                                        <span className="mt-1 inline-block text-sm font-bold text-[#434A90] underline">
+                                       target="_blank" rel="noreferrer" className={`group block ${linkFocus}`}>
+                                        {activity.location && <p className="font-display text-2xl font-bold text-navy break-words group-hover:underline">{activity.location}</p>}
+                                        {activity.address && <p className="text-sm text-navy whitespace-pre-line break-words group-hover:underline">{activity.address}</p>}
+                                        <span className="mt-1 inline-flex min-h-11 items-center text-sm font-bold text-bay underline">
                                             Open in Google Maps ↗<span className="sr-only"> (opens in a new tab)</span>
                                         </span>
                                     </a>
                                 </div>
                             </div>
                             {activity.lat !== null && activity.lng !== null && (
-                                <div className="h-40 shrink-0 border-t-2 border-[#031136] sm:h-auto sm:w-52 sm:aspect-square sm:border-t-0 sm:border-l-2">
+                                <div className="h-40 shrink-0 border-t-[1.5px] border-navy sm:h-auto sm:w-52 sm:aspect-square sm:border-t-0 sm:border-l-[1.5px]">
                                     <ClientOnlyMap lat={activity.lat} lng={activity.lng}
                                                    label={activity.location ?? activity.address ?? activity.name}/>
                                 </div>
@@ -244,57 +255,64 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
 
                         {activity.description && (
                             <div>
-                                <p className={tileLabelClass}>Description</p>
-                                <p className="mt-1 text-[#031136] whitespace-pre-line">{activity.description}</p>
+                                <p className={eyebrow}>Description</p>
+                                <p className="mt-1.5 text-[15px] leading-relaxed text-navy whitespace-pre-line break-words">{activity.description}</p>
                             </div>
                         )}
 
-                        <div className={`${cardClass} p-6`}>
-                            <h2 className="font-display text-2xl font-semibold text-[#434A90]">Cost &amp; logistics</h2>
-                            <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm text-[#031136] sm:grid-cols-[10rem_1fr]">
-                                <dt className="font-bold">Cost per person</dt>
+                        <section className={card}>
+                            <h2 className="flex items-center gap-2 font-display text-2xl font-bold text-navy">
+                                <Gem color="lilac" size={20}/>
+                                Cost &amp; logistics
+                            </h2>
+                            <dl className="mt-4 grid gap-x-6 gap-y-3 text-[15px] text-navy sm:grid-cols-[10rem_1fr]">
+                                <dt className={`${tileLabelClass} sm:pt-1`}>Cost per person</dt>
                                 <dd>{describeCost(activity.cost)}</dd>
                                 {activity.notes && <>
-                                    <dt className="font-bold">What to bring</dt>
-                                    <dd className="whitespace-pre-line">{activity.notes}</dd>
+                                    <dt className={`${tileLabelClass} sm:pt-1`}>What to bring</dt>
+                                    <dd className="whitespace-pre-line break-words">{activity.notes}</dd>
                                 </>}
                             </dl>
-                        </div>
+                        </section>
 
-                        <div>
-                            <h2 className="font-display text-2xl font-semibold text-[#031136]">Organizer</h2>
+                        <section>
+                            <h2 className="font-display text-2xl font-bold text-navy">The organizer</h2>
                             {isOrganizer ? (
-                                <p className="mt-1 text-sm text-[#031136]">
+                                <p className="mt-1 text-[15px] text-navy">
                                     You are the organizer of this trip. Travelers see your contact details here.
                                 </p>
                             ) : organizer && (
-                                <div className={`${cardClass} mt-2 flex items-center justify-between gap-4 px-4 py-3`}>
-                                    <div>
-                                        <p className="font-bold text-[#031136]">{organizer.name}</p>
-                                        <p className="text-xs text-[#434A90]">{organizer.email}</p>
+                                <div className={`${tileClass} mt-3 flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between`}>
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        <Crown size={26}/>
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-navy break-words">{organizer.name}</p>
+                                            <p className="text-xs text-bay break-all">{organizer.email}</p>
+                                        </div>
                                     </div>
-                                    <a href={`mailto:${organizer.email}`} className="text-sm font-bold text-[#031136] underline">
+                                    <a href={`mailto:${organizer.email}`}
+                                       className={`inline-flex min-h-11 items-center text-sm font-bold text-navy underline ${linkFocus}`}>
                                         Contact organizer
                                     </a>
                                 </div>
                             )}
-                        </div>
+                        </section>
                     </div>
 
-                    {/* ── side panel: Attendance for the organizer (above the details on mobile), RSVP for travelers ── */}
+                    {/* ── side panel: Attendance for the organizer, RSVP for travelers (both above the details on mobile) ── */}
                     {attendance && (
-                        <aside className="order-first lg:order-none">
+                        <aside className="order-first min-w-0 lg:order-none">
                             <AttendancePanel attendance={attendance}/>
                         </aside>
                     )}
                     {canRsvp && (
-                        <aside>
+                        <aside className="order-first min-w-0 lg:order-none">
                             <RsvpPanel defaultValues={rsvpValues} hasAnswered={hasAnswered}/>
                         </aside>
                     )}
                 </div>
-            </div>
-        </div>
+            </Parchment>
+        </RoyalPage>
     )
 }
 
@@ -302,36 +320,43 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
 /** The organizer's counts, in people (adults + children). */
 function AttendancePanel({attendance}: { attendance: Attendance }) {
     const total = attendance.going + attendance.maybe + attendance.notGoing + attendance.notResponded
+    // each tile carries its label; "Not going" is also striped so it doesn't rely on hue to differ from "Maybe"
     const tiles = [
-        {label: 'Going', count: attendance.going, className: 'bg-[#434A90] text-white', bar: 'bg-[#434A90]'},
-        {label: 'Maybe', count: attendance.maybe, className: 'bg-[#C9A3CB] text-[#031136]', bar: 'bg-[#C9A3CB]'},
-        {label: 'Not going', count: attendance.notGoing, className: 'bg-[#FF6B6C] text-[#031136]', bar: 'bg-[#FF6B6C]'},
-        {label: 'Not responded', count: attendance.notResponded, className: 'bg-[#ECE9F3] text-[#031136]', bar: 'bg-[#ECE9F3]'},
+        {label: 'Going', count: attendance.going, className: 'bg-bay text-white', bar: 'bg-bay', style: undefined},
+        {label: 'Maybe', count: attendance.maybe, className: 'bg-lilac text-navy', bar: 'bg-lilac', style: undefined},
+        {label: 'Not going', count: attendance.notGoing, className: 'bg-pink text-navy', bar: 'bg-pink', style: notGoingStripes},
+        {label: 'Not responded', count: attendance.notResponded, className: 'bg-mist text-navy', bar: 'bg-mist', style: undefined},
     ]
 
     return (
-        <section aria-labelledby="attendance-heading" className={`${cardClass} overflow-hidden`}>
-            <div className="bg-[#031136] px-5 pt-4 pb-3">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#C9A3CB]">Organizer only</p>
-                <h2 id="attendance-heading" className="font-display text-3xl font-bold text-white">Attendance</h2>
-            </div>
-            <SunsetStripes/>
-            <div className="space-y-3 p-4">
+        <section aria-labelledby="attendance-heading" className={navyPanelClass}>
+            <div className={`${navyPanelInnerClass} space-y-4`}>
+                <div className="flex items-center gap-3">
+                    <Crown size={30} outline="#ffffff"/>
+                    <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-lilac">For the queen's eyes only</p>
+                        <h2 id="attendance-heading" className="font-display text-2xl font-bold italic text-white">The Royal Headcount</h2>
+                    </div>
+                </div>
+
                 {/* one bar split by answer */}
-                <div className="flex h-4 overflow-hidden rounded-full border-2 border-[#031136] bg-[#ECE9F3]" aria-hidden="true">
+                <div className="flex h-4 overflow-hidden rounded-full border-[1.5px] border-white bg-mist" aria-hidden="true">
                     {total > 0 && tiles.map((tile) => (
-                        <div key={tile.label} className={tile.bar} style={{width: `${(tile.count / total) * 100}%`}}/>
+                        <div key={tile.label} className={tile.bar} style={{width: `${(tile.count / total) * 100}%`, ...tile.style}}/>
                     ))}
                 </div>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                     {tiles.map((tile) => (
-                        <div key={tile.label} className={`rounded-2xl px-3 py-2 ${tile.className}`}>
-                            <p className="text-xs font-bold">{tile.label}</p>
-                            <p className="font-display text-4xl font-bold">{tile.count}</p>
+                        <div key={tile.label} className={`rounded-[14px] px-3.5 py-3 ${tile.className}`}>
+                            <p className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.14em]">
+                                {tile.style && <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-sm border border-navy/60" style={tile.style}/>}
+                                {tile.label}
+                            </p>
+                            <p className="font-display text-[32px] font-semibold leading-none">{tile.count}</p>
                         </div>
                     ))}
                 </div>
-                <p className="text-xs text-[#031136]">
+                <p className="text-xs leading-relaxed text-mist">
                     Counts are people: each answer includes its adults and children. Travelers never see this panel.
                 </p>
             </div>
@@ -362,92 +387,99 @@ function RsvpPanel({defaultValues, hasAnswered}: { defaultValues: RsvpForm, hasA
     }, [fetcher.state, fetcher.data, form])
 
     const saved = fetcher.data?.success === true
-    const numberClass = "w-full px-3 py-2 rounded-xl border-2 border-[#434A90] bg-[#031136] text-white text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5903]"
+    // the shared label style, in lilac so it stays readable on the navy panel
+    const navyLabel = "mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-lilac"
 
     return (
-        <section aria-labelledby="rsvp-heading" className="rounded-3xl bg-[#031136] p-5 text-white">
-            <div className="grid grid-cols-4 gap-2" aria-hidden="true">
-                <div className="h-1.5 rounded-full bg-[#FF5903]"/>
-                <div className="h-1.5 rounded-full bg-[#FF6B6C]"/>
-                <div className="h-1.5 rounded-full bg-[#C9A3CB]"/>
-                <div className="h-1.5 rounded-full bg-[#434A90]"/>
-            </div>
-            <h2 id="rsvp-heading" className="mt-5 font-display text-3xl font-bold leading-tight">Will you attend?</h2>
-            <p className="mt-2 text-sm">Answer for your household, and say how many adults and children are coming.</p>
+        <section aria-labelledby="rsvp-heading" className={navyPanelClass}>
+            <div className={navyPanelInnerClass}>
+                <div className="flex flex-col items-center gap-1.5 text-center">
+                    <Crown size={30} outline="#ffffff"/>
+                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-lilac">Your presence is requested</p>
+                    <h2 id="rsvp-heading" className="font-display text-[26px] font-bold italic leading-tight text-white">
+                        Will you attend, Your Majesty?
+                    </h2>
+                    <p className="text-sm text-mist">Answer for your household, and say how many adults and children are coming.</p>
+                </div>
 
-            <form
-                className="mt-4 space-y-4 border-t border-white/20 pt-4"
-                noValidate
-                onSubmit={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    void form.handleSubmit()
-                }}
-            >
-                <form.Field name="going">
-                    {(field) => (
-                        <fieldset>
-                            <legend className="sr-only">Will you attend?</legend>
-                            <div className="grid grid-cols-3 gap-2">
-                                {GOING_OPTIONS.map((option) => {
-                                    const checked = field.state.value === option
-                                    return (
-                                        <label key={option}
-                                               className={`cursor-pointer rounded-full border-2 py-2 text-center text-sm font-bold transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-white ${checked ? 'border-[#FF5903] bg-[#FF5903] text-[#031136]' : 'border-[#434A90] text-white hover:bg-white/10'}`}>
-                                            <input type="radio" name={field.name} value={option} checked={checked}
-                                                   onBlur={field.handleBlur}
-                                                   onChange={() => field.handleChange(option)}
-                                                   className="sr-only"/>
-                                            {labels[option]}
-                                        </label>
-                                    )
-                                })}
-                            </div>
-                            {field.state.meta.isTouched && field.state.meta.errors[0] && (
-                                <p className="mt-1 text-sm text-[#FF6B6C]">{field.state.meta.errors[0].message}</p>
-                            )}
-                        </fieldset>
-                    )}
-                </form.Field>
-
-                <div className="grid grid-cols-2 gap-3">
-                    {(['adults', 'children'] as const).map((name) => (
-                        <form.Field key={name} name={name}>
-                            {(field) => (
-                                <div>
-                                    <label htmlFor={`rsvp-${name}`} className="mb-1 block text-sm font-bold capitalize">{name}</label>
-                                    <input id={`rsvp-${name}`} name={field.name} type="number" min="0" step="1" inputMode="numeric"
-                                           value={field.state.value}
-                                           onBlur={field.handleBlur}
-                                           onChange={(event) => field.handleChange(event.target.value)}
-                                           className={numberClass}/>
-                                    {field.state.meta.isTouched && field.state.meta.errors[0] && (
-                                        <p className="mt-1 text-xs text-[#FF6B6C]">{field.state.meta.errors[0].message}</p>
-                                    )}
+                <form
+                    className="mt-4 space-y-4 border-t border-bay pt-4"
+                    noValidate
+                    onSubmit={(event) => {
+                        event.preventDefault()
+                        event.stopPropagation()
+                        void form.handleSubmit()
+                    }}
+                >
+                    <form.Field name="going">
+                        {(field) => (
+                            <fieldset>
+                                <legend className="sr-only">Will you attend?</legend>
+                                <div className="grid grid-cols-3 gap-1.5">
+                                    {GOING_OPTIONS.map((option) => {
+                                        const checked = field.state.value === option
+                                        return (
+                                            <label key={option}
+                                                   className={`flex min-h-11 cursor-pointer items-center justify-center rounded-full border-[1.5px] px-1 text-center text-[11px] font-bold uppercase tracking-[0.08em] transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-navy ${checked ? 'border-lilac bg-lilac text-navy' : 'border-bay bg-navy text-white hover:bg-white/10'}`}>
+                                                <input type="radio" name={field.name} value={option} checked={checked}
+                                                       onBlur={field.handleBlur}
+                                                       onChange={() => field.handleChange(option)}
+                                                       className="sr-only"/>
+                                                {labels[option]}
+                                            </label>
+                                        )
+                                    })}
                                 </div>
-                            )}
-                        </form.Field>
-                    ))}
-                </div>
+                                {field.state.meta.isTouched && field.state.meta.errors[0] && (
+                                    <p className="mt-1 text-sm text-pink">{field.state.meta.errors[0].message}</p>
+                                )}
+                            </fieldset>
+                        )}
+                    </form.Field>
 
-                <form.Subscribe selector={(state) => state.canSubmit}>
-                    {(canSubmit) => (
-                        <button type="submit" disabled={!canSubmit || isSaving}
-                                className="w-full rounded-full border-2 border-[#031136] bg-[#FF5903] py-3 font-bold text-[#031136] shadow-[4px_4px_0_#FF6B6C] transition hover:bg-[#FF5903]/90 disabled:opacity-50">
-                            {isSaving ? 'Saving…' : hasAnswered ? 'Update RSVP' : 'Submit RSVP'}
-                        </button>
-                    )}
-                </form.Subscribe>
-            </form>
+                    <div className="grid grid-cols-2 gap-3">
+                        {(['adults', 'children'] as const).map((name) => (
+                            <form.Field key={name} name={name}>
+                                {(field) => (
+                                    <div>
+                                        <label htmlFor={`rsvp-${name}`} className={navyLabel}>{name}</label>
+                                        <input id={`rsvp-${name}`} name={field.name} type="number" min="0" step="1" inputMode="numeric"
+                                               value={field.state.value}
+                                               onBlur={field.handleBlur}
+                                               onChange={(event) => field.handleChange(event.target.value)}
+                                               className={`${input} min-h-11 text-center font-bold`}/>
+                                        {field.state.meta.isTouched && field.state.meta.errors[0] && (
+                                            <p className="mt-1 text-xs text-pink">{field.state.meta.errors[0].message}</p>
+                                        )}
+                                    </div>
+                                )}
+                            </form.Field>
+                        ))}
+                    </div>
 
-            {saved ? (
-                <div role="status" className="mt-4 rounded-2xl bg-[#434A90] p-4">
-                    <p className="font-bold">Your RSVP has been saved.</p>
-                    <p className="text-sm">Change a response anytime and submit again.</p>
-                </div>
-            ) : (
-                <StatusMessage actionData={fetcher.data}/>
-            )}
+                    <form.Subscribe selector={(state) => state.canSubmit}>
+                        {(canSubmit) => (
+                            <div className="flex justify-center pt-2 pb-1">
+                                <WaxSealButton type="submit" disabled={!canSubmit || isSaving}>
+                                    {isSaving ? 'Saving…' : hasAnswered ? <>Update{' '}<br/>my{' '}<br/>RSVP</> : <>Seal{' '}<br/>my{' '}<br/>RSVP</>}
+                                </WaxSealButton>
+                            </div>
+                        )}
+                    </form.Subscribe>
+                </form>
+
+                {saved ? (
+                    <div role="status" className="mt-4 rounded-[14px] bg-bay p-4 text-center">
+                        <p className="font-display text-lg font-semibold">Your RSVP is sealed.</p>
+                        <p className="text-sm text-mist">Change a response anytime and seal it again.</p>
+                    </div>
+                ) : (
+                    // the shared message is styled for parchment: give it a cream background on this navy panel
+                    <div className="[&>div]:bg-parchment">
+                        <StatusMessage actionData={fetcher.data}/>
+                    </div>
+                )}
+            </div>
         </section>
     )
 }

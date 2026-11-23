@@ -3,6 +3,11 @@ import type {Route} from "./+types/my-trips";
 import {endSession, requireSignedInUser} from "~/utils/session.server";
 import {getMyTrips} from "~/utils/models/trip.model";
 import {getProfileByProfileId} from "~/utils/models/profile.model";
+import {Gem, Parchment, chip, emphasis, eyebrow, goldButton, headline} from "~/components/royal";
+
+export function meta({}: Route.MetaArgs) {
+    return [{title: "My Trips | TripsQueen"}]
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
@@ -62,113 +67,116 @@ export async function loader({request}: Route.LoaderArgs) {
     }
 }
 
-// rotating colors from the sunset palette: trip icon circles and "Planned by" pills
-const iconColors = ['bg-[#FF5A1F]', 'bg-[#FF8A85]', 'bg-[#C19AC5]']
-const pillColors = ['bg-[#C19AC5]', 'bg-[#FF8A85]']
+// rotating gems for the trip icon circles, and chip colors for the "Summoned by" tags
+const gemColors = ['pink', 'lilac', 'sapphire'] as const
+const pillColors = ['bg-lilac!', 'bg-peach!']
 
-// the "Create a new trip" button: orange with a thick navy outline, bold text that never wraps.
-// Full width on phones; sized to its text on wide screens
-const primaryButtonClasses = 'flex items-center justify-center gap-2 whitespace-nowrap rounded-full border-[3px] border-[#0B1533] bg-[#FF5A1F] px-6 py-3 text-base font-bold text-[#0B1533] hover:bg-[#FF7A45] lg:py-2.5'
+// a trip row: white card with a navy outline, gold focus ring
+const rowClasses = 'flex min-h-11 items-center gap-3 rounded-2xl border-[1.5px] border-navy bg-white transition-colors hover:bg-mist focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold focus-visible:ring-offset-2 focus-visible:ring-offset-parchment'
 
 
-// picture placeholder, same as the landing page; swap for the trip's photo later
-function ImageIcon({className}: { className: string }) {
+// a navy rule with a gem in the middle, under the heading
+function HeadingRule() {
     return (
-        <svg aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="4"/>
-            <circle cx="15.5" cy="8.5" r="1.5"/>
-            <path strokeLinejoin="round" d="m3 16 5-5 4 4 2-2 7 7"/>
-        </svg>
+        <div aria-hidden="true" className="flex w-full items-center gap-2.5">
+            <span className="h-px flex-1 bg-navy"/>
+            <Gem color="pink" size={20}/>
+            <span className="h-px flex-1 bg-navy"/>
+        </div>
     )
 }
-
 
 
 export default function MyTrips({loaderData}: Route.ComponentProps) {
     const {planned, invited, upNextId, message} = loaderData
 
     return (
-        // same lavender page background as the travel itinerary page
         // flex-1 fills the space down to the footer (min-h-full can't, since the parent has no fixed height)
-        <main className="flex-1 bg-[#F7EEF6] text-[#0B1533]">
-            <div className="mx-auto max-w-[1248px] px-5 py-6 sm:px-8 lg:py-10">
+        <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-3 pb-14 pt-4 sm:px-8 sm:pt-6">
+            <Parchment>
+                <div className="flex flex-col gap-7">
 
-                {message && (
-                    <p role="alert" className="mb-6 rounded-2xl border-[3px] border-[#FF5A1F] bg-white p-4 font-medium">{message}</p>
-                )}
+                    {message && (
+                        <p role="alert" className="rounded-2xl border-[1.5px] border-royal-red bg-white p-4 font-medium text-royal-red">{message}</p>
+                    )}
 
-                {/* phones: one column. Wide screens: trips on the left, buttons + invites in a fixed right column */}
-                {/* grid-cols-1 caps the phone column at the screen width, so long one-line text truncates instead of overflowing */}
-                <div className="grid grid-cols-1 gap-x-9 gap-y-6 lg:grid-cols-[minmax(0,1fr)_468px] lg:gap-y-8">
-
-                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-none">My Trips</h1>
-
-                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-end lg:gap-3">
-                        <Link to="/create-trip" className={primaryButtonClasses}>+ Create a new trip</Link>
+                    {/* heading and the gold "new trip" button: stacked on phones, side by side on wider screens */}
+                    <div className="flex flex-col gap-5 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+                        <div className="flex flex-col gap-2.5">
+                            <p className={eyebrow}>The royal archives</p>
+                            <h1 className={`${headline} text-[40px] sm:text-6xl`}>
+                                My <em className={emphasis}>Royal</em> Trips
+                            </h1>
+                        </div>
+                        <Link to="/create-trip" className={`${goldButton} w-full whitespace-nowrap sm:w-auto`}>+ Decree a new trip</Link>
                     </div>
 
-                    {/* trips the signed-in user owns */}
-                    <section aria-labelledby="planned-heading">
-                        <h2 id="planned-heading" className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-[#3A4187] lg:mb-4">
-                            Planned by you
-                        </h2>
+                    <HeadingRule/>
 
-                        {planned.length === 0 ? (
-                            <p className="rounded-3xl border-[3px] border-[#0B1533] bg-white p-5">
-                                You haven't planned a trip yet. Create one to get started!
-                            </p>
-                        ) : (
-                            <ul className="flex flex-col gap-3 lg:gap-4">
-                                {planned.map((trip, index) => (
-                                    <li key={trip.id}>
-                                        <Link to={`/trip-itinerary/${trip.id}`}
-                                              className="flex items-center gap-4 rounded-full border-[3px] border-[#0B1533] bg-white p-2 pr-4 transition-colors hover:bg-[#FFF5F0] lg:gap-5 lg:p-2.5 lg:pr-6">
-                                            <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full lg:h-16 lg:w-16 ${iconColors[index % iconColors.length]}`}>
-                                                <ImageIcon className="h-6 w-6 lg:h-7 lg:w-7"/>
-                                            </span>
-                                            <span className="min-w-0 flex-1">
-                                                <span className="block truncate text-xl font-extrabold tracking-tight leading-tight lg:text-3xl">{trip.title}</span>
-                                                <span className="block truncate text-sm text-[#3A4187] lg:text-base">
-                                                    {trip.destination} · {trip.dates}
+                    {/* phones: one column. Wide screens: trips on the left, invites in a right column */}
+                    {/* grid-cols-1 caps the phone column at the screen width, and long trip names wrap instead of overflowing */}
+                    <div className="grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_400px]">
+
+                        {/* trips the signed-in user owns */}
+                        <section aria-labelledby="planned-heading">
+                            <h2 id="planned-heading" className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-bay">
+                                Planned by you
+                            </h2>
+
+                            {planned.length === 0 ? (
+                                <p className="rounded-2xl border-[1.5px] border-navy bg-white p-5 text-bay">
+                                    No trips proclaimed yet. Decree one to get started!
+                                </p>
+                            ) : (
+                                <ul className="flex flex-col gap-3">
+                                    {planned.map((trip, index) => (
+                                        <li key={trip.id}>
+                                            <Link to={`/trip-itinerary/${trip.id}`}
+                                                  className={`${rowClasses} p-2.5 pr-4 sm:gap-4 sm:p-3 sm:pr-5`}>
+                                                <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-navy sm:h-14 sm:w-14">
+                                                    <Gem color={gemColors[index % gemColors.length]} size={26} outline="#ffffff"/>
                                                 </span>
-                                            </span>
-                                            {trip.id === upNextId && (
-                                                <span className="shrink-0 whitespace-nowrap rounded-full bg-[#FF8A85] px-3 py-1 text-sm font-bold">Up next</span>
-                                            )}
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        )}
-                    </section>
+                                                <span className="min-w-0 flex-1">
+                                                    {/* phones: the "Up next" tag sits above the name, so the name gets the full width */}
+                                                    {trip.id === upNextId && (
+                                                        <span className={`${chip} mb-1 whitespace-nowrap bg-pink! sm:hidden`}>Up next</span>
+                                                    )}
+                                                    <span className="block break-words font-display text-xl font-semibold leading-tight sm:text-[26px]">{trip.title}</span>
+                                                    <span className="block text-[13px] text-bay">
+                                                        {trip.destination} · {trip.dates}
+                                                    </span>
+                                                </span>
+                                                {trip.id === upNextId && (
+                                                    <span className={`${chip} shrink-0 self-start whitespace-nowrap bg-pink! max-sm:hidden`}>Up next</span>
+                                                )}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </section>
 
-                    {/* trips someone else planned that the user has joined */}
-                    <section aria-labelledby="invites-heading"
-                             className="mt-3 self-start overflow-hidden rounded-[28px] border-[3px] border-[#0B1533] bg-[#434A8E] text-white lg:mt-0">
-                        <div aria-hidden="true">
-                            <div className="h-2 bg-[#FF5A1F]"/>
-                            <div className="h-1.5 bg-[#FF8A85]"/>
-                            <div className="h-1.5 bg-[#C19AC5]"/>
-                        </div>
-                        <div className="px-4 pb-5 pt-5 lg:px-7 lg:pb-7 lg:pt-6">
-                            <h2 id="invites-heading" className="text-3xl font-extrabold tracking-tight lg:text-4xl">Trip Invites</h2>
-                            <p className="mt-3 text-white/90">
-                                Trips other people have invited you to. Open one to see the plan and RSVP.
+                        {/* trips someone else planned that the user has joined */}
+                        <section aria-labelledby="invites-heading"
+                                 className="self-start rounded-2xl border-[1.5px] border-navy bg-lilac/15 p-5 sm:p-6">
+                            <h2 id="invites-heading" className="font-display text-[26px] font-bold italic leading-tight">Royal Summons</h2>
+                            <p className="mt-2 text-[15px] leading-normal text-bay">
+                                Trips other queens have invited you to. Open one to see the plan and RSVP.
                             </p>
 
                             {invited.length === 0 ? (
-                                <p className="mt-4 rounded-2xl bg-white/10 p-4 text-white/90">No invites yet.</p>
+                                <p className="mt-4 rounded-2xl border-[1.5px] border-dashed border-navy/40 bg-white p-4 text-bay">No summons yet.</p>
                             ) : (
                                 <ul className="mt-4 flex flex-col gap-3">
                                     {invited.map((trip, index) => (
                                         <li key={trip.id}>
                                             <Link to={`/trip-itinerary/${trip.id}`}
-                                                  className="flex items-center justify-between gap-3 rounded-full bg-white py-2.5 pl-5 pr-3 text-[#0B1533] transition-colors hover:bg-[#FFF5F0]">
-                                                <span className="min-w-0 truncate text-lg font-extrabold tracking-tight lg:text-xl">{trip.title}</span>
+                                                  className={`${rowClasses} justify-between py-3 pl-4 pr-3`}>
+                                                <span className="min-w-0 break-words font-display text-xl font-semibold">{trip.title}</span>
                                                 {trip.ownerName && (
-                                                    <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold lg:text-sm ${pillColors[index % pillColors.length]}`}>
+                                                    <span className={`${chip} shrink-0 whitespace-nowrap ${pillColors[index % pillColors.length]}`}>
                                                         <span className="lg:hidden">By</span>
-                                                        <span className="hidden lg:inline">Planned by</span> {trip.ownerName}
+                                                        <span className="hidden lg:inline">Summoned by</span>&nbsp;{trip.ownerName}
                                                     </span>
                                                 )}
                                             </Link>
@@ -176,10 +184,10 @@ export default function MyTrips({loaderData}: Route.ComponentProps) {
                                     ))}
                                 </ul>
                             )}
-                        </div>
-                    </section>
+                        </section>
+                    </div>
                 </div>
-            </div>
+            </Parchment>
         </main>
     )
 }

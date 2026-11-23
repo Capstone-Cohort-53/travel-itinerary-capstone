@@ -9,6 +9,7 @@ import type {Coordinates, PlaceSuggestion} from "~/utils/place-search";
 import {PlaceSearchInput} from "~/routes/activity/place-search-input";
 import {NeedIdeas} from "~/routes/activity/need-ideas";
 import type {TripIdea} from "~/utils/trip-ideas";
+import {card, chip, eyebrow, GemDivider, headline, label, Parchment, RoyalPage, WaxSealButton} from "~/components/royal";
 
 /**
  * The activity form the Add and Edit pages share. TanStack Form validates with
@@ -16,7 +17,7 @@ import type {TripIdea} from "~/utils/trip-ideas";
  * action, which validates again and saves. The action redirects to the trip's
  * itinerary on success, or returns a message that shows above the buttons.
  *
- * Styled after the "Retro Sunset · Add Activity" mockup. The mockup splits some
+ * Styled after the "TripsQueen · Royal Decree" Add Activity design. The design splits some
  * fields into several boxes (Date / Start / End, and Street / City, State / ZIP);
  * those boxes are combined here in the browser into the same startDatetime,
  * endDatetime and address values the API has always received.
@@ -120,17 +121,31 @@ function describeWhen({date, start, end}: When): string {
     const day = new Date(`${date}T00:00Z`).toLocaleDateString('en-US', {timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric'})
     const time = (hhmm: string) => new Date(`1970-01-01T${hhmm}Z`).toLocaleTimeString('en-US', {timeZone: 'UTC', hour: 'numeric', minute: '2-digit'})
     const times = [start, end].filter(Boolean).map(time).join(' – ')
-    return times ? `${day} | ${times}` : day
+    return times ? `${day} · ${times}` : day
 }
 
 
-// ── Retro Sunset styles ──
+// ── Royal Decree styles ──
 
-const labelClass = "block text-sm font-bold text-[#031136] mb-1.5"
-const inputClass = "w-full px-4 py-2.5 rounded-xl border-2 bg-white text-sm text-[#031136] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5903] focus:ring-offset-1"
-const cardClass = "bg-white rounded-3xl border-2 border-[#031136] p-6 sm:p-7 space-y-4"
-const sectionTitleClass = "font-display text-2xl font-semibold text-[#434A90]"
-const pillClass = "w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] font-bold text-sm text-center transition"
+const labelClass = label
+// the shared `input` look, without its border color, so a box with an error can turn royal red
+const inputClass = "block w-full min-w-0 rounded-xl border-[1.5px] bg-white px-3.5 py-2.5 text-base text-navy placeholder:text-[#6b6f8f] focus:outline-none focus:ring-2 focus:ring-gold"
+// each part of the form is an "article" of the decree: a navy rule on top, a small eyebrow and an italic Playfair title
+const articleClass = "space-y-4 border-t-[1.5px] border-navy pt-5"
+const articleEyebrowClass = "text-[11px] font-bold uppercase tracking-[0.18em] text-royal-red"
+const articleTitleClass = "font-display text-2xl font-bold italic text-navy"
+const helperClass = "mt-1 text-xs text-bay"
+const errorClass = "mt-1 text-sm font-medium text-royal-red"
+
+/** "Article I" and the article's title. */
+function ArticleHeading({number, children}: { number: string, children: ReactNode }) {
+    return (
+        <div>
+            <p className={articleEyebrowClass}>Article {number}</p>
+            <h2 className={`mt-1 ${articleTitleClass}`}>{children}</h2>
+        </div>
+    )
+}
 
 // ── field helpers: every input shows its first error once it has been touched ──
 
@@ -149,18 +164,18 @@ function inputProps(field: AnyFieldApi) {
         onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => field.handleChange(event.target.value),
         'aria-invalid': error ? true : undefined,
         'aria-describedby': error ? `${field.name}-error` : undefined,
-        className: `${inputClass} ${error ? 'border-red-600' : 'border-[#031136]'}`,
+        className: `${inputClass} ${error ? 'border-royal-red' : 'border-navy'}`,
     }
 }
 
 function FieldError({field}: {field: AnyFieldApi}) {
     const error = fieldError(field)
-    return error ? <p id={`${field.name}-error`} className="mt-1 text-sm text-red-600">{error}</p> : null
+    return error ? <p id={`${field.name}-error`} className={errorClass}>{error}</p> : null
 }
 
 /** A plain input for the combined boxes, which aren't fields of their own. */
 function boxClass(hasError: boolean) {
-    return `${inputClass} ${hasError ? 'border-red-600' : 'border-[#031136]'}`
+    return `${inputClass} ${hasError ? 'border-royal-red' : 'border-navy'}`
 }
 
 
@@ -168,9 +183,13 @@ type ActivityFormPageProps = {
     trip: Trip,
     /** what the form starts with: empty values for Add, the saved activity for Edit */
     defaultValues: ActivityForm,
-    heading: string,
+    /** the small capitals above the headline, e.g. "Add to the decree" */
+    eyebrowText: string,
+    /** the Playfair headline; wrap a word in <em className={emphasis}> */
+    heading: ReactNode,
     intro: string,
-    submitLabel: string,
+    /** the words on the gold wax seal; keep them short */
+    submitLabel: ReactNode,
     /** shown below the form, outside it: the Edit page's delete button */
     footer?: ReactNode,
     /** a place on this trip, so Location Name suggestions near it come first; null when there isn't one yet */
@@ -179,7 +198,7 @@ type ActivityFormPageProps = {
     showIdeas?: boolean,
 }
 
-export function ActivityFormPage({trip, defaultValues, heading, intro, submitLabel, footer, searchNear, showIdeas = false}: ActivityFormPageProps) {
+export function ActivityFormPage({trip, defaultValues, eyebrowText, heading, intro, submitLabel, footer, searchNear, showIdeas = false}: ActivityFormPageProps) {
     const fetcher = useFetcher<FormActionResponse>()
     const isSaving = fetcher.state !== 'idle'
 
@@ -230,25 +249,31 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
     const tripDates = `${formatTripDate(trip.startDate)} – ${formatTripDate(trip.endDate)}`
 
     return (
-        <div className="bg-[#FBF3FA] min-h-screen py-10 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-5xl mx-auto">
+        <RoyalPage>
+            <Parchment>
 
-                {/* ── heading ── */}
-                <p className="text-sm font-bold text-[#434A90]">{trip.title}</p>
-                <h1 className="mt-1 font-display text-4xl sm:text-6xl font-bold tracking-tight break-words text-[#031136]">{heading}</h1>
-                <p className="mt-2 mb-8 text-sm text-[#031136]">
-                    {intro} <span className="text-[#434A90]">* Required</span>
-                </p>
+                {/* ── the decree's heading, centered like the design ── */}
+                <header className="flex flex-col items-center gap-3 text-center">
+                    <p className={eyebrow}>{eyebrowText}</p>
+                    <h1 className={`${headline} break-words text-4xl sm:text-5xl lg:text-[57px]`}>{heading}</h1>
+                    <p className="max-w-xl text-[15px] text-bay">
+                        <span className="font-bold">{trip.title}</span> · {intro} <span className="whitespace-nowrap">* Required</span>
+                    </p>
+                </header>
 
-                <div className="grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-start">
+                <div className="my-8">
+                    <GemDivider color="pink"/>
+                </div>
 
-                    <div className="space-y-5">
+                <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+
+                    <div className="min-w-0 space-y-8">
                         {showIdeas && (
                             <NeedIdeas near={searchNear} destination={trip.destination} onPick={pickIdea}/>
                         )}
 
                         <form
-                            className="space-y-5"
+                            className="space-y-8"
                             noValidate
                             onSubmit={(event) => {
                                 event.preventDefault()
@@ -264,8 +289,8 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                         >
 
                             {/* ── basic info ── */}
-                            <section className={cardClass}>
-                                <h2 className={sectionTitleClass}>Basic info</h2>
+                            <section className={articleClass}>
+                                <ArticleHeading number="I">The basics</ArticleHeading>
 
                                 <form.Field name="name">
                                     {(field) => (
@@ -287,7 +312,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                     const checked = field.state.value === option
                                                     return (
                                                         <label key={option}
-                                                               className={`flex cursor-pointer items-center gap-2 px-5 py-2 rounded-full border-2 text-sm font-bold capitalize transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#FF5903] has-[:focus-visible]:ring-offset-1 ${checked ? 'border-[#FF5903] bg-[#FF5903] text-[#031136]' : 'border-[#031136] bg-white text-[#031136] hover:bg-[#031136]/5'}`}>
+                                                               className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-full border-[1.5px] border-navy px-5 py-2 text-[15px] capitalize text-navy transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-parchment ${checked ? 'bg-lilac font-bold' : 'bg-transparent font-medium hover:bg-navy/5'}`}>
                                                             <input
                                                                 type="radio"
                                                                 name={field.name}
@@ -297,10 +322,10 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                                 onChange={() => field.handleChange(option)}
                                                                 className="sr-only"
                                                             />
-                                                            {/* the little radio dot from the mockup */}
+                                                            {/* the little radio dot from the design */}
                                                             <span aria-hidden="true"
-                                                                  className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${checked ? 'border-white bg-white' : 'border-[#031136]/50'}`}>
-                                                                {checked && <span className="h-2 w-2 rounded-full bg-[#434A90]"/>}
+                                                                  className="flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] border-navy bg-white">
+                                                                {checked && <span className="h-2 w-2 rounded-full bg-navy"/>}
                                                             </span>
                                                             {option}
                                                         </label>
@@ -345,7 +370,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                                        className={boxClass(Boolean(error))}/>
                                                             </div>
                                                             <div>
-                                                                <label htmlFor="activity-end" className={labelClass}>End <span className="font-normal text-gray-500">(optional)</span></label>
+                                                                <label htmlFor="activity-end" className={labelClass}>End <span className="font-medium normal-case tracking-normal">(optional)</span></label>
                                                                 <input id="activity-end" type="time"
                                                                        value={when.end}
                                                                        onBlur={endField.handleBlur}
@@ -354,8 +379,8 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                             </div>
                                                         </div>
                                                         {error
-                                                            ? <p id="when-error" role="alert" className="mt-1 text-sm text-red-600">{error}</p>
-                                                            : <p className="mt-1 text-xs text-gray-500">Trip: {tripDates}. Leave End blank if there’s no set finish time.</p>}
+                                                            ? <p id="when-error" role="alert" className={errorClass}>{error}</p>
+                                                            : <p className={helperClass}>Trip: {tripDates}. Leave End blank if there’s no set finish time.</p>}
                                                     </div>
                                                 )
                                             }}
@@ -377,20 +402,20 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                             </section>
 
                             {/* ── location ── */}
-                            <section className={cardClass}>
-                                <h2 className={sectionTitleClass}>Location</h2>
-                                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                                    {/* the big lilac location badge from the mockup */}
+                            <section className={articleClass}>
+                                <ArticleHeading number="II">Where the court shall gather</ArticleHeading>
+                                <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+                                    {/* the big lilac location badge from the design */}
                                     <span aria-hidden="true"
-                                          className="hidden sm:flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-[#C9A3CB]">
-                                        <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="#031136"
+                                          className="hidden sm:flex h-[110px] w-[110px] shrink-0 items-center justify-center rounded-full border-[1.5px] border-navy bg-lilac">
+                                        <svg viewBox="0 0 24 24" className="h-9 w-9" fill="none" stroke="#031136"
                                              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>
                                             <circle cx="12" cy="10" r="2.5"/>
                                         </svg>
                                     </span>
 
-                                    <div className="flex-1 space-y-3">
+                                    <div className="min-w-0 flex-1 space-y-4">
                                         <form.Field name="location">
                                             {(field) => (
                                                 <div>
@@ -403,7 +428,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                                       near={searchNear}
                                                                       destination={trip.destination}
                                                                       placeholder="Start typing a place, e.g., La Choza"/>
-                                                    <p className="mt-1 text-xs text-gray-500">Pick a suggestion to fill in the address, or type it yourself.</p>
+                                                    <p className={helperClass}>Pick a suggestion to fill in the address, or type it yourself.</p>
                                                     <FieldError field={field}/>
                                                 </div>
                                             )}
@@ -453,8 +478,8 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                             </div>
                                                         </div>
                                                         {error
-                                                            ? <p className="text-sm text-red-600">{error}</p>
-                                                            : <p className="text-xs text-gray-500">Add the address to show a map on the activity page.</p>}
+                                                            ? <p className="-mt-3 text-sm font-medium text-royal-red">{error}</p>
+                                                            : <p className="-mt-3 text-xs text-bay">Add the address to show a map on the activity page.</p>}
                                                     </>
                                                 )
                                             }}
@@ -464,15 +489,15 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                             </section>
 
                             {/* ── cost & logistics ── */}
-                            <section className={cardClass}>
-                                <h2 className={sectionTitleClass}>Cost &amp; logistics</h2>
+                            <section className={articleClass}>
+                                <ArticleHeading number="III">Cost &amp; logistics</ArticleHeading>
 
                                 <form.Field name="cost">
                                     {(field) => (
                                         <div className="sm:max-w-[14rem]">
                                             <label htmlFor={field.name} className={labelClass}>Cost Per Person</label>
                                             <input type="number" min="0" step="0.01" placeholder="35.00" {...inputProps(field)}/>
-                                            <p className="mt-1 text-xs text-gray-500">Leave blank if it’s free.</p>
+                                            <p className={helperClass}>Leave blank if it’s free.</p>
                                             <FieldError field={field}/>
                                         </div>
                                     )}
@@ -494,21 +519,21 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                             {/* ── buttons ── */}
                             <StatusMessage actionData={fetcher.data}/>
 
-                            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                            {/* an italic "cancel" link beside the gold wax seal that saves the activity */}
+                            <div className="flex flex-wrap items-center justify-center gap-6 pt-2 sm:justify-end sm:gap-8">
                                 <Link to={`/trip-itinerary/${trip.id}`}
-                                      className={`${pillClass} bg-white text-[#031136] hover:bg-[#031136]/5`}>
-                                    Cancel
+                                      className="inline-flex min-h-11 items-center rounded-md px-2 font-display text-lg italic text-navy underline decoration-[1.5px] underline-offset-4 hover:text-bay focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+                                    cancel
                                 </Link>
 
                                 <form.Subscribe selector={(state) => state.canSubmit}>
                                     {(canSubmit) => (
-                                        <button
+                                        <WaxSealButton
                                             type="submit"
                                             disabled={!canSubmit || isSaving}
-                                            className={`${pillClass} bg-[#FF5903] text-[#031136] hover:bg-[#FF5903]/90 disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
                                             {isSaving ? 'Saving…' : submitLabel}
-                                        </button>
+                                        </WaxSealButton>
                                     )}
                                 </form.Subscribe>
                             </div>
@@ -518,39 +543,39 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                     </div>
 
                     {/* ── side panel: the trip, a live preview of the itinerary card, and who can see it ── */}
-                    <aside className="space-y-4 lg:sticky lg:top-6">
-                        <div className="rounded-3xl bg-[#FF6B6C] px-5 py-4 text-[#031136]">
-                            <p className="text-xs font-bold uppercase tracking-wider">Trip</p>
-                            <p className="mt-1 font-display text-2xl font-bold leading-tight">{trip.title}</p>
-                            <p className="mt-2 text-sm">{tripDates} | {trip.destination}</p>
-                            <p className="mt-1 text-sm font-bold">Your role: Organizer</p>
+                    <aside className="min-w-0 space-y-5 lg:sticky lg:top-6">
+                        <div className={card}>
+                            <p className={eyebrow}>The trip</p>
+                            <p className="mt-1.5 break-words font-display text-[22px] font-semibold leading-tight text-navy">{trip.title}</p>
+                            <p className="mt-1.5 text-sm text-navy">{tripDates} · {trip.destination}</p>
+                            <p className={`mt-3 ${chip}`}>Your role: Organizer</p>
                         </div>
 
-                        <div className="rounded-3xl border-2 border-[#031136] bg-white p-4">
-                            <h2 className="font-display text-xl font-semibold text-[#031136]">Itinerary preview</h2>
+                        <div className="rounded-2xl border-[1.5px] border-navy bg-[#f6eff7] p-5">
+                            <h2 className={articleEyebrowClass}>As it shall appear</h2>
                             <form.Subscribe selector={(state) => state.values}>
                                 {(values) => (
-                                    <div className="mt-3 rounded-xl border-l-4 border-[#FF5903] bg-[#FBF3FA] px-3 py-2 text-[#031136]">
-                                        <p className="text-xs text-[#434A90]">{describeWhen(when)}</p>
-                                        <p className="font-bold">{values.name || 'Activity name'}</p>
-                                        <p className="text-xs">
+                                    <div className="mt-2 space-y-1 text-navy">
+                                        <p className="text-sm text-bay">{describeWhen(when)}</p>
+                                        <p className="break-words font-display text-[23px] font-semibold leading-tight">{values.name || 'Activity name'}</p>
+                                        <p className="break-words text-sm">
                                             {values.mandatory === 'mandatory' ? 'Required' : 'Optional'}
-                                            {values.location && ` | ${values.location}`}
+                                            {values.location && ` · ${values.location}`}
                                         </p>
-                                        <p className="mt-1 text-xs">
-                                            {values.cost && Number(values.cost) > 0 ? `$${Number(values.cost).toFixed(2)} per person` : 'Free'} | RSVP open
+                                        <p className="text-sm">
+                                            {values.cost && Number(values.cost) > 0 ? `$${Number(values.cost).toFixed(2)} per person` : 'Free'} · RSVP open
                                         </p>
                                     </div>
                                 )}
                             </form.Subscribe>
                         </div>
 
-                        <p className="rounded-2xl bg-[#C9A3CB] px-5 py-3 text-xs text-[#031136]">
-                            All accepted travelers can view this activity. Only organizers can edit it.
+                        <p className="font-display text-base italic leading-snug text-bay">
+                            All accepted travelers may view this activity. Only the organizer may edit it.
                         </p>
                     </aside>
                 </div>
-            </div>
-        </div>
+            </Parchment>
+        </RoyalPage>
     );
 }

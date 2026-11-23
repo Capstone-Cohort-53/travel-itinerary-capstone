@@ -1,9 +1,9 @@
 import {useFetcher} from "react-router";
 import {useForm} from "@tanstack/react-form";
-import {Button, HelperText, Label, Radio, TextInput} from "flowbite-react";
 import {AcceptInviteFormSchema, type Member} from "~/utils/models/member.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
+import {card, eyebrow, goldButton, input, label} from "~/components/royal";
 
 type AcceptInviteFormValues = { going: 'yes' | 'no' | 'maybe', adults: string, children: string }
 
@@ -14,6 +14,10 @@ const goingOptions = [
     {value: 'maybe', label: 'Maybe'},
     {value: 'no', label: 'No'},
 ] as const
+
+// each answer is a pill (44px tall); the chosen one turns lilac
+const radioPill = 'flex min-h-11 cursor-pointer items-center gap-2 rounded-full border-[1.5px] border-navy bg-white px-5 text-sm font-bold text-navy transition hover:bg-navy/5 has-[:checked]:bg-lilac has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-gold has-[:focus-visible]:ring-offset-2'
+const fieldError = 'mt-1 text-sm font-medium text-royal-red'
 
 type UpdateRsvpFormProps = { member: Member }
 
@@ -42,19 +46,10 @@ export function UpdateRsvpForm(props: UpdateRsvpFormProps) {
     })
 
     return (
-        // indigo card with a navy border and stripes, same as the Invite a Traveler and accept-invitation forms
-        // (replaces the gray Flowbite Card); full width of the page column, mb-6 spaces it from the stat cards
-        <div className="mb-6 overflow-hidden rounded-2xl border border-[#0B1533] bg-[#3A4187]">
-            {/* decorative stripes along the top, matching the invite form */}
-            <div aria-hidden="true">
-                <div className="h-1.5 bg-[#FF5A1F]"/>
-                <div className="h-1.5 bg-[#FF8A85]"/>
-                <div className="h-1.5 bg-[#FFB3A7]"/>
-                <div className="h-1.5 bg-[#C19AC5]"/>
-            </div>
+        // plain parchment card with a navy border, above the roster
+        <div className={`${card} mb-6 sm:p-6`}>
             <form
-                // full-width fields; a bit less padding on phones
-                className="flex flex-col gap-4 p-4 sm:p-6"
+                className="flex flex-col gap-4"
                 noValidate
                 onSubmit={(event) => {
                     event.preventDefault()
@@ -62,27 +57,31 @@ export function UpdateRsvpForm(props: UpdateRsvpFormProps) {
                     void form.handleSubmit()
                 }}
             >
-                <h5 className="text-xl sm:text-2xl font-bold tracking-wider text-white">Change my RSVP</h5>
+                <div>
+                    <p className={eyebrow}>Change my RSVP</p>
+                    <h2 className="mt-1 font-display text-2xl font-bold italic text-navy">Will you attend, Your Majesty?</h2>
+                </div>
 
                 <form.Field name="going">
                     {(field) => {
                         const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
                         return (
                             <fieldset aria-describedby={error ? `${field.name}-error` : undefined}>
-                                {/* white legend; radios wrap onto a second line on very narrow phones */}
-                                <legend className="mb-2 text-sm font-bold text-white">Are you going?</legend>
-                                <div className="flex flex-wrap gap-4 sm:gap-6">
+                                {/* pills wrap onto a second line on very narrow phones */}
+                                <legend className={label}>Are you going?</legend>
+                                <div className="flex flex-wrap gap-2 sm:gap-3">
                                     {goingOptions.map((option) => (
-                                        <div key={option.value} className="flex items-center gap-2">
-                                            <Radio id={`going-${option.value}`} name={field.name} value={option.value}
+                                        <label key={option.value} htmlFor={`going-${option.value}`} className={radioPill}>
+                                            <input type="radio" id={`going-${option.value}`} name={field.name} value={option.value}
+                                                   className="h-4 w-4 accent-navy"
                                                    checked={field.state.value === option.value}
                                                    onBlur={field.handleBlur}
                                                    onChange={() => field.handleChange(option.value)}/>
-                                            <Label htmlFor={`going-${option.value}`} className="text-white">{option.label}</Label>
-                                        </div>
+                                            {option.label}
+                                        </label>
                                     ))}
                                 </div>
-                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
+                                {error && <p id={`${field.name}-error`} className={fieldError}>{error}</p>}
                             </fieldset>
                         )
                     }}
@@ -90,21 +89,20 @@ export function UpdateRsvpForm(props: UpdateRsvpFormProps) {
 
                 {/* adults and children side by side on tablet and up, stacked on phones */}
                 <div className="grid gap-4 sm:grid-cols-2">
-                    {/* labels are white and errors light red (text-red-200) so both are readable on indigo */}
                     <form.Field name="adults">
                         {(field) => {
                             const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
                             return (
                                 <div>
-                                    <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Number of Adults (including you)</Label>
-                                    <TextInput id={field.name} name={field.name} type="number" min={1} max={100} shadow
-                                               value={field.state.value}
-                                               onBlur={field.handleBlur}
-                                               onChange={(event) => field.handleChange(event.target.value)}
-                                               color={error ? 'failure' : undefined}
-                                               aria-invalid={error ? true : undefined}
-                                               aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                    {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
+                                    <label htmlFor={field.name} className={label}>Number of Adults (including you)</label>
+                                    <input id={field.name} name={field.name} type="number" min={1} max={100}
+                                           className={`${input} ${error ? 'border-royal-red' : ''}`}
+                                           value={field.state.value}
+                                           onBlur={field.handleBlur}
+                                           onChange={(event) => field.handleChange(event.target.value)}
+                                           aria-invalid={error ? true : undefined}
+                                           aria-describedby={error ? `${field.name}-error` : undefined}/>
+                                    {error && <p id={`${field.name}-error`} className={fieldError}>{error}</p>}
                                 </div>
                             )
                         }}
@@ -115,15 +113,15 @@ export function UpdateRsvpForm(props: UpdateRsvpFormProps) {
                             const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
                             return (
                                 <div>
-                                    <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Number of Children</Label>
-                                    <TextInput id={field.name} name={field.name} type="number" min={0} max={10} shadow
-                                               value={field.state.value}
-                                               onBlur={field.handleBlur}
-                                               onChange={(event) => field.handleChange(event.target.value)}
-                                               color={error ? 'failure' : undefined}
-                                               aria-invalid={error ? true : undefined}
-                                               aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                    {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
+                                    <label htmlFor={field.name} className={label}>Number of Children</label>
+                                    <input id={field.name} name={field.name} type="number" min={0} max={10}
+                                           className={`${input} ${error ? 'border-royal-red' : ''}`}
+                                           value={field.state.value}
+                                           onBlur={field.handleBlur}
+                                           onChange={(event) => field.handleChange(event.target.value)}
+                                           aria-invalid={error ? true : undefined}
+                                           aria-describedby={error ? `${field.name}-error` : undefined}/>
+                                    {error && <p id={`${field.name}-error`} className={fieldError}>{error}</p>}
                                 </div>
                             )
                         }}
@@ -132,16 +130,16 @@ export function UpdateRsvpForm(props: UpdateRsvpFormProps) {
 
                 <form.Subscribe selector={(state) => state.canSubmit}>
                     {(canSubmit) => (
-                        // orange pill button with navy text: full width on phones, normal width on tablet and up
-                        <Button className="w-full sm:w-auto sm:self-start rounded-full border border-[#0B1533] bg-[#FFA06B] font-bold text-[#0B1533] hover:bg-[#FF8A55] focus:ring-[#FFB3A7]" type="submit" disabled={!canSubmit || isSending}>
+                        // gold pill: full width on phones, normal width on tablet and up
+                        <button className={`${goldButton} w-full sm:w-auto sm:self-start`} type="submit" disabled={!canSubmit || isSending}>
                             {isSending ? 'Updating…' : 'Update RSVP'}
-                        </Button>
+                        </button>
                     )}
                 </form.Subscribe>
 
-                {/* light lavender helper text on indigo; this form stays on the page, so no "taken to the trip" */}
-                <p className="text-[#F7EEF6]">
-                    Your changes update the attendance counts below.
+                {/* this form stays on the page, so no "taken to the trip" */}
+                <p className="text-sm text-bay">
+                    Your changes update the attendance counts.
                 </p>
 
                 <StatusMessage actionData={fetcher.data}/>

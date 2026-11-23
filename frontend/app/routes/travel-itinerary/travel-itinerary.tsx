@@ -17,14 +17,19 @@ import {
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {AcceptInviteFormSchema, putMember} from "~/utils/models/member.model";
 import {UpdateRsvpForm} from "~/routes/travel-itinerary/update-rsvp-form";
-// table colors from the mockup: navy header with white uppercase text,
-// white rows separated by a thin lavender line (no stripes)
-const navyTableTheme = createTheme({
+import {Crown, Gem, Parchment, RoyalPage, eyebrow, emphasis, headline, outlineButton} from "~/components/royal";
+// roster table in the Royal Decree look: white rows, small Blue Bay capitals
+// over a navy rule for the header, rows split by a thin mist line (no stripes)
+const royalTableTheme = createTheme({
     table: {
+        root: {
+            base: "w-full text-left text-sm text-navy",
+            shadow: "hidden",
+        },
         head: {
-            base: "text-xs uppercase text-white",
+            base: "text-[11px] uppercase tracking-[0.16em] text-bay",
             cell: {
-                base: "bg-[#0B1533] px-3 py-3 text-white"
+                base: "bg-white px-3 py-3 font-bold text-bay border-b-[1.5px] border-navy"
             }
         },
         // less padding than Flowbite's default (px-6 py-4) so the table fits beside the Attendance sidebar
@@ -34,7 +39,7 @@ const navyTableTheme = createTheme({
             }
         },
         row: {
-            base: "bg-white border-b border-[#F7EEF6] text-[#0B1533]"
+            base: "bg-white border-b border-mist text-navy"
         }
     }
 });
@@ -127,10 +132,16 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
 export default function TravelItinerary(props: Route.ComponentProps) {
 const {trip, travelers, myMember, isOwner} = props.loaderData
     if (trip === null) {
-        return <>
-        <h1> trip not found</h1>
-
-        </>
+        return (
+            <RoyalPage width="max-w-xl">
+                <Parchment compact>
+                    <div className="text-center">
+                        <p className={eyebrow}>Travelers & Invites</p>
+                        <h1 className={`${headline} mt-3 text-4xl`}>Trip <em className={emphasis}>not found</em></h1>
+                    </div>
+                </Parchment>
+            </RoyalPage>
+        )
 
     }
 
@@ -143,36 +154,32 @@ const {trip, travelers, myMember, isOwner} = props.loaderData
     const totalChildren = going.reduce((sum, t) => sum + (t.member?.children ?? 0), 0)
     const totalTravelers = totalAdults + totalChildren
 
-    // the four RSVP answers, in the same order and colors as the trip itinerary's Attendance card
+    // the four RSVP answers, in the design's tile colors: peach (kept on this page), lilac, watermelon, mist
     const segments = [
-        {label: 'Going', value: totalGoing, color: 'bg-[#434A90]'},
-        {label: 'Maybe', value: totalMaybe, color: 'bg-[#C9A3CB]'},
-        {label: 'Not going', value: totalNotGoing, color: 'bg-[#FF6B6C]'},
-        {label: 'No response', value: totalPending, color: 'bg-gray-200 border border-[#031136]'},
+        {label: 'Going', value: totalGoing, color: 'bg-peach'},
+        {label: 'Maybe', value: totalMaybe, color: 'bg-lilac'},
+        {label: 'Not going', value: totalNotGoing, color: 'bg-pink'},
+        {label: 'No response', value: totalPending, color: 'bg-mist'},
     ]
     const totalAnswers = segments.reduce((sum, segment) => sum + segment.value, 0)
     const goingNames = going.map((t) => t.profile?.name ?? t.invite.name).join(', ')
 
     return (
-        // flat lavender page background (replaces the bg_reduced.jpeg photo)
-        <div className="min-h-screen bg-[#F7EEF6] py-8">
-        {/* px-4 keeps content off the screen edges on phones */}
-        {/* wider on large screens to make room for the Attendance sidebar */}
-        <main className="container mx-auto max-w-3xl px-4 sm:px-0 lg:max-w-5xl">
+        <RoyalPage>
+        <Parchment>
             {/* header: titles on the left, a button back to the trip's activities on the right.
                 phones: the button sits under the titles at full width */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
-                    {/* small indigo trip title, big navy page title, then destination and dates */}
-                    <p className={'text-sm font-bold tracking-wider text-[#3A4187] mb-1'}>{trip.title}</p>
-                    <h1 className={'text-3xl sm:text-4xl font-bold tracking-wider text-[#0B1533] mb-2'}>Travelers & Invites</h1>
-                    <h2 className = {'text-base sm:text-xl font-bold tracking-wider text-[#0B1533]'}>
-                        {trip.destination} · {trip.startDate.toLocaleDateString('en-US', {timeZone:'UTC'})} - {trip.endDate.toLocaleDateString('en-US', {timeZone:'UTC'})}</h2>
+                    {/* small Blue Bay eyebrow with the trip title, big Playfair page title, then destination and dates */}
+                    <p className={`${eyebrow} break-words`}>Travelers & Invites · {trip.title}</p>
+                    <h1 className={`${headline} mt-3 text-4xl sm:text-5xl lg:text-6xl`}>Your <em className={emphasis}>Royal Court</em></h1>
+                    <p className="mt-3 text-sm font-bold uppercase tracking-[0.16em] text-bay">
+                        {trip.destination} · {trip.startDate.toLocaleDateString('en-US', {timeZone:'UTC'})} - {trip.endDate.toLocaleDateString('en-US', {timeZone:'UTC'})}</p>
                 </div>
-                {/* white pill, same style as the trip itinerary's "Travelers & Invites" button */}
                 <Link
                     to={`/trip-itinerary/${trip.id}`}
-                    className="shrink-0 px-4 py-2.5 rounded-full border-2 border-[#031136] bg-white text-center text-sm font-bold text-[#031136] hover:bg-[#031136]/5"
+                    className={`${outlineButton} w-full shrink-0 sm:w-auto`}
                 >
                     ← Back to activities
                 </Link>
@@ -182,22 +189,25 @@ const {trip, travelers, myMember, isOwner} = props.loaderData
             <div className="min-w-0">
             {myMember && <UpdateRsvpForm member={myMember}/>}
 
-            {/* white roster card with a navy border, like the mockup */}
-            <section className="mb-6 overflow-hidden rounded-2xl border border-[#0B1533] bg-white">
-                <h2 className="px-4 py-4 text-xl sm:text-2xl font-bold text-[#0B1533]">Traveler Roster</h2>
+            {/* white roster card with a navy border, like the design */}
+            <section className="mb-6 overflow-hidden rounded-[18px] border-[1.5px] border-navy bg-white">
+                <div className="flex items-center gap-2 px-4 py-4 sm:px-5">
+                    <Crown size={24}/>
+                    <h2 className="font-display text-2xl font-bold italic text-navy">The Royal Court</h2>
+                </div>
 
                 {/* phones and small tablets: stacked rows */}
-                <ul className="md:hidden border-t border-[#0B1533]">
+                <ul className="md:hidden border-t-[1.5px] border-navy">
                     {travelers.length === 0
-                        ? <li className="px-4 py-3 text-sm text-[#0B1533]">No travelers invited yet</li>
+                        ? <li className="px-4 py-4 text-sm text-bay">No travelers summoned yet</li>
                         : travelers.map((traveler) => <TravelerCard key={traveler.invite.id} traveler={traveler} isOwner={isOwner}/>)}
                 </ul>
 
-                {/* md and up: full table, sized to fit its card (no sideways scrolling).
-                    the short columns (RSVP, Status, Adults, Children, actions) shrink to their content with w-px,
-                    so the leftover room goes to Traveler and Contact */}
-                <div className="hidden md:block">
-                <Table theme={navyTableTheme.table}>
+                {/* md and up: full table. The short columns (RSVP, Status, Adults, Children, actions) shrink to
+                    their content with w-px, so the leftover room goes to Traveler and Contact; if it still
+                    doesn't fit, it scrolls sideways inside this card instead of the page */}
+                <div className="hidden overflow-x-auto md:block">
+                <Table theme={royalTableTheme.table}>
                     <TableHead>
                         <TableRow>
                             <TableHeadCell>Traveler</TableHeadCell>
@@ -212,9 +222,9 @@ const {trip, travelers, myMember, isOwner} = props.loaderData
                         </TableRow>
                     </TableHead>
 
-                    <TableBody className={'text-sm text-[#0B1533]'}>
+                    <TableBody className={'text-sm text-navy'}>
                         {travelers.length === 0
-                            ? <TableRow><TableCell colSpan={isOwner ? 7 : 6 /* 6 columns, plus Actions for the trip owner */}>No travelers invited yet</TableCell></TableRow>
+                            ? <TableRow><TableCell colSpan={isOwner ? 7 : 6 /* 6 columns, plus Actions for the trip owner */} className="text-bay">No travelers summoned yet</TableCell></TableRow>
                             : travelers.map((traveler) => <TravelerRow key={traveler.invite.id} traveler={traveler} isOwner={isOwner}/>)}
 
                     </TableBody>
@@ -228,47 +238,42 @@ const {trip, travelers, myMember, isOwner} = props.loaderData
             </section>
             </div>
 
-            {/* Attendance card: white with sunset stripes, matching the trip itinerary's Attendance card.
+            {/* Attendance card: parchment with a navy border and a gem.
                 phones and tablets: shown first, above the RSVP form; large screens: a sticky sidebar on the right */}
-            <aside className="order-first overflow-hidden rounded-3xl border-2 border-[#031136] bg-white lg:order-none lg:sticky lg:top-6">
-                <div aria-hidden="true">
-                    <div className="h-2 bg-[#FF5903]"/>
-                    <div className="h-1.5 bg-[#FF6B6C]"/>
-                    <div className="h-1.5 bg-[#C9A3CB]"/>
-                </div>
+            <aside className="order-first rounded-2xl border-[1.5px] border-navy bg-white lg:order-none lg:sticky lg:top-6">
                 <div className="space-y-4 p-5">
                     <div className="flex flex-wrap items-center gap-2">
-                        <h2 className="text-xl font-extrabold text-[#031136]">Attendance</h2>
-                        <span className="rounded-full bg-[#031136] px-2.5 py-1 text-[10px] font-bold uppercase leading-tight text-white">
+                        <Gem color="lilac" size={22}/>
+                        <h2 className="font-display text-2xl font-bold italic text-navy">Attendance</h2>
+                        <span className="rounded-full bg-navy px-2.5 py-1 text-[10px] font-bold uppercase leading-tight tracking-[0.14em] text-white">
                             Organizer only
                         </span>
                     </div>
-                    <p className="text-sm text-[#434A90]">Trip RSVPs · {travelers.length} invited</p>
+                    <p className="text-sm text-bay">Trip RSVPs · {travelers.length} invited</p>
 
-                    {/* one bar split by how people answered; empty grey until someone is invited */}
-                    <div className="flex h-4 overflow-hidden rounded-full border-2 border-[#031136] bg-gray-100">
+                    {/* one bar split by how people answered; empty mist until someone is invited */}
+                    <div className="flex h-4 overflow-hidden rounded-full border-[1.5px] border-navy bg-mist">
                         {totalAnswers > 0 && segments.map((segment) => (
                             <div key={segment.label} className={segment.color}
                                  style={{width: `${(segment.value / totalAnswers) * 100}%`}}/>
                         ))}
                     </div>
 
-                    {/* 2x2, like the mockup; one row of four on tablets, where the card spans the page */}
+                    {/* colored tiles with Playfair numbers, like the design; 2x2, one row of four on tablets */}
                     <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
                         {segments.map((segment) => (
-                            <div key={segment.label} className="rounded-2xl border-2 border-[#031136] p-3">
-                                <dt className="flex items-center gap-2 text-xs text-[#031136]">
-                                    <span className={`h-3 w-3 shrink-0 rounded-full ${segment.color}`}/>
+                            <div key={segment.label} className={`rounded-[14px] px-3.5 py-3 text-navy ${segment.color}`}>
+                                <dt className="text-[10px] font-bold uppercase tracking-[0.14em]">
                                     {segment.label}
                                 </dt>
-                                <dd className="mt-2 text-lg font-extrabold text-[#031136]">{segment.value}</dd>
+                                <dd className="mt-1 font-display text-3xl font-semibold leading-none">{segment.value}</dd>
                             </div>
                         ))}
                     </dl>
 
                     {/* headcount of everyone going (was the Total / Adult / Children cards) */}
-                    <p className="break-words text-xs text-gray-500">
-                        Headcount: <span className="font-bold text-[#031136]">{totalTravelers}</span>
+                    <p className="break-words text-xs text-bay">
+                        Headcount: <span className="font-bold text-navy">{totalTravelers}</span>
                         {' '}({totalAdults} {totalAdults === 1 ? 'adult' : 'adults'}, {totalChildren} {totalChildren === 1 ? 'child' : 'children'})
                         {goingNames && <> · {goingNames}</>}
                     </p>
@@ -277,8 +282,8 @@ const {trip, travelers, myMember, isOwner} = props.loaderData
             </div>
 
 
-        </main>
-        </div>
+        </Parchment>
+        </RoyalPage>
     )
 }
 // Might want to incorporate for final submission:
