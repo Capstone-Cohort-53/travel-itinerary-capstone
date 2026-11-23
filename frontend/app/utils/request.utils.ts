@@ -74,7 +74,7 @@ export function failedRequestStatus(error: unknown): Status {
  *
  * @param path the API path to GET, e.g. `/thread/following`
  * @param user the signed-in user, from requireSignedInUser (guarded routes only)
- * @returns `200` with the parsed body in `data`, otherwise the failure's status and message
+ * @returns `200` (or `201`) with the parsed body in `data`, otherwise the failure's status and message
  */
 export async function getRequest(path: string, user?: SignedInUser): Promise<Status> {
     const headers = new Headers();
@@ -157,7 +157,7 @@ export async function postRequest(path: string, body: unknown, user?: SignedInUs
  * @param path the API path to PUT to, e.g. `/trip/123/activity/456`
  * @param body the value to send, serialized as JSON
  * @param user the signed-in user, from requireSignedInUser (guarded routes only)
- * @returns `200` with the parsed body in `data`, otherwise the failure's status and message
+ * @returns `200` (or `201`) with the parsed body in `data`, otherwise the failure's status and message
  */
 export async function putRequest(path: string, body: unknown, user?: SignedInUser): Promise<Status> {
     return sendJsonRequest("PUT", path, body, user);
@@ -169,7 +169,7 @@ export async function putRequest(path: string, body: unknown, user?: SignedInUse
  *
  * @param path the API path to DELETE, e.g. `/trip/123/activity/456`
  * @param user the signed-in user, from requireSignedInUser (guarded routes only)
- * @returns `200` with the parsed body in `data`, otherwise the failure's status and message
+ * @returns `200` (or `201`) with the parsed body in `data`, otherwise the failure's status and message
  */
 export async function deleteRequest(path: string, user?: SignedInUser): Promise<Status> {
     return sendJsonRequest("DELETE", path, undefined, user);
@@ -196,8 +196,8 @@ async function sendJsonRequest(method: "PUT" | "DELETE", path: string, body: unk
 
         const responseBody = await response.json().catch(() => null);
 
-        if (response.status === 200) {
-            return { status: 200, data: responseBody, message: null };
+        if (response.status === 200 || response.status === 201) {
+            return { status: response.status, data: responseBody, message: null };
         }
 
         return {

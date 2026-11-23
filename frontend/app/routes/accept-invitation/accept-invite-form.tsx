@@ -1,6 +1,6 @@
 import {useFetcher} from "react-router";
 import {useForm} from "@tanstack/react-form";
-import {Button, Card, HelperText, Label, Radio, TextInput} from "flowbite-react";
+import {Button, HelperText, Label, Radio, TextInput} from "flowbite-react";
 import {AcceptInviteFormSchema} from "~/utils/models/member.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
@@ -38,9 +38,19 @@ export function AcceptInviteForm(props: AcceptInviteFormProps) {
     })
 
     return (
-        <Card className="mt-8 mx-auto max-w-md hover:bg-[#FFF0F1]">
+        // indigo card with a navy border, same as the travel itinerary invite form (replaces the Flowbite Card);
+        // overflow-hidden clips the stripes to the rounded corners
+        <div className="overflow-hidden rounded-2xl border border-[#0B1533] bg-[#3A4187]">
+            {/* decorative stripes along the top, matching the invite form */}
+            <div aria-hidden="true">
+                <div className="h-1.5 bg-[#FF5A1F]"/>
+                <div className="h-1.5 bg-[#FF8A85]"/>
+                <div className="h-1.5 bg-[#FFB3A7]"/>
+                <div className="h-1.5 bg-[#C19AC5]"/>
+            </div>
             <form
-                className="flex max-w-md flex-col gap-4"
+                // full-width fields; a bit less padding on phones
+                className="flex flex-col gap-4 p-4 sm:p-6"
                 noValidate
                 onSubmit={(event) => {
                     event.preventDefault()
@@ -48,38 +58,41 @@ export function AcceptInviteForm(props: AcceptInviteFormProps) {
                     void form.handleSubmit()
                 }}
             >
-                <h5 className="text-2xl font-bold tracking-tight text-gray-500">RSVP for {tripTitle}</h5>
-                <p className="font-normal text-gray-700">Signed in as {signedInName}</p>
+                {/* white title, light lavender "signed in" line: readable on indigo */}
+                <h5 className="break-words text-xl sm:text-2xl font-bold tracking-wider text-white">RSVP for {tripTitle}</h5>
+                <p className="break-words text-[#F7EEF6]">Signed in as {signedInName}</p>
 
                 <form.Field name="going">
                     {(field) => {
                         const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
                         return (
                             <fieldset aria-describedby={error ? `${field.name}-error` : undefined}>
-                                <legend className="mb-2 text-sm font-medium text-gray-900">Are you going?</legend>
-                                <div className="flex gap-6">
+                                {/* white legend; radios wrap onto a second line on very narrow phones */}
+                                <legend className="mb-2 text-sm font-bold text-white">Are you going?</legend>
+                                <div className="flex flex-wrap gap-4 sm:gap-6">
                                     {goingOptions.map((option) => (
                                         <div key={option.value} className="flex items-center gap-2">
                                             <Radio id={`going-${option.value}`} name={field.name} value={option.value}
                                                    checked={field.state.value === option.value}
                                                    onBlur={field.handleBlur}
                                                    onChange={() => field.handleChange(option.value)}/>
-                                            <Label htmlFor={`going-${option.value}`}>{option.label}</Label>
+                                            <Label htmlFor={`going-${option.value}`} className="text-white">{option.label}</Label>
                                         </div>
                                     ))}
                                 </div>
-                                {error && <HelperText id={`${field.name}-error`} color="failure">{error}</HelperText>}
+                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
                             </fieldset>
                         )
                     }}
                 </form.Field>
 
+                {/* labels are white and errors light red (text-red-200) so both are readable on indigo */}
                 <form.Field name="adults">
                     {(field) => {
                         const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
                         return (
                             <div>
-                                <Label htmlFor={field.name} className="mb-2 block">Number of Adults (including you)</Label>
+                                <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Number of Adults (including you)</Label>
                                 <TextInput id={field.name} name={field.name} type="number" min={1} max={100} shadow
                                            value={field.state.value}
                                            onBlur={field.handleBlur}
@@ -87,7 +100,7 @@ export function AcceptInviteForm(props: AcceptInviteFormProps) {
                                            color={error ? 'failure' : undefined}
                                            aria-invalid={error ? true : undefined}
                                            aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                {error && <HelperText id={`${field.name}-error`} color="failure">{error}</HelperText>}
+                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
                             </div>
                         )
                     }}
@@ -98,7 +111,7 @@ export function AcceptInviteForm(props: AcceptInviteFormProps) {
                         const error = field.state.meta.isTouched ? field.state.meta.errors[0]?.message : undefined
                         return (
                             <div>
-                                <Label htmlFor={field.name} className="mb-2 block">Number of Children</Label>
+                                <Label htmlFor={field.name} className="mb-2 block font-bold text-white">Number of Children</Label>
                                 <TextInput id={field.name} name={field.name} type="number" min={0} max={10} shadow
                                            value={field.state.value}
                                            onBlur={field.handleBlur}
@@ -106,7 +119,7 @@ export function AcceptInviteForm(props: AcceptInviteFormProps) {
                                            color={error ? 'failure' : undefined}
                                            aria-invalid={error ? true : undefined}
                                            aria-describedby={error ? `${field.name}-error` : undefined}/>
-                                {error && <HelperText id={`${field.name}-error`} color="failure">{error}</HelperText>}
+                                {error && <HelperText id={`${field.name}-error`} className="mt-1 text-sm text-red-200">{error}</HelperText>}
                             </div>
                         )
                     }}
@@ -114,18 +127,20 @@ export function AcceptInviteForm(props: AcceptInviteFormProps) {
 
                 <form.Subscribe selector={(state) => state.canSubmit}>
                     {(canSubmit) => (
-                        <Button className="bg-[#FD6B6C] hover:bg-red-600" type="submit" disabled={!canSubmit || isSending}>
+                        // orange pill button with navy text: full width on phones, normal width on tablet and up
+                        <Button className="w-full sm:w-auto rounded-full border border-[#0B1533] bg-[#FFA06B] font-bold text-[#0B1533] hover:bg-[#FF8A55] focus:ring-[#FFB3A7]" type="submit" disabled={!canSubmit || isSending}>
                             {isSending ? 'Sending…' : 'Send RSVP'}
                         </Button>
                     )}
                 </form.Subscribe>
 
-                <p className="font-normal text-gray-700">
+                {/* light lavender helper text on indigo */}
+                <p className="text-[#F7EEF6]">
                     After you RSVP, you'll be taken to the trip to view the itinerary and attendance.
                 </p>
 
                 <StatusMessage actionData={fetcher.data}/>
             </form>
-        </Card>
+        </div>
     )
 }
