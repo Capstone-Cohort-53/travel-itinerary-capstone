@@ -25,11 +25,13 @@ export async function loader({request}: Route.LoaderArgs) {
         throw await endSession(request);
     }
 
-    // where the photo picker uploads to. Both values are public (an unsigned upload preset
-    // is made to be used from the browser), so they are safe to send along
-    const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET;
-    const cloudinary = cloudName && uploadPreset ? {cloudName, uploadPreset} : null;
+    // where the photo picker uploads to: the team's Cloudinary account. Both values are
+    // public (an unsigned upload preset is made to be used from the browser), so they are
+    // safe to keep in the code. Set them in the env to point at a different account
+    const cloudinary = {
+        cloudName: process.env.CLOUDINARY_CLOUD_NAME || "pxffgvfq",
+        uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || "profile_photos",
+    };
 
     // only the profile goes to the browser, never the token or the cookies
     return {profile, cloudinary, message: profile === null ? status.message : null};
