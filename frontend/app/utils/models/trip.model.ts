@@ -1,7 +1,7 @@
 import {z} from 'zod'
 import {v7 as uuid} from "uuid";
 import type {Status} from "~/utils/interfaces/Status";
-import {failedRequestStatus, getRequest, REQUEST_TIMEOUT_MS, REST_URL} from "~/utils/request.utils";
+import {failedRequestStatus, getRequest, putRequest, REQUEST_TIMEOUT_MS, REST_URL} from "~/utils/request.utils";
 import type {SignedInUser} from "~/utils/session.server";
 
 // a whole trip, mirroring the backend's TripSchema (backend/src/apis/trip/trip.model.ts)
@@ -160,4 +160,46 @@ export async function postTrip(data: NewTrip, user: SignedInUser, image: string)
         console.error('POST /trip failed:', error)
         return failedRequestStatus(error)
     }
+}
+
+/**
+ * The saved trip as form values, so the Edit Trip form starts out showing it.
+ * Trip dates are calendar dates kept as UTC midnight, so read them back in UTC.
+ */
+export function toTripForm(trip: Trip): NewTrip {
+    return {
+        title: trip.title,
+        destination: trip.destination,
+        startDate: trip.startDate.toISOString().slice(0, 10),
+        endDate: trip.endDate.toISOString().slice(0, 10),
+        description: trip.description ?? '',
+    }
+}
+
+/**
+ * PUT /apis/trip/:tripId: updates a trip. The API only lets the trip's owner do this.
+ * The API replaces every field, so the trip's current image is sent back unchanged.
+ * Never throws: every failure comes back as a Status.
+ *
+ * @param tripId the trip to update
+ * @param data the validated form values
+ * @param image the trip's current image
+ * @param user the signed-in user, from requireSignedInUser
+ * @returns 200 with the updated trip in `data`, otherwise the failure's status and message
+ */
+export async function putTrip(tripId: string, data: NewTrip, image: string, user: SignedInUser): Promise<Status> {
+    // serverValidate hands back the raw form values, so trim here
+    const description = data.description.trim()
+    const status = await putRequest(`/trip/${tripId}`, {
+        title: data.title.trim(),
+        destination: data.destination.trim(),
+        description: description === '' ? null : description,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        image,
+    }, user)
+
+    return status.status === 200
+        ? {...status, message: 'Trip updated!'}
+        : {...status, message: status.message ?? 'Could not update the trip. Please try again.'}
 }

@@ -128,8 +128,16 @@ export default function TripItinerary(props: Route.ComponentProps) {
                         </p>
                     </div>
 
-                    {/* phones: two equal buttons filling the width; wider screens: side by side on the right */}
+                    {/* phones: Edit trip across the top (organizer only), then two equal buttons; wider screens: side by side on the right */}
                     <div className="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto">
+                        {isOwner && (
+                            <Link
+                                to={`/trip-itinerary/${trip.id}/edit`}
+                                className="col-span-2 px-4 py-2.5 rounded-full border-2 border-[#031136] bg-white text-center text-sm font-bold text-[#031136] hover:bg-[#031136]/5"
+                            >
+                                ✏️ Edit trip
+                            </Link>
+                        )}
                         <Link
                             to={`/travel-itinerary/${trip.id}`}
                             className={`${isOwner ? "" : "col-span-2"} px-4 py-2.5 rounded-full border-2 border-[#031136] bg-white text-center text-sm font-bold text-[#031136] hover:bg-[#031136]/5`}
@@ -273,7 +281,7 @@ function TripCard({trip}: { trip: Trip }) {
             <Stripes/>
             <div className="p-5">
                 <h2 className="text-xl font-extrabold text-[#031136]">About this trip</h2>
-                <p className="mt-1 break-words whitespace-pre-line text-sm text-[#434A90]">{trip.description ?? "No description yet."}</p>
+                <p className="mt-2 break-words whitespace-pre-line text-lg leading-relaxed text-[#434A90]">{trip.description ?? "No description yet."}</p>
             </div>
         </section>
     );

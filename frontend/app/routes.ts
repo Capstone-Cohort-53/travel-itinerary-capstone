@@ -10,6 +10,7 @@ route('/travel-itinerary/:id/activity/new','routes/activity/activity.tsx'),
     route('/travel-itinerary/:id/activity/:activityId/edit','routes/activity/edit-activity.tsx'),
     route('/travel-itinerary/:id/activity/:activityId','routes/activity-details.tsx'),
     route('/trip-itinerary/:tripId', 'routes/trip-itinerary/trip-itinerary.tsx'),
+    route('/trip-itinerary/:tripId/edit', 'routes/edit-trip/edit-trip.tsx'),
 
     route('/travel-itinerary/:id', 'routes/travel-itinerary/travel-itinerary.tsx'),
     route('/profile', 'routes/profile/profile.tsx'),
