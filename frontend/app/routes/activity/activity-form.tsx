@@ -287,7 +287,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                                        className={boxClass(Boolean(error))}/>
                                                             </div>
                                                             <div>
-                                                                <label htmlFor="activity-end" className={labelClass}>End</label>
+                                                                <label htmlFor="activity-end" className={labelClass}>End <span className="font-normal text-gray-500">(optional)</span></label>
                                                                 <input id="activity-end" type="time"
                                                                        value={when.end}
                                                                        onBlur={endField.handleBlur}
@@ -297,7 +297,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                         </div>
                                                         {error
                                                             ? <p className="mt-1 text-sm text-red-600">{error}</p>
-                                                            : <p className="mt-1 text-xs text-gray-500">Trip: {tripDates}. Leave the times blank if they aren’t set yet.</p>}
+                                                            : <p className="mt-1 text-xs text-gray-500">Trip: {tripDates}. Leave End blank if there’s no set finish time.</p>}
                                                     </div>
                                                 )
                                             }}
@@ -343,6 +343,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                                       onChange={(value) => field.handleChange(value)}
                                                                       onPick={pickPlace}
                                                                       near={searchNear}
+                                                                      destination={trip.destination}
                                                                       placeholder="Start typing a place, e.g., La Choza"/>
                                                     <p className="mt-1 text-xs text-gray-500">Pick a suggestion to fill in the address, or type it yourself.</p>
                                                     <FieldError field={field}/>

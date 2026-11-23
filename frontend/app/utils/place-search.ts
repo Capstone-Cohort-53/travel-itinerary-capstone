@@ -91,15 +91,9 @@ function escapeRegExp(text: string): string {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/**
- * Up to `limit` places matching what's been typed. When `near` is given,
- * places within NEARBY_KM (150 km) of it come first: Photon ranks a close name match
- * above distance, so "folk art museum" would otherwise start with one in Greece.
- * Throws only when aborted or when Photon can't be reached.
- */
-export async function searchPlaces(query: string, near: Coordinates | null, signal: AbortSignal, limit = 5): Promise<PlaceSuggestion[]> {
-    // ask for extra results to re-rank, so a nearby place further down Photon's list can move up
-    const params = new URLSearchParams({q: query, limit: String(near ? limit * 2 : limit), lang: 'en'})
+/** One Photon search, as suggestions. Throws only when aborted or when Photon can't be reached. */
+async function photonSearch(query: string, limit: number, near: Coordinates | null, signal: AbortSignal): Promise<PlaceSuggestion[]> {
+    const params = new URLSearchParams({q: query, limit: String(limit), lang: 'en'})
     if (near) {
         params.set('lat', String(near.lat))
         params.set('lon', String(near.lng))
@@ -109,23 +103,60 @@ export async function searchPlaces(query: string, near: Coordinates | null, sign
         return []
     }
     const body = await response.json() as { features?: PhotonFeature[] }
-
-    // Photon sometimes lists the same place twice (e.g. a building and its entrance)
-    const seen = new Set<string>()
-    const suggestions = (body.features ?? [])
+    return (body.features ?? [])
         .map(toSuggestion)
-        .filter((suggestion): suggestion is PlaceSuggestion => {
-            if (suggestion === null) return false
-            const key = `${suggestion.name}|${suggestion.detail}`
-            if (seen.has(key)) return false
-            seen.add(key)
-            return true
-        })
+        .filter((suggestion): suggestion is PlaceSuggestion => suggestion !== null)
+}
 
+/** Drops repeats (Photon sometimes lists a building and its entrance), keeping the first. */
+function withoutRepeats(suggestions: PlaceSuggestion[]): PlaceSuggestion[] {
+    const seen = new Set<string>()
+    return suggestions.filter((suggestion) => {
+        const key = `${suggestion.name}|${suggestion.detail}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+}
+
+/** Where the trip is, for ranking suggestions. Either may be missing. */
+export type SearchArea = {
+    /** a pin on this trip (another activity's), the most reliable hint */
+    near: Coordinates | null,
+    /** the trip's destination as typed, e.g. "Santa Fe" */
+    destination: string | null,
+}
+
+/**
+ * Up to `limit` places matching what's been typed, with places on this trip first.
+ *
+ * - With a pin on the trip, places within NEARBY_KM (150 km) of it come first: Photon
+ *   ranks a close name match above distance, so "folk art museum" would otherwise
+ *   start with one in Greece.
+ * - With no pin yet (a new trip), the destination is added to the search too
+ *   ("la choza" → "la choza Santa Fe") and those matches come first. Looking the
+ *   destination up on its own doesn't work: "Santa Fe" alone means Argentina.
+ *
+ * Throws only when aborted or when Photon can't be reached.
+ */
+export async function searchPlaces(query: string, {near, destination}: SearchArea, signal: AbortSignal, limit = 5): Promise<PlaceSuggestion[]> {
     if (near) {
+        // ask for extra results to re-rank, so a nearby place further down Photon's list can move up
+        const suggestions = withoutRepeats(await photonSearch(query, limit * 2, near, signal))
         // nearby first; otherwise keep Photon's order (Array.sort is stable)
         const isFar = (place: PlaceSuggestion) => distanceKm(near, place) > NEARBY_KM ? 1 : 0
         suggestions.sort((a, b) => isFar(a) - isFar(b))
+        return suggestions.slice(0, limit)
     }
-    return suggestions.slice(0, limit)
+
+    const place = destination?.trim()
+    // skip the extra search when the organizer has already typed the destination
+    if (!place || query.toLowerCase().includes(place.toLowerCase())) {
+        return withoutRepeats(await photonSearch(query, limit, null, signal)).slice(0, limit)
+    }
+    const [atDestination, anywhere] = await Promise.all([
+        photonSearch(`${query} ${place}`, limit, null, signal),
+        photonSearch(query, limit, null, signal),
+    ])
+    return withoutRepeats([...atDestination, ...anywhere]).slice(0, limit)
 }
