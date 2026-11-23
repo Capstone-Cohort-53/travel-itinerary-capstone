@@ -86,6 +86,21 @@ function splitWhen(values: ActivityForm): When {
     }
 }
 
+/**
+ * What's wrong with the Date / Start / End boxes, or null when they can be saved.
+ * The database keeps a date and a time together (startDatetime), so a date with
+ * no start time, or a time with no date, would quietly be dropped on save.
+ */
+export function whenProblem({date, start, end}: When): string | null {
+    if (!date && (start || end)) {
+        return 'Pick a date for this time.'
+    }
+    if (date && !start) {
+        return 'Add a start time to keep this date, or clear the date if it isn’t set yet.'
+    }
+    return null
+}
+
 /** "Sat, Oct 24 | 6:00 – 8:00 PM" for the itinerary preview. */
 function describeWhen({date, start, end}: When): string {
     if (!date) {
@@ -202,6 +217,12 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                             onSubmit={(event) => {
                                 event.preventDefault()
                                 event.stopPropagation()
+                                // a date with no start time (or the reverse) would be dropped on save:
+                                // send the organizer to the box to fix instead of saving
+                                if (whenProblem(when)) {
+                                    document.getElementById(when.date ? 'activity-start' : 'activity-date')?.focus()
+                                    return
+                                }
                                 void form.handleSubmit()
                             }}
                         >
@@ -266,7 +287,8 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                     startField.handleChange(next.date && next.start ? `${next.date}T${next.start}` : '')
                                                     endField.handleChange(next.date && next.end ? `${next.date}T${next.end}` : '')
                                                 }
-                                                const error = fieldError(startField) ?? fieldError(endField)
+                                                // the box mix-up first (it's the one to fix first), then the schema's own checks
+                                                const error = whenProblem(when) ?? fieldError(startField) ?? fieldError(endField)
                                                 return (
                                                     <div>
                                                         <div className="grid gap-3 sm:grid-cols-3">
@@ -296,7 +318,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                             </div>
                                                         </div>
                                                         {error
-                                                            ? <p className="mt-1 text-sm text-red-600">{error}</p>
+                                                            ? <p id="when-error" role="alert" className="mt-1 text-sm text-red-600">{error}</p>
                                                             : <p className="mt-1 text-xs text-gray-500">Trip: {tripDates}. Leave End blank if there’s no set finish time.</p>}
                                                     </div>
                                                 )
