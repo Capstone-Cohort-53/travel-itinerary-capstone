@@ -7,6 +7,8 @@ import {requireSignedInUser} from "~/utils/session.server";
 import {getTripByTripId} from "~/utils/models/trip.model";
 import {getTripInviteKitchenSink, postTripInvite, TripInviteFormSchema} from "~/utils/models/trip-invite.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
+import {AcceptInviteFormSchema, putMember} from "~/utils/models/member.model";
+import {UpdateRsvpForm} from "~/routes/travel-itinerary/update-rsvp-form";
 // table colors from the mockup: navy header with white uppercase text,
 // white rows separated by a thin lavender line (no stripes)
 const navyTableTheme = createTheme({
@@ -34,14 +36,32 @@ export async function loader ({request, params}: Route.LoaderArgs) {
     if (trip === null) {
         return {trip, travelers: []}
     }
- const travelers = await getTripInviteKitchenSink(trip.id,signedInUser )
-return {trip, travelers}
+
+    const travelers = await getTripInviteKitchenSink(trip.id,signedInUser )
+
+
+    const myMember = travelers.find(
+        (t) => t.invite.acceptedProfileId === signedInUser.profile.id
+    )?.member ?? null
+        return {trip, travelers, myMember}
 }
 
 
 export async function action({request, params}: Route.ActionArgs): Promise<FormActionResponse> {
     const signedInUser = await requireSignedInUser(request)
     const formData = Object.fromEntries(await request.formData())
+
+    if (formData.intent === 'update-rsvp') {
+        const result = AcceptInviteFormSchema.safeParse(formData)
+        if (!result.success) {
+            return {success: false, status: {status: 400, data: null, message: result.error.issues[0].message}}
+        }
+        const status = await putMember(String(formData.memberId), result.data, signedInUser)
+        if (status.status !== 200) {
+            return {success: false, status}
+        }
+        return {success: true, status: {...status, message: 'Your RSVP was updated!'}}
+    }
 
     // never trust the browser: validate again with the same schema the form used
     const result = TripInviteFormSchema.safeParse(formData)
@@ -61,17 +81,19 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
         return {success: false, status}
     }
     return {success: true, status: {...status, message: `Invitation sent to ${name}!`}}
+
 }
 
 
 
 export default function TravelItinerary(props: Route.ComponentProps) {
-const {trip, travelers } = props.loaderData
+const {trip, travelers, myMember } = props.loaderData
     if (trip === null) {
         return <>
         <h1> trip not found</h1>
 
         </>
+
     }
 
     const going = travelers.filter((t) => t.member?.going === 'yes')
@@ -97,6 +119,7 @@ const {trip, travelers } = props.loaderData
             <h1 className={'text-3xl sm:text-4xl font-bold tracking-wider text-[#0B1533] mb-2'}>Travelers & Invites</h1>
             <h2 className = {'text-base sm:text-xl font-bold tracking-wider text-[#0B1533] mb-6'}>
                 {trip.destination} · {trip.startDate.toLocaleDateString('en-US', {timeZone:'UTC'})} - {trip.endDate.toLocaleDateString('en-US', {timeZone:'UTC'})}</h2>
+            {myMember && <UpdateRsvpForm member={myMember}/>}
 
 
             {/* stat cards: three across at every width; Status spans the full row underneath */}

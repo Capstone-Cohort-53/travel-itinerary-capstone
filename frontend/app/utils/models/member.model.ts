@@ -1,6 +1,6 @@
 import z from "zod"
 import type {SignedInUser} from "~/utils/session.server";
-import {postRequest} from "~/utils/request.utils";
+import {postRequest, putRequest} from "~/utils/request.utils";
 import type {Status} from "~/utils/interfaces/Status";
 
 export const MemberSchema =
@@ -41,4 +41,8 @@ export type MemberRequest = AcceptInviteForm & { token: string }
 /** Accepts (or declines) an invitation by creating the signed-in user's member row. */
 export async function postMember(body: MemberRequest, signedInUser: SignedInUser): Promise<Status> {
     return postRequest('/member', body, signedInUser)
+}
+
+export async function putMember(memberId: string, body: AcceptInviteForm, signedInUser: SignedInUser): Promise<Status> {
+    return putRequest(`/member/${memberId}`, body, signedInUser)
 }
