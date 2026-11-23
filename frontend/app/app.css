@@ -2,3 +2,8 @@
 @import "flowbite-react/plugin/tailwindcss";
 @source "../.flowbite-react/class-list.json";
 
+
+/* rounded display font for big headings: use the font-display class */
+@theme {
+    --font-display: "Fredoka", ui-rounded, system-ui, sans-serif;
+}
