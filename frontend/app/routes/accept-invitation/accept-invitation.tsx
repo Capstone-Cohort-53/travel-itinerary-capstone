@@ -1,4 +1,3 @@
-import {Card} from "flowbite-react";
 import {redirect} from "react-router";
 import type {Route} from "./+types/accept-invitation";
 import {getTripInviteByToken} from "~/utils/models/trip-invite.model";
@@ -7,6 +6,8 @@ import {getSession, requireSignedInUser} from "~/utils/session.server";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {GoogleSignInButton} from "~/components/google-sign-in";
 import {AcceptInviteForm} from "~/routes/accept-invitation/accept-invite-form";
+// reuse the roster's colored status badge so both pages match
+import {InviteStatusBadge} from "~/routes/travel-itinerary/traveler-row";
 
 
 // public page: the invitee usually has no account yet, so no requireSignedInUser.
@@ -47,12 +48,21 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
 export default function AcceptInvite(props: Route.ComponentProps) {
     const {invitation, token, signedInName, googleClientId} = props.loaderData
 
+    // shared look for every card, same as cardBase on the travel itinerary page:
+    // rounded, navy border and text; min-w-0 + break-words keep long text inside the card on phones
+    const cardBase = 'min-w-0 break-words rounded-2xl border border-[#0B1533] p-4 text-[#0B1533]'
+
     if (invitation === null) {
         return (
-            <div className="bg-[url('/bg_reduced.jpeg')] bg-cover bg-right bg-no-repeat">
-                <section className={'gap-6 auto rounded-xl min-h-screen container mx-auto max-w-md '}>
-                    <h1 className={'text-4xl font-bold tracking-wider text-white'}>Invitation not found</h1>
-                </section>
+            // flat lavender page background (replaces the bg_reduced.jpeg photo)
+            <div className="min-h-screen bg-[#F7EEF6] py-8">
+                {/* px-4 keeps content off the screen edges on phones */}
+                <main className="container mx-auto max-w-md px-4 sm:px-0">
+                    {/* purple bordered card with navy text */}
+                    <div className={`${cardBase} bg-[#C19AC5]`}>
+                        <h1 className={'text-2xl sm:text-3xl font-bold tracking-wider'}>Invitation not found</h1>
+                    </div>
+                </main>
             </div>
         )
     }
@@ -65,71 +75,74 @@ export default function AcceptInvite(props: Route.ComponentProps) {
     }
 
     return (
-
-<div className="bg-[url('/bg_reduced.jpeg')] bg-cover bg-right bg-no-repeat">
-
-
+        // flat lavender page background (replaces the bg_reduced.jpeg photo)
+        <div className="min-h-screen bg-[#F7EEF6] py-8">
 
 {/*need to link title for You are invited to text*/}
-        <section className={'gap-6 auto rounded-xl min-h-screen container mx-auto max-w-md '}>
+        {/* px-4 keeps content off the screen edges on phones; cards stack with space between */}
+        <main className="container mx-auto flex max-w-md flex-col gap-6 px-4 sm:px-0">
 
-            <h1 className={'text-4xl font-bold tracking-wider text-white'}>Accept Invitation</h1>
+            {/* navy page title, same style as "Travelers & Invites" */}
+            <h1 className={'text-3xl sm:text-4xl font-bold tracking-wider text-[#0B1533]'}>Accept Invitation</h1>
 
-            <Card href="#" className=" mt-8 hover:bg-[#FFF0F1]">
-                <h5 className="text-2xl font-bold tracking-tight text-gray-500">
-                    Hi {invitation.inviteeName}, you are invited!
+            {/* purple trip details card, styled like the Adult Count card (was a Flowbite Card linking to "#") */}
+            <div className={`${cardBase} bg-[#C19AC5] flex flex-col gap-2`}>
+                {/* greeting names the trip; trip-title size (large on phones, larger on tablet and up).
+                    the separate trip title line was removed since the greeting now includes it */}
+                <h5 className="text-2xl sm:text-3xl font-bold">
+                    Hi {invitation.inviteeName}, you are invited to {trip.title}!
                 </h5>
-
-                <p className="font-bold text-lg text-gray-700">
-                    {trip.title}
-                </p>
-                <p className="font-bold text-lg text-gray-700">
+                <p className="text-lg font-bold">
                     Invited by {invitation.organizerName}
                 </p>
-                <div className="flex gap-4">
-                    <p className="font-bold text-lg text-gray-700  ">
-                        Destination: {trip.destination}
+                <p className="text-lg font-bold">
+                    Destination: {trip.destination}
+                </p>
+
+                {/* dates stack on phones and sit side by side on wider screens;
+                    timeZone UTC matches the itinerary page so dates don't show a day early */}
+                <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                    <p className="text-base">
+                        Trip Start Date: {trip.startDate.toLocaleDateString('en-US', {timeZone: 'UTC'})}
+                    </p>
+                    <p className="text-base">
+                        Trip End Date: {trip.endDate.toLocaleDateString('en-US', {timeZone: 'UTC'})}
                     </p>
                 </div>
-                <div>
-                    <p className="font-normal text-lg text-gray-700 ">
-                        Trip Start Date: {trip.startDate.toLocaleDateString()}
-                    </p>
-                    <p className="font-normal text-lg text-gray-700 ">
-                        Trip End Date: {trip.endDate.toLocaleDateString()}
-                    </p>
-                </div>
-
-
-            </Card>
+            </div>
 
             {invitation.status !== 'pending' ? (
-                <Card className=" mt-8 mx-auto max-w-md">
-                    <p className="font-bold text-lg text-gray-700">
+                // coral status card: the message plus the same colored badge the roster uses
+                <div className={`${cardBase} bg-[#FF8A85] flex flex-col items-start gap-2`}>
+                    <InviteStatusBadge status={invitation.status}/>
+                    <p className="text-lg font-bold">
                         {statusMessages[invitation.status]}
                     </p>
-                </Card>
+                </div>
             ) : (
                 signedInName === null ? (
-                    <Card className="mt-8 mx-auto max-w-md hover:bg-[#FFF0F1]">
-                        <h5 className="text-2xl font-bold tracking-tight text-gray-500">
+                    // coral sign-in card: navy heading and helper line, centered Google button
+                    <div className={`${cardBase} bg-[#FF8A85] flex flex-col gap-3`}>
+                        <h5 className="text-xl sm:text-2xl font-bold">
                             Sign in with Google to accept your invitation to {trip.title}!
                         </h5>
-                        <p className="font-normal text-gray-700">
+                        {/* navy (not indigo) so it stays readable on coral */}
+                        <p className="text-[#0B1533]">
                             New here? Signing in with Google creates your account.
                         </p>
                         {googleClientId && (
-                            <GoogleSignInButton clientId={googleClientId} text="signup_with"
-                                                redirectTo={`/accept-invitation/${token}`}/>
+                            <div className="flex justify-center">
+                                <GoogleSignInButton clientId={googleClientId} text="signup_with"
+                                                    redirectTo={`/accept-invitation/${token}`}/>
+                            </div>
                         )}
-                    </Card>
+                    </div>
                 ) : (
                     <AcceptInviteForm tripTitle={trip.title} signedInName={signedInName}/>
                 )
             )}
 
-
-        </section>
+        </main>
         </div>
     )
 }
