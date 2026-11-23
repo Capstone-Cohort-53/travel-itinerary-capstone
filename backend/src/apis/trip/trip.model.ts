@@ -8,8 +8,8 @@ export const TripSchema =
         ownerId: z
             .uuidv7('please provide a valid uuid for trip'),
         description: z
-            .string('please provide a valid cellNumber')
-            .max(40,'please provide 20 characters').nullable(),
+            .string('please provide a valid description')
+            .max(360,'please provide a description of 360 characters or less').nullable(),
         createdAt: z
             .coerce.date('please provide a valid created at').nullable(),
         title:z
