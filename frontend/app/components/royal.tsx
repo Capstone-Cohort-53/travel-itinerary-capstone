@@ -49,8 +49,8 @@ export const chip = 'inline-flex items-center rounded-full bg-lilac px-3 py-1 te
 /** A plain card inside a parchment page. */
 export const card = 'rounded-2xl border-[1.5px] border-navy bg-parchment p-5'
 
-/** Form labels stay plain (Montserrat, navy) so the forms are easy to use. */
-export const label = 'mb-1.5 block text-sm font-bold text-navy'
+/** Form labels: small spaced-out capitals in Blue Bay, like the design. The wording stays plain so the forms are easy to use. */
+export const label = 'mb-1.5 block text-[11px] font-bold uppercase tracking-[0.16em] text-bay'
 
 /** Text boxes, selects and text areas on parchment. */
 export const input = 'block w-full rounded-xl border-[1.5px] border-navy bg-white px-3.5 py-2.5 text-navy placeholder:text-[#6b6f8f] focus:border-navy focus:outline-none focus:ring-2 focus:ring-gold'

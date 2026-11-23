@@ -21,7 +21,7 @@ export function FieldError(props: FieldErrorProps) {
     }
 
     return (
-        <p id={id} role="alert" className="mt-1 text-sm text-red-600">
+        <p id={id} role="alert" className="mt-1 text-sm font-medium text-royal-red">
             {messages[0]}
         </p>
     );
