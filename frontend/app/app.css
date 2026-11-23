@@ -7,3 +7,22 @@
 @theme {
     --font-display: "Fredoka", ui-rounded, system-ui, sans-serif;
 }
+
+/* phones: iOS Safari zooms the page in when you tap a box whose text is under 16px,
+   and most inputs here (ours and Flowbite's) use 14px. Plain CSS outside a layer
+   beats Tailwind's utility classes, so this wins on phones only. */
+@media (max-width: 639px) {
+    input, textarea, select {
+        font-size: 16px;
+    }
+}
+
+/* the small activity map: keep OpenStreetMap's required credit readable but compact */
+.activity-map .leaflet-control-attribution {
+    font-size: 9px;
+    line-height: 1.3;
+    /* clear the card's rounded bottom-right corner */
+    margin-right: 14px !important;
+    margin-bottom: 4px !important;
+    border-radius: 4px;
+}

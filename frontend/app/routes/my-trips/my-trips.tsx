@@ -2,21 +2,24 @@ import {Link} from "react-router";
 import type {Route} from "./+types/my-trips";
 import {endSession, requireSignedInUser} from "~/utils/session.server";
 import {getMyTrips} from "~/utils/models/trip.model";
+import {getProfileByProfileId} from "~/utils/models/profile.model";
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-// short text for the trip card: how long until the trip, or whether it is on now or over.
-// Worked out here on the server so the browser shows exactly the same text
-function getCountdown(startDate: Date, endDate: Date, now: Date) {
-    const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / DAY_MS)
-    if (daysUntilStart > 1) return `${daysUntilStart} days to go`
-    if (daysUntilStart === 1) return '1 day to go'
-    // the end date is the trip's last day, so the trip lasts until the end of that day
-    if (now.getTime() < endDate.getTime() + DAY_MS) return 'Happening now!'
-    return 'Trip ended'
+// "Jun 3 – Jun 9, 2027". Dates are stored as midnight UTC, so format in UTC
+// or the browser's time zone can shift them back a day
+function formatDates(startDate: Date, endDate: Date) {
+    const short = {month: 'short', day: 'numeric', timeZone: 'UTC'} as const
+    const year = endDate.getUTCFullYear()
+    return `${startDate.toLocaleDateString('en-US', short)} – ${endDate.toLocaleDateString('en-US', short)}, ${year}`
 }
 
-// loads every trip the user owns or has joined
+// the end date is the trip's last day, so a trip is over once that whole day has passed
+function hasEnded(endDate: Date, now: Date) {
+    return now.getTime() >= endDate.getTime() + DAY_MS
+}
+
+// loads every trip the user owns or has joined, split into the two lists on the page
 export async function loader({request}: Route.LoaderArgs) {
     const user = await requireSignedInUser(request)
     const {status, trips} = await getMyTrips(user)
@@ -27,97 +30,168 @@ export async function loader({request}: Route.LoaderArgs) {
     }
 
     const now = new Date()
+    const toCard = (trip: typeof trips[number]) => ({
+        id: trip.id,
+        title: trip.title,
+        destination: trip.destination,
+        dates: formatDates(trip.startDate, trip.endDate),
+        ended: hasEnded(trip.endDate, now),
+    })
+
+    const planned = trips.filter((trip) => trip.ownerId === user.profile.id).map(toCard)
+    const invitedTrips = trips.filter((trip) => trip.ownerId !== user.profile.id)
+
+    // look up each trip owner's name once for the "Planned by" pills
+    const ownerIds = [...new Set(invitedTrips.map((trip) => trip.ownerId))]
+    const owners = await Promise.all(ownerIds.map((id) => getProfileByProfileId(id, user)))
+    const ownerNames = new Map(ownerIds.map((id, index) => [id, owners[index].profile?.name ?? null]))
+
+    const invited = invitedTrips.map((trip) => ({
+        ...toCard(trip),
+        ownerName: ownerNames.get(trip.ownerId) ?? null,
+    }))
+
+    // trips arrive soonest first, so the first one not over yet is next
+    const upNextId = planned.find((trip) => !trip.ended)?.id ?? null
+
     return {
-        trips: trips.map((trip) => ({
-            id: trip.id,
-            title: trip.title,
-            destination: trip.destination,
-            countdown: getCountdown(trip.startDate, trip.endDate, now),
-        })),
+        planned,
+        invited,
+        upNextId,
         message: status.status === 200 ? null : status.message,
     }
 }
 
-export default function myTrips ({loaderData}: Route.ComponentProps) {
-    const {trips, message} = loaderData
-    return (
-        <>
-            <section className={'px-45 py-25 font-serif grid grid-cols-1 md:grid-cols-2 gap-4'}>
-                    <div className="md:col-span-1">
-                        <section className={'my-10'}>
-                            <h1 className={'text-3xl font-bold underline'}> My Trips </h1>
-                            <Link to="/create-trip" className="w-full max-w-lg overflow-hidden rounded-xl flex items-center mt-10 hover:underline">
-                                <img className={'size-10 border-2 border-black rounded-xl mr-3'}
-                                     src="/plus-icon.png"
-                                     alt=""
-                                />
-                                <h2 className={'text-2xl'}> Create a New Trip! </h2>
-                            </Link>
-                            <div className="w-full max-w-lg overflow-hidden rounded-xl flex items-center mt-5">
-                                <img className={'size-10 border-2 border-black rounded-xl mr-3'}
-                                     src="plus-icon.png"
-                                     alt="Add Icon"
-                                />
-                                <h2 className={'text-2xl'}> Re-use a past itinerary! </h2>
-                            </div>
-                        </section>
+// rotating colors from the sunset palette: trip icon circles and "Planned by" pills
+const iconColors = ['bg-[#FF5A1F]', 'bg-[#FF8A85]', 'bg-[#C19AC5]']
+const pillColors = ['bg-[#C19AC5]', 'bg-[#FF8A85]']
 
-                        <section className={'mt-10'}>
-                            {/* the user's real trips: each card opens that trip's itinerary */}
-                            {message && <p className="text-red-700">{message}</p>}
-                            {!message && trips.length === 0 && (
-                                <p className="text-lg text-gray-600">You have no trips yet. Create one to get started!</p>
-                            )}
-                            <ul className="max-w-sm">
-                                {trips.map((trip, index) => (
+// both header buttons: thick navy outline, bold text that never wraps.
+// Full width and stacked on phones; side by side on wide screens
+const buttonBase = 'flex items-center justify-center gap-2 whitespace-nowrap rounded-full border-[3px] border-[#0B1533] px-6 py-3 text-base font-bold text-[#0B1533] lg:py-2.5'
+const primaryButtonClasses = `${buttonBase} bg-[#FF5A1F] hover:bg-[#FF7A45]`
+const secondaryButtonClasses = `${buttonBase} bg-white hover:bg-[#F7EEF6]`
+
+
+// picture placeholder, same as the landing page; swap for the trip's photo later
+function ImageIcon({className}: { className: string }) {
+    return (
+        <svg aria-hidden="true" className={className} fill="none" stroke="currentColor" strokeWidth="1.75" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="4"/>
+            <circle cx="15.5" cy="8.5" r="1.5"/>
+            <path strokeLinejoin="round" d="m3 16 5-5 4 4 2-2 7 7"/>
+        </svg>
+    )
+}
+
+function RecycleIcon() {
+    return (
+        <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/>
+        </svg>
+    )
+}
+
+
+export default function MyTrips({loaderData}: Route.ComponentProps) {
+    const {planned, invited, upNextId, message} = loaderData
+
+    return (
+        // same lavender page background as the travel itinerary page
+        <main className="min-h-full bg-[#F7EEF6] text-[#0B1533]">
+            <div className="mx-auto max-w-[1248px] px-5 py-6 sm:px-8 lg:py-10">
+
+                {message && (
+                    <p role="alert" className="mb-6 rounded-2xl border-[3px] border-[#FF5A1F] bg-white p-4 font-medium">{message}</p>
+                )}
+
+                {/* phones: one column. Wide screens: trips on the left, buttons + invites in a fixed right column */}
+                {/* grid-cols-1 caps the phone column at the screen width, so long one-line text truncates instead of overflowing */}
+                <div className="grid grid-cols-1 gap-x-9 gap-y-6 lg:grid-cols-[minmax(0,1fr)_468px] lg:gap-y-8">
+
+                    <h1 className="font-display text-6xl font-bold leading-none sm:text-7xl lg:text-8xl">My Trips</h1>
+
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-end lg:gap-3">
+                        <Link to="/create-trip" className={primaryButtonClasses}>+ Create a new trip</Link>
+                        {/* not built yet: shown so the layout matches the design */}
+                        <button type="button" disabled title="Coming soon" className={`${secondaryButtonClasses} cursor-not-allowed`}>
+                            <RecycleIcon/> Recycle a past itinerary
+                        </button>
+                    </div>
+
+                    {/* trips the signed-in user owns */}
+                    <section aria-labelledby="planned-heading">
+                        <h2 id="planned-heading" className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-[#3A4187] lg:mb-4">
+                            Planned by you
+                        </h2>
+
+                        {planned.length === 0 ? (
+                            <p className="rounded-3xl border-[3px] border-[#0B1533] bg-white p-5">
+                                You haven't planned a trip yet. Create one to get started!
+                            </p>
+                        ) : (
+                            <ul className="flex flex-col gap-3 lg:gap-4">
+                                {planned.map((trip, index) => (
                                     <li key={trip.id}>
                                         <Link to={`/trip-itinerary/${trip.id}`}
-                                              className={`flex h-20 w-100 items-center justify-between gap-3 rounded-2xl p-4 my-2 font-medium text-blue-900 transition-colors ${
-                                                  index % 2 === 0 ? 'bg-blue-100 hover:bg-blue-300' : 'bg-green-100 hover:bg-green-300'
-                                              }`}>
-                                            <span>{trip.title} * {trip.destination} * {trip.countdown}</span>
-                                            {/* arrow pointing right: this opens the trip */}
-                                            <svg aria-hidden="true" className="h-5 w-5 shrink-0 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
-                                            </svg>
+                                              className="flex items-center gap-4 rounded-full border-[3px] border-[#0B1533] bg-white p-2 pr-4 transition-colors hover:bg-[#FFF5F0] lg:gap-5 lg:p-2.5 lg:pr-6">
+                                            <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full lg:h-16 lg:w-16 ${iconColors[index % iconColors.length]}`}>
+                                                <ImageIcon className="h-6 w-6 lg:h-7 lg:w-7"/>
+                                            </span>
+                                            <span className="min-w-0 flex-1">
+                                                <span className="block truncate font-display text-xl font-bold leading-tight lg:text-3xl">{trip.title}</span>
+                                                <span className="block truncate text-sm text-[#3A4187] lg:text-base">
+                                                    {trip.destination} · {trip.dates}
+                                                </span>
+                                            </span>
+                                            {trip.id === upNextId && (
+                                                <span className="shrink-0 whitespace-nowrap rounded-full bg-[#FF8A85] px-3 py-1 text-sm font-bold">Up next</span>
+                                            )}
                                         </Link>
                                     </li>
                                 ))}
                             </ul>
-                        </section>
-                    </div>
+                        )}
+                    </section>
 
-                    <div className="px-25">
-                        <section className="md:col-span-2">
-                            <h1 className={'text-3xl font-bold my-10 align-right justify-items-start max-w-[50%] underline'}> Trip Invites </h1>
-                        </section>
+                    {/* trips someone else planned that the user has joined */}
+                    <section aria-labelledby="invites-heading"
+                             className="mt-3 self-start overflow-hidden rounded-[28px] border-[3px] border-[#0B1533] bg-[#434A8E] text-white lg:mt-0">
+                        <div aria-hidden="true">
+                            <div className="h-2 bg-[#FF5A1F]"/>
+                            <div className="h-1.5 bg-[#FF8A85]"/>
+                            <div className="h-1.5 bg-[#C19AC5]"/>
+                        </div>
+                        <div className="px-4 pb-5 pt-5 lg:px-7 lg:pb-7 lg:pt-6">
+                            <h2 id="invites-heading" className="font-display text-3xl font-bold lg:text-4xl">Trip Invites</h2>
+                            <p className="mt-3 text-white/90">
+                                Trips other people have invited you to. Open one to see the plan and RSVP.
+                            </p>
 
-                        <section>
-                            <div className="max-w-sm">
-                                <button
-                                        className="w-100 h-20 flex items-center text-center justify-center p-4 bg-red-100 rounded-2xl my-10 hover:bg-red-300 transition-colors">
-                                    <span
-                                        className="flex items-center text-center justify-center font-medium text-blue-900"> Trip Name * Location * Countdown  </span>
-                                    <svg id="arrow"
-                                         className="w-5 h-5 text-gray-500 align-right transition-transform duration-300"
-                                         fill="none"
-                                         viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </button>
-                                <div id="contentBox"
-                                     className="max-h-0 overflow-hidden transition-all duration-300 ease-in-out">
-                                    <div className="p-4 text-gray-600 border-t border-gray-100 text-sm">
-                                        This is the hidden container. It uses overflow-hidden to prevent layout jumps
-                                        and max-height
-                                        transitions to seamlessly roll down when triggered.
-                                    </div>
-                                </div>
-                            </div>
-                        </section>
-                    </div>
-            </section>
-        </>
+                            {invited.length === 0 ? (
+                                <p className="mt-4 rounded-2xl bg-white/10 p-4 text-white/90">No invites yet.</p>
+                            ) : (
+                                <ul className="mt-4 flex flex-col gap-3">
+                                    {invited.map((trip, index) => (
+                                        <li key={trip.id}>
+                                            <Link to={`/trip-itinerary/${trip.id}`}
+                                                  className="flex items-center justify-between gap-3 rounded-full bg-white py-2.5 pl-5 pr-3 text-[#0B1533] transition-colors hover:bg-[#FFF5F0]">
+                                                <span className="min-w-0 truncate font-display text-lg font-bold lg:text-xl">{trip.title}</span>
+                                                {trip.ownerName && (
+                                                    <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold lg:text-sm ${pillColors[index % pillColors.length]}`}>
+                                                        <span className="lg:hidden">By</span>
+                                                        <span className="hidden lg:inline">Planned by</span> {trip.ownerName}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
     )
 }

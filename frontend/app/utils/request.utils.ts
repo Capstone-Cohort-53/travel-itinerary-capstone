@@ -74,7 +74,7 @@ export function failedRequestStatus(error: unknown): Status {
  *
  * @param path the API path to GET, e.g. `/thread/following`
  * @param user the signed-in user, from requireSignedInUser (guarded routes only)
- * @returns `200` with the parsed body in `data`, otherwise the failure's status and message
+ * @returns `200` (or `201`) with the parsed body in `data`, otherwise the failure's status and message
  */
 export async function getRequest(path: string, user?: SignedInUser): Promise<Status> {
     const headers = new Headers();
@@ -150,9 +150,37 @@ export async function postRequest(path: string, body: unknown, user?: SignedInUs
     }
 }
 
-
+/**
+ * Replaces a record in the API: sends a PUT request with a JSON body and
+ * normalizes the answer into a Status. Like getRequest, it never throws.
+ *
+ * @param path the API path to PUT to, e.g. `/trip/123/activity/456`
+ * @param body the value to send, serialized as JSON
+ * @param user the signed-in user, from requireSignedInUser (guarded routes only)
+ * @returns `200` (or `201`) with the parsed body in `data`, otherwise the failure's status and message
+ */
 export async function putRequest(path: string, body: unknown, user?: SignedInUser): Promise<Status> {
-    const headers = new Headers({ "Content-Type": "application/json" });
+    return sendJsonRequest("PUT", path, body, user);
+}
+
+/**
+ * Deletes a record in the API and normalizes the answer into a Status. Like
+ * getRequest, it never throws.
+ *
+ * @param path the API path to DELETE, e.g. `/trip/123/activity/456`
+ * @param user the signed-in user, from requireSignedInUser (guarded routes only)
+ * @returns `200` (or `201`) with the parsed body in `data`, otherwise the failure's status and message
+ */
+export async function deleteRequest(path: string, user?: SignedInUser): Promise<Status> {
+    return sendJsonRequest("DELETE", path, undefined, user);
+}
+
+/** What putRequest and deleteRequest share: send, then turn the answer into a Status. */
+async function sendJsonRequest(method: "PUT" | "DELETE", path: string, body: unknown, user?: SignedInUser): Promise<Status> {
+    const headers = new Headers();
+    if (body !== undefined) {
+        headers.set("Content-Type", "application/json");
+    }
     if (user) {
         headers.set("Authorization", user.authorization);
         headers.set("Cookie", user.cookie);
@@ -160,9 +188,9 @@ export async function putRequest(path: string, body: unknown, user?: SignedInUse
 
     try {
         const response = await fetch(`${REST_URL}${path}`, {
-            method: "PUT",
+            method,
             headers,
-            body: JSON.stringify(body),
+            body: body === undefined ? undefined : JSON.stringify(body),
             signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         });
 
@@ -178,7 +206,7 @@ export async function putRequest(path: string, body: unknown, user?: SignedInUse
             message: responseBody?.message ?? "Failed to save. Please try again.",
         };
     } catch (error) {
-        console.error(`PUT ${path} failed:`, error);
+        console.error(`${method} ${path} failed:`, error);
         return failedRequestStatus(error);
     }
 }

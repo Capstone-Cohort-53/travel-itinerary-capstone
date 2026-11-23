@@ -4,6 +4,7 @@ import type {Route} from "./+types/trip-itinerary";
 import {endSession, requireSignedInUser} from "~/utils/session.server";
 import {getTrip, type Trip} from "~/utils/models/trip.model";
 import {type Activity, getActivitiesByTripId} from "~/utils/models/activity.model";
+import {googleMapsUrl} from "~/utils/google-maps";
 
 // loads one trip and everything planned for it
 export async function loader({request, params}: Route.LoaderArgs) {
@@ -61,8 +62,9 @@ function tripLength(trip: Trip): number {
     return Math.round((new Date(trip.endDate).getTime() - new Date(trip.startDate).getTime()) / ONE_DAY_MS) + 1;
 }
 
+// activity times are saved as the clock time at the destination, marked UTC, so read them back in UTC
 function formatTime(date: Date | string | null): string | null {
-    return date === null ? null : new Date(date).toLocaleTimeString(undefined, {hour: "numeric", minute: "2-digit"});
+    return date === null ? null : new Date(date).toLocaleTimeString(undefined, {timeZone: "UTC", hour: "numeric", minute: "2-digit"});
 }
 
 function formatCost(cost: number): string {
@@ -80,7 +82,7 @@ function groupByDay(activities: Activity[]): Day[] {
     const days: Day[] = [];
     for (const activity of sorted) {
         const start = activity.startDatetime === null ? null : new Date(activity.startDatetime);
-        const key = start === null ? "unscheduled" : start.toDateString();
+        const key = start === null ? "unscheduled" : start.toISOString().slice(0, 10);
 
         const lastDay = days[days.length - 1];
         if (lastDay && lastDay.key === key) {
@@ -90,7 +92,7 @@ function groupByDay(activities: Activity[]): Day[] {
 
         const label = start === null
             ? "Not scheduled yet"
-            : `Day ${days.length + 1} · ${start.toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"})}`;
+            : `Day ${days.length + 1} · ${start.toLocaleDateString(undefined, {timeZone: "UTC", weekday: "short", month: "short", day: "numeric"})}`;
         days.push({key, label, activities: [activity]});
     }
     return days;
@@ -120,7 +122,7 @@ export default function TripItinerary(props: Route.ComponentProps) {
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
                         <Link to="/my-trips" className="text-sm font-bold text-[#434A90] hover:underline">← My Trips</Link>
-                        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight text-[#031136]">{trip.title}</h1>
+                        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight break-words text-[#031136]">{trip.title}</h1>
                         <p className="mt-1 text-sm text-[#434A90]">
                             {trip.destination} · {formatTripDate(trip.startDate)} – {formatTripDate(trip.endDate)} · {length} {length === 1 ? "day" : "days"}
                         </p>
@@ -136,7 +138,7 @@ export default function TripItinerary(props: Route.ComponentProps) {
                         </Link>
                         {isOwner && (
                             <Link
-                                to="/activity"
+                                to={`/travel-itinerary/${trip.id}/activity/new`}
                                 className="px-4 py-2.5 rounded-full border-2 border-[#031136] bg-[#FF5903] text-center text-sm font-bold text-[#031136] hover:bg-[#FF5903]/90"
                             >
                                 + Add activity
@@ -166,7 +168,11 @@ export default function TripItinerary(props: Route.ComponentProps) {
                                 <h2 className="inline-block rounded-full bg-[#031136] px-4 py-1 text-xs font-bold uppercase tracking-wider text-white">
                                     {day.label}
                                 </h2>
-                                {day.activities.map((activity) => <ActivityCard key={activity.id} activity={activity}/>)}
+                                {day.activities.map((activity) => (
+                                    <ActivityCard key={activity.id} activity={activity}
+                                                  detailsTo={`/travel-itinerary/${trip.id}/activity/${activity.id}`}
+                                                  editTo={isOwner ? `/travel-itinerary/${trip.id}/activity/${activity.id}/edit` : undefined}/>
+                                ))}
                             </section>
                         ))}
                     </div>
@@ -266,11 +272,13 @@ function TripCard({trip}: { trip: Trip }) {
     );
 }
 
-function ActivityCard({activity}: { activity: Activity }) {
+function ActivityCard({activity, detailsTo, editTo}: { activity: Activity; detailsTo: string; editTo?: string }) {
     const start = formatTime(activity.startDatetime);
     const end = formatTime(activity.endDatetime);
     // the one-line summary under the name: only the parts this activity has
-    const details = [activity.location, activity.address, formatCost(activity.cost)].filter(Boolean).join(" · ");
+    // the place opens in Google Maps (the app, on phones); the cost follows it
+    const place = [activity.location, activity.address].filter(Boolean).join(" · ");
+    const mapsUrl = googleMapsUrl(activity.location, activity.address);
 
     return (
         // phones: the time on its own line above the name, with Required beside it.
@@ -293,10 +301,22 @@ function ActivityCard({activity}: { activity: Activity }) {
             </div>
 
             <div className="min-w-0 flex-1 space-y-1">
-                <h3 className="font-bold text-[#031136]">{activity.name}</h3>
-                <p className="text-sm text-[#434A90]">{details}</p>
+                {/* the name opens the activity's details page, where its map is */}
+                <h3 className="font-bold text-[#031136]"><Link to={detailsTo} className="hover:underline">{activity.name}</Link></h3>
+                <p className="text-sm text-[#434A90]">
+                    {mapsUrl && (
+                        <a href={mapsUrl} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2 hover:decoration-solid">
+                            📍 {place}<span className="sr-only"> (opens Google Maps in a new tab)</span>
+                        </a>
+                    )}
+                    {mapsUrl && " · "}{formatCost(activity.cost)}
+                </p>
                 {activity.description && <p className="text-sm text-gray-700">{activity.description}</p>}
                 {activity.notes && <p className="text-sm italic text-gray-500">Note: {activity.notes}</p>}
+                <div className="flex gap-4 pt-1 text-sm font-bold text-[#434A90]">
+                    <Link to={detailsTo} className="underline">View details &amp; map</Link>
+                    {editTo && <Link to={editTo} className="underline">Edit</Link>}
+                </div>
             </div>
 
             {activity.mandatory && (
