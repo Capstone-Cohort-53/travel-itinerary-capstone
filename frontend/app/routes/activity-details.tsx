@@ -186,7 +186,7 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
                         <span className={`inline-block rounded-full border-2 border-[#031136] px-3 py-0.5 text-xs font-bold text-[#031136] ${activity.mandatory ? 'bg-[#FF5903]' : 'bg-[#C9A3CB]'}`}>
                             {typeLabel}
                         </span>
-                        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight text-[#031136]">{activity.name}</h1>
+                        <h1 className="mt-2 font-display text-5xl sm:text-6xl font-bold tracking-tight text-[#031136]">{activity.name}</h1>
                         <p className="mt-1 text-sm text-[#434A90]">{trip.title}</p>
                     </div>
                     {isOrganizer && (
@@ -220,7 +220,7 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
                                 </span>
                                 <div>
                                     <p className={tileLabelClass}>Location</p>
-                                    {activity.location && <p className="text-lg font-extrabold text-[#031136]">{activity.location}</p>}
+                                    {activity.location && <p className="font-display text-2xl font-semibold text-[#031136]">{activity.location}</p>}
                                     {activity.address && <p className="text-sm text-[#031136] whitespace-pre-line">{activity.address}</p>}
                                     {activity.lat !== null && activity.lng !== null && (
                                         <a href={`https://www.openstreetmap.org/?mlat=${activity.lat}&mlon=${activity.lng}#map=17/${activity.lat}/${activity.lng}`}
@@ -248,19 +248,19 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
                         )}
 
                         <div className={`${cardClass} p-6`}>
-                            <h2 className="text-xl font-extrabold text-[#434A90]">Cost &amp; notes</h2>
+                            <h2 className="font-display text-2xl font-semibold text-[#434A90]">Cost &amp; logistics</h2>
                             <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm text-[#031136] sm:grid-cols-[10rem_1fr]">
                                 <dt className="font-bold">Cost per person</dt>
                                 <dd>{describeCost(activity.cost)}</dd>
                                 {activity.notes && <>
-                                    <dt className="font-bold">Notes</dt>
+                                    <dt className="font-bold">What to bring</dt>
                                     <dd className="whitespace-pre-line">{activity.notes}</dd>
                                 </>}
                             </dl>
                         </div>
 
                         <div>
-                            <h2 className="text-xl font-extrabold text-[#031136]">Organizer</h2>
+                            <h2 className="font-display text-2xl font-semibold text-[#031136]">Organizer</h2>
                             {isOrganizer ? (
                                 <p className="mt-1 text-sm text-[#031136]">
                                     You are the organizer of this trip. Travelers see your contact details here.
@@ -311,7 +311,7 @@ function AttendancePanel({attendance}: { attendance: Attendance }) {
         <section aria-labelledby="attendance-heading" className={`${cardClass} overflow-hidden`}>
             <div className="bg-[#031136] px-5 pt-4 pb-3">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#C9A3CB]">Organizer only</p>
-                <h2 id="attendance-heading" className="text-2xl font-extrabold text-white">Attendance</h2>
+                <h2 id="attendance-heading" className="font-display text-3xl font-bold text-white">Attendance</h2>
             </div>
             <SunsetStripes/>
             <div className="space-y-3 p-4">
@@ -325,7 +325,7 @@ function AttendancePanel({attendance}: { attendance: Attendance }) {
                     {tiles.map((tile) => (
                         <div key={tile.label} className={`rounded-2xl px-3 py-2 ${tile.className}`}>
                             <p className="text-xs font-bold">{tile.label}</p>
-                            <p className="text-3xl font-extrabold">{tile.count}</p>
+                            <p className="font-display text-4xl font-bold">{tile.count}</p>
                         </div>
                     ))}
                 </div>
@@ -370,7 +370,7 @@ function RsvpPanel({defaultValues, hasAnswered}: { defaultValues: RsvpForm, hasA
                 <div className="h-1.5 rounded-full bg-[#C9A3CB]"/>
                 <div className="h-1.5 rounded-full bg-[#434A90]"/>
             </div>
-            <h2 id="rsvp-heading" className="mt-5 text-3xl font-extrabold leading-tight">Will you attend?</h2>
+            <h2 id="rsvp-heading" className="mt-5 font-display text-3xl font-bold leading-tight">Will you attend?</h2>
             <p className="mt-2 text-sm">Answer for your household, and say how many adults and children are coming.</p>
 
             <form

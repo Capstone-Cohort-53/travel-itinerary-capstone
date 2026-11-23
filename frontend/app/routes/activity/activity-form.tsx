@@ -1,4 +1,4 @@
-import type {ChangeEvent, ReactNode} from "react";
+import {useState, type ChangeEvent, type ReactNode} from "react";
 import {Link, useFetcher} from "react-router";
 import {useForm, type AnyFieldApi} from "@tanstack/react-form";
 import {ActivityFormSchema, type ActivityForm} from "~/utils/models/activity.model";
@@ -11,6 +11,11 @@ import {StatusMessage} from "~/components/StatusMessage";
  * the Zod schema as the user types; on submit the values go to the page's own
  * action, which validates again and saves. The action redirects to the trip's
  * itinerary on success, or returns a message that shows above the buttons.
+ *
+ * Styled after the "Retro Sunset · Add Activity" mockup. The mockup splits some
+ * fields into several boxes (Date / Start / End, and Street / City, State / ZIP);
+ * those boxes are combined here in the browser into the same startDatetime,
+ * endDatetime and address values the API has always received.
  */
 
 export const emptyActivityValues: ActivityForm = {
@@ -47,24 +52,57 @@ export function isDuringTrip(form: Pick<ActivityForm, 'startDatetime' | 'endDate
 }
 
 
-// ── Retro Sunset styles, the same ones zoey's Create Trip page uses ──
+// ── the address boxes: one saved address, shown as Street / City, State / ZIP ──
 
-const labelClass = "block text-sm font-bold text-[#031136] mb-2"
-const inputClass = "w-full px-4 py-2.5 rounded-xl border-2 bg-white text-sm text-[#031136] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5903] focus:ring-offset-1"
-const cardClass = "bg-white rounded-3xl border-2 border-[#031136] p-6 sm:p-8 space-y-5"
-const sectionTitleClass = "text-xl font-extrabold text-[#434A90]"
-const pillClass = "w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] font-bold text-sm text-center transition"
+type AddressParts = { street: string, cityState: string, zip: string }
 
-/** The four sunset stripes under the navbar and the panel headers. */
-function SunsetStripes() {
-    return (
-        <div aria-hidden="true">
-            <div className="h-1.5 bg-[#FF5903]"/>
-            <div className="h-1.5 bg-[#FF6B6C]"/>
-            <div className="h-1.5 bg-[#C9A3CB]"/>
-        </div>
-    )
+/** "905 Alarid St, Santa Fe, NM 87505" → street, "Santa Fe, NM", "87505". Anything unusual stays whole in Street. */
+export function splitAddress(address: string): AddressParts {
+    const oneLine = address.replace(/\s*\n\s*/g, ', ').trim()
+    const match = oneLine.match(/^(.+?),\s*([^,]+,\s*[A-Za-z]{2})\.?(?:\s+(\d{5}(?:-\d{4})?))?$/)
+    return match
+        ? {street: match[1], cityState: match[2], zip: match[3] ?? ''}
+        : {street: oneLine, cityState: '', zip: ''}
 }
+
+/** The reverse of splitAddress: "street, City, ST ZIP", skipping empty boxes. */
+export function joinAddress({street, cityState, zip}: AddressParts): string {
+    const cityLine = [cityState.trim(), zip.trim()].filter(Boolean).join(' ')
+    return [street.trim(), cityLine].filter(Boolean).join(', ')
+}
+
+
+// ── the date and time boxes: Date + Start + End, saved as startDatetime and endDatetime ──
+
+type When = { date: string, start: string, end: string }
+
+function splitWhen(values: ActivityForm): When {
+    return {
+        date: (values.startDatetime || values.endDatetime).slice(0, 10),
+        start: values.startDatetime.slice(11, 16),
+        end: values.endDatetime.slice(11, 16),
+    }
+}
+
+/** "Sat, Oct 24 | 6:00 – 8:00 PM" for the itinerary preview. */
+function describeWhen({date, start, end}: When): string {
+    if (!date) {
+        return 'Date not set'
+    }
+    const day = new Date(`${date}T00:00Z`).toLocaleDateString('en-US', {timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric'})
+    const time = (hhmm: string) => new Date(`1970-01-01T${hhmm}Z`).toLocaleTimeString('en-US', {timeZone: 'UTC', hour: 'numeric', minute: '2-digit'})
+    const times = [start, end].filter(Boolean).map(time).join(' – ')
+    return times ? `${day} | ${times}` : day
+}
+
+
+// ── Retro Sunset styles ──
+
+const labelClass = "block text-sm font-bold text-[#031136] mb-1.5"
+const inputClass = "w-full px-4 py-2.5 rounded-xl border-2 bg-white text-sm text-[#031136] placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#FF5903] focus:ring-offset-1"
+const cardClass = "bg-white rounded-3xl border-2 border-[#031136] p-6 sm:p-7 space-y-4"
+const sectionTitleClass = "font-display text-2xl font-semibold text-[#434A90]"
+const pillClass = "w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] font-bold text-sm text-center transition"
 
 // ── field helpers: every input shows its first error once it has been touched ──
 
@@ -92,6 +130,11 @@ function FieldError({field}: {field: AnyFieldApi}) {
     return error ? <p id={`${field.name}-error`} className="mt-1 text-sm text-red-600">{error}</p> : null
 }
 
+/** A plain input for the combined boxes, which aren't fields of their own. */
+function boxClass(hasError: boolean) {
+    return `${inputClass} ${hasError ? 'border-red-600' : 'border-[#031136]'}`
+}
+
 
 type ActivityFormPageProps = {
     trip: Trip,
@@ -117,6 +160,10 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
         },
     })
 
+    // what's typed in the split boxes; each change writes the combined value into the form
+    const [when, setWhen] = useState<When>(() => splitWhen(defaultValues))
+    const [addressParts, setAddressParts] = useState<AddressParts>(() => splitAddress(defaultValues.address))
+
     const tripStart = toDateString(trip.startDate)
     const tripEnd = toDateString(trip.endDate)
     const tripDates = `${formatTripDate(trip.startDate)} – ${formatTripDate(trip.endDate)}`
@@ -126,18 +173,17 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
             <div className="max-w-5xl mx-auto">
 
                 {/* ── heading ── */}
-                <Link to={`/trip-itinerary/${trip.id}`} className="text-sm font-bold text-[#434A90] hover:underline">
-                    ← Back to itinerary
-                </Link>
-                <p className="mt-3 text-sm font-bold text-[#434A90]">{trip.title}</p>
-                <h1 className="mt-1 text-4xl sm:text-5xl font-extrabold tracking-tight text-[#031136]">{heading}</h1>
-                <p className="mt-2 mb-8 text-[#031136]">{intro}</p>
+                <p className="text-sm font-bold text-[#434A90]">{trip.title}</p>
+                <h1 className="mt-1 font-display text-5xl sm:text-6xl font-bold tracking-tight text-[#031136]">{heading}</h1>
+                <p className="mt-2 mb-8 text-sm text-[#031136]">
+                    {intro} <span className="text-[#434A90]">* Required</span>
+                </p>
 
                 <div className="grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-start">
 
-                    <div className="space-y-6">
+                    <div className="space-y-5">
                         <form
-                            className="space-y-6"
+                            className="space-y-5"
                             noValidate
                             onSubmit={(event) => {
                                 event.preventDefault()
@@ -146,31 +192,31 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                             }}
                         >
 
-                            {/* ── the activity ── */}
+                            {/* ── basic info ── */}
                             <section className={cardClass}>
-                                <h2 className={sectionTitleClass}>The activity</h2>
+                                <h2 className={sectionTitleClass}>Basic info</h2>
 
                                 <form.Field name="name">
                                     {(field) => (
                                         <div>
-                                            <label htmlFor={field.name} className={labelClass}>Activity name *</label>
+                                            <label htmlFor={field.name} className={labelClass}>Activity Name *</label>
                                             <input type="text" placeholder="e.g., Family Welcome Dinner" {...inputProps(field)}/>
                                             <FieldError field={field}/>
                                         </div>
                                     )}
                                 </form.Field>
 
-                                {/* Mandatory / Optional as pill toggles, like the RSVP buttons */}
+                                {/* Mandatory / Optional as radio pills */}
                                 <form.Field name="mandatory">
                                     {(field) => (
                                         <fieldset>
-                                            <legend className={labelClass}>Activity type *</legend>
-                                            <div className="grid grid-cols-2 gap-3 sm:flex">
+                                            <legend className={labelClass}>Activity Type *</legend>
+                                            <div className="flex flex-wrap gap-3">
                                                 {(['mandatory', 'optional'] as const).map((option) => {
                                                     const checked = field.state.value === option
                                                     return (
                                                         <label key={option}
-                                                               className={`cursor-pointer px-6 py-2.5 rounded-full border-2 border-[#031136] text-sm font-bold text-center capitalize transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#FF5903] has-[:focus-visible]:ring-offset-1 ${checked ? 'bg-[#FF5903] text-[#031136]' : 'bg-white text-[#031136] hover:bg-[#031136]/5'}`}>
+                                                               className={`flex cursor-pointer items-center gap-2 px-5 py-2 rounded-full border-2 text-sm font-bold capitalize transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#FF5903] has-[:focus-visible]:ring-offset-1 ${checked ? 'border-[#FF5903] bg-[#FF5903] text-[#031136]' : 'border-[#031136] bg-white text-[#031136] hover:bg-[#031136]/5'}`}>
                                                             <input
                                                                 type="radio"
                                                                 name={field.name}
@@ -180,6 +226,11 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                                 onChange={() => field.handleChange(option)}
                                                                 className="sr-only"
                                                             />
+                                                            {/* the little radio dot from the mockup */}
+                                                            <span aria-hidden="true"
+                                                                  className={`flex h-3.5 w-3.5 items-center justify-center rounded-full border ${checked ? 'border-white bg-white' : 'border-[#031136]/50'}`}>
+                                                                {checked && <span className="h-2 w-2 rounded-full bg-[#434A90]"/>}
+                                                            </span>
                                                             {option}
                                                         </label>
                                                     )
@@ -190,34 +241,61 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                     )}
                                 </form.Field>
 
-                                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4">
-                                    <form.Field name="startDatetime">
-                                        {(field) => (
-                                            <div>
-                                                <label htmlFor={field.name} className={labelClass}>Starts</label>
-                                                <input type="datetime-local" min={`${tripStart}T00:00`} max={`${tripEnd}T23:59`} {...inputProps(field)}/>
-                                                <FieldError field={field}/>
-                                            </div>
-                                        )}
-                                    </form.Field>
-
-                                    <form.Field name="endDatetime">
-                                        {(field) => (
-                                            <div>
-                                                <label htmlFor={field.name} className={labelClass}>Ends</label>
-                                                <input type="datetime-local" min={`${tripStart}T00:00`} max={`${tripEnd}T23:59`} {...inputProps(field)}/>
-                                                <FieldError field={field}/>
-                                            </div>
-                                        )}
-                                    </form.Field>
-                                </div>
-                                <p className="-mt-2 text-xs text-gray-500">Trip: {tripDates}. Leave the times blank if they aren’t set yet.</p>
+                                {/* Date + Start + End boxes, saved as startDatetime and endDatetime */}
+                                <form.Field name="startDatetime">
+                                    {(startField) => (
+                                        <form.Field name="endDatetime">
+                                            {(endField) => {
+                                                const update = (changes: Partial<When>) => {
+                                                    const next = {...when, ...changes}
+                                                    setWhen(next)
+                                                    startField.handleChange(next.date && next.start ? `${next.date}T${next.start}` : '')
+                                                    endField.handleChange(next.date && next.end ? `${next.date}T${next.end}` : '')
+                                                }
+                                                const error = fieldError(startField) ?? fieldError(endField)
+                                                return (
+                                                    <div>
+                                                        <div className="grid gap-3 sm:grid-cols-3">
+                                                            <div>
+                                                                <label htmlFor="activity-date" className={labelClass}>Date</label>
+                                                                <input id="activity-date" type="date" min={tripStart} max={tripEnd}
+                                                                       value={when.date}
+                                                                       onBlur={startField.handleBlur}
+                                                                       onChange={(event) => update({date: event.target.value})}
+                                                                       className={boxClass(Boolean(error))}/>
+                                                            </div>
+                                                            <div>
+                                                                <label htmlFor="activity-start" className={labelClass}>Start</label>
+                                                                <input id="activity-start" type="time"
+                                                                       value={when.start}
+                                                                       onBlur={startField.handleBlur}
+                                                                       onChange={(event) => update({start: event.target.value})}
+                                                                       className={boxClass(Boolean(error))}/>
+                                                            </div>
+                                                            <div>
+                                                                <label htmlFor="activity-end" className={labelClass}>End</label>
+                                                                <input id="activity-end" type="time"
+                                                                       value={when.end}
+                                                                       onBlur={endField.handleBlur}
+                                                                       onChange={(event) => update({end: event.target.value})}
+                                                                       className={boxClass(Boolean(error))}/>
+                                                            </div>
+                                                        </div>
+                                                        {error
+                                                            ? <p className="mt-1 text-sm text-red-600">{error}</p>
+                                                            : <p className="mt-1 text-xs text-gray-500">Trip: {tripDates}. Leave the times blank if they aren’t set yet.</p>}
+                                                    </div>
+                                                )
+                                            }}
+                                        </form.Field>
+                                    )}
+                                </form.Field>
 
                                 <form.Field name="description">
                                     {(field) => (
                                         <div>
-                                            <label htmlFor={field.name} className={labelClass}>Description</label>
-                                            <textarea rows={4}
+                                            <label htmlFor={field.name} className={labelClass}>Description (optional)</label>
+                                            <textarea rows={2}
                                                       placeholder="What is this activity about?"
                                                       {...inputProps(field)}/>
                                             <FieldError field={field}/>
@@ -228,51 +306,88 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
 
                             {/* ── location ── */}
                             <section className={cardClass}>
-                                <div className="flex items-center gap-4">
-                                    {/* the lilac location badge from the activity designs */}
+                                <h2 className={sectionTitleClass}>Location</h2>
+                                <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                                    {/* the big lilac location badge from the mockup */}
                                     <span aria-hidden="true"
-                                          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#C9A3CB]">
-                                        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="#031136"
+                                          className="hidden sm:flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-[#C9A3CB]">
+                                        <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="#031136"
                                              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>
                                             <circle cx="12" cy="10" r="2.5"/>
                                         </svg>
                                     </span>
-                                    <h2 className={sectionTitleClass}>Location</h2>
+
+                                    <div className="flex-1 space-y-3">
+                                        <form.Field name="location">
+                                            {(field) => (
+                                                <div>
+                                                    <label htmlFor={field.name} className={labelClass}>Location Name</label>
+                                                    <input type="text" placeholder="e.g., Family Dinner Restaurant" {...inputProps(field)}/>
+                                                    <FieldError field={field}/>
+                                                </div>
+                                            )}
+                                        </form.Field>
+
+                                        {/* Street / City, State / ZIP boxes, saved together as the one address the map uses */}
+                                        <form.Field name="address">
+                                            {(field) => {
+                                                const update = (changes: Partial<AddressParts>) => {
+                                                    const next = {...addressParts, ...changes}
+                                                    setAddressParts(next)
+                                                    field.handleChange(joinAddress(next))
+                                                }
+                                                const error = fieldError(field)
+                                                return (
+                                                    <>
+                                                        <div>
+                                                            <label htmlFor="address-street" className={labelClass}>Street Address</label>
+                                                            <input id="address-street" type="text" autoComplete="address-line1"
+                                                                   placeholder="123 Main Street"
+                                                                   value={addressParts.street}
+                                                                   onBlur={field.handleBlur}
+                                                                   onChange={(event) => update({street: event.target.value})}
+                                                                   className={boxClass(Boolean(error))}/>
+                                                        </div>
+                                                        <div className="grid gap-3 sm:grid-cols-[1fr_9rem]">
+                                                            <div>
+                                                                <label htmlFor="address-city" className={labelClass}>City, State</label>
+                                                                <input id="address-city" type="text"
+                                                                       placeholder="Albuquerque, NM"
+                                                                       value={addressParts.cityState}
+                                                                       onBlur={field.handleBlur}
+                                                                       onChange={(event) => update({cityState: event.target.value})}
+                                                                       className={boxClass(Boolean(error))}/>
+                                                            </div>
+                                                            <div>
+                                                                <label htmlFor="address-zip" className={labelClass}>ZIP</label>
+                                                                <input id="address-zip" type="text" inputMode="numeric" autoComplete="postal-code"
+                                                                       placeholder="87101"
+                                                                       value={addressParts.zip}
+                                                                       onBlur={field.handleBlur}
+                                                                       onChange={(event) => update({zip: event.target.value})}
+                                                                       className={boxClass(Boolean(error))}/>
+                                                            </div>
+                                                        </div>
+                                                        {error
+                                                            ? <p className="text-sm text-red-600">{error}</p>
+                                                            : <p className="text-xs text-gray-500">Add the address to show a map on the activity page.</p>}
+                                                    </>
+                                                )
+                                            }}
+                                        </form.Field>
+                                    </div>
                                 </div>
-
-                                <form.Field name="location">
-                                    {(field) => (
-                                        <div>
-                                            <label htmlFor={field.name} className={labelClass}>Location name</label>
-                                            <input type="text" placeholder="e.g., Family Dinner Restaurant" {...inputProps(field)}/>
-                                            <FieldError field={field}/>
-                                        </div>
-                                    )}
-                                </form.Field>
-
-                                <form.Field name="address">
-                                    {(field) => (
-                                        <div>
-                                            <label htmlFor={field.name} className={labelClass}>Address</label>
-                                            <textarea rows={2}
-                                                      placeholder="123 Main Street, Albuquerque, NM 87101"
-                                                      autoComplete="street-address"
-                                                      {...inputProps(field)}/>
-                                            <FieldError field={field}/>
-                                        </div>
-                                    )}
-                                </form.Field>
                             </section>
 
-                            {/* ── cost & notes ── */}
+                            {/* ── cost & logistics ── */}
                             <section className={cardClass}>
-                                <h2 className={sectionTitleClass}>Cost &amp; notes</h2>
+                                <h2 className={sectionTitleClass}>Cost &amp; logistics</h2>
 
                                 <form.Field name="cost">
                                     {(field) => (
-                                        <div className="sm:max-w-xs">
-                                            <label htmlFor={field.name} className={labelClass}>Cost per person</label>
+                                        <div className="sm:max-w-[14rem]">
+                                            <label htmlFor={field.name} className={labelClass}>Cost Per Person</label>
                                             <input type="number" min="0" step="0.01" placeholder="35.00" {...inputProps(field)}/>
                                             <p className="mt-1 text-xs text-gray-500">Leave blank if it’s free.</p>
                                             <FieldError field={field}/>
@@ -283,9 +398,9 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                 <form.Field name="notes">
                                     {(field) => (
                                         <div>
-                                            <label htmlFor={field.name} className={labelClass}>Notes</label>
-                                            <textarea rows={3}
-                                                      placeholder="What to bring, parking, dress code, who pays…"
+                                            <label htmlFor={field.name} className={labelClass}>Event Notes / What to Bring</label>
+                                            <textarea rows={2}
+                                                      placeholder="Casual attire. Parking is available near the entrance."
                                                       {...inputProps(field)}/>
                                             <FieldError field={field}/>
                                         </div>
@@ -319,28 +434,36 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                         {footer}
                     </div>
 
-                    {/* ── side panel: the trip at a glance, styled like the Attendance panel ── */}
+                    {/* ── side panel: the trip, a live preview of the itinerary card, and who can see it ── */}
                     <aside className="space-y-4 lg:sticky lg:top-6">
-                        <div className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-white">
-                            <div className="bg-[#031136] px-5 pt-4 pb-3">
-                                <p className="text-xs font-bold uppercase tracking-wider text-[#C9A3CB]">Your trip</p>
-                                <p className="text-xl font-extrabold text-white">{trip.title}</p>
-                            </div>
-                            <SunsetStripes/>
-                            <dl className="space-y-3 px-5 py-4 text-sm text-[#031136]">
-                                <div>
-                                    <dt className="text-xs font-bold uppercase tracking-wider text-[#434A90]">Destination</dt>
-                                    <dd className="font-bold">{trip.destination}</dd>
-                                </div>
-                                <div>
-                                    <dt className="text-xs font-bold uppercase tracking-wider text-[#434A90]">Dates</dt>
-                                    <dd className="font-bold">{tripDates}</dd>
-                                </div>
-                            </dl>
+                        <div className="rounded-3xl bg-[#FF6B6C] px-5 py-4 text-[#031136]">
+                            <p className="text-xs font-bold uppercase tracking-wider">Trip</p>
+                            <p className="mt-1 font-display text-2xl font-bold leading-tight">{trip.title}</p>
+                            <p className="mt-2 text-sm">{tripDates} | {trip.destination}</p>
+                            <p className="mt-1 text-sm font-bold">Your role: Organizer</p>
                         </div>
-                        <p className="rounded-2xl bg-[#C9A3CB] px-5 py-4 text-xs text-[#031136]">
-                            Tip: mandatory activities show as <strong>Required</strong> on the itinerary, so travelers
-                            know not to miss them.
+
+                        <div className="rounded-3xl border-2 border-[#031136] bg-white p-4">
+                            <h2 className="font-display text-xl font-semibold text-[#031136]">Itinerary preview</h2>
+                            <form.Subscribe selector={(state) => state.values}>
+                                {(values) => (
+                                    <div className="mt-3 rounded-xl border-l-4 border-[#FF5903] bg-[#FBF3FA] px-3 py-2 text-[#031136]">
+                                        <p className="text-xs text-[#434A90]">{describeWhen(when)}</p>
+                                        <p className="font-bold">{values.name || 'Activity name'}</p>
+                                        <p className="text-xs">
+                                            {values.mandatory === 'mandatory' ? 'Required' : 'Optional'}
+                                            {values.location && ` | ${values.location}`}
+                                        </p>
+                                        <p className="mt-1 text-xs">
+                                            {values.cost && Number(values.cost) > 0 ? `$${Number(values.cost).toFixed(2)} per person` : 'Free'} | RSVP open
+                                        </p>
+                                    </div>
+                                )}
+                            </form.Subscribe>
+                        </div>
+
+                        <p className="rounded-2xl bg-[#C9A3CB] px-5 py-3 text-xs text-[#031136]">
+                            All accepted travelers can view this activity. Only organizers can edit it.
                         </p>
                     </aside>
                 </div>

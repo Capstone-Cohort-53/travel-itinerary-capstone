@@ -12,6 +12,9 @@ import type { Route } from "./+types/root";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
+  // groupie.travel icon in the browser tab, and on phone home screens
+  { rel: "icon", type: "image/png", href: "/favicon.png" },
+  { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -20,7 +23,8 @@ export const links: Route.LinksFunction = () => [
   },
   {
     rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    // Inter for body text, Fredoka for the rounded display headings on the landing page
+    href: "https://fonts.googleapis.com/css2?family=Fredoka:wght@500..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
   },
 ];
 
