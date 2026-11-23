@@ -5,7 +5,8 @@ import {
     getTripInvitesController,
     getTripInviteByIdController,
     deleteTripInviteController,
-    declineTripInviteController, getTripInvitesKitchenSinkController
+    declineTripInviteController, getTripInvitesKitchenSinkController,
+    putTripInviteController
 } from "./trip-invite.controller.ts"
 import { isLoggedInController } from "../../utils/controllers/is-logged-in.controller.ts"
 
@@ -23,6 +24,7 @@ tripInviteRouter.route('/kitchen-sink')
 tripInviteRouter.route('/:inviteId')
     .delete(isLoggedInController, deleteTripInviteController)
     .get(isLoggedInController, getTripInviteByIdController)
+    .put(isLoggedInController, putTripInviteController)
 
 export const tripInviteRoute = { basepath, router: tripInviteRouter }
 

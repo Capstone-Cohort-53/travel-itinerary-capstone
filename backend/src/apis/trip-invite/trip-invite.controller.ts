@@ -15,7 +15,8 @@ import {
     selectTripInvitesByTripId,
     selectTripInviteById,
     deleteTripInvite,
-    updateTripInvite, selectKitchenSinkByTripId
+    updateTripInvite, selectKitchenSinkByTripId,
+    TripInviteDetailsSchema, updateTripInviteDetails
 
 
 } from "./trip-invite.model.ts"
@@ -307,9 +308,67 @@ export async function deleteTripInviteController (request: Request, response: Re
             return
         }
 
-        // 4. revoke it
+        // 4. the owner is on the roster too (their own accepted invite); they can't remove themselves
+        if (invite.acceptedProfileId === trip.ownerId) {
+            sendError(request, response, 400, "You can't remove yourself from your own trip.")
+            return
+        }
+
+        // 5. revoke it (and, if they had accepted, take them off the trip)
         await deleteTripInvite(inviteId)
-        response.status(200).json({ message: 'Invitation revoked.' })
+        response.status(200).json({ message: 'Traveler removed.' })
+    } catch (error: unknown) {
+        console.error(error)
+        sendServerError(request, response)
+    }
+}
+
+/**
+ * PUT /apis/trip/:tripId/invite/:inviteId
+ * Lets the trip owner fix a pending invite's name, email or cell number (e.g. a typo).
+ * Accepted invites are locked: those travelers' details come from their own profile.
+ */
+export async function putTripInviteController (request: Request, response: Response): Promise<void> {
+    try {
+        const paramsResult = z.object({ tripId: z.uuidv7(), inviteId: z.uuidv7() }).safeParse(request.params)
+        if (!paramsResult.success) {
+            sendZodError(request, response, paramsResult.error)
+            return
+        }
+        const { tripId, inviteId } = paramsResult.data
+
+        const bodyResult = TripInviteDetailsSchema.safeParse(request.body)
+        if (!bodyResult.success) {
+            sendZodError(request, response, bodyResult.error)
+            return
+        }
+
+        // the trip must exist and belong to the signed-in user
+        const trip = await selectTripById(tripId)
+        if (trip === null) {
+            sendError(request, response, 404, 'Trip not found.')
+            return
+        }
+        if (trip.ownerId !== request.session.profile?.id) {
+            sendError(request, response, 403, 'Only the trip owner can edit invitations.')
+            return
+        }
+
+        // the invite must belong to this trip, and still be waiting for an answer
+        const invite = await selectTripInviteById(inviteId)
+        if (invite === null || invite.tripId !== tripId) {
+            sendError(request, response, 404, 'Invitation not found.')
+            return
+        }
+        if (invite.status !== 'pending') {
+            sendError(request, response, 409, 'Only pending invitations can be edited.')
+            return
+        }
+
+        const updatedInvite = await updateTripInviteDetails(inviteId, bodyResult.data)
+        // never send the token back: it is the invite's secret link
+        const { token: _token, ...inviteWithoutToken } = updatedInvite
+        response.status(200).json(inviteWithoutToken)
     } catch (error: unknown) {
         console.error(error)
         sendServerError(request, response)
