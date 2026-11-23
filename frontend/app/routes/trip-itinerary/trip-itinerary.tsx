@@ -147,15 +147,22 @@ export default function TripItinerary(props: Route.ComponentProps) {
                     </div>
                 </div>
 
+                {/* About this trip: a full-width card right under the trip's name and dates */}
+                <div className="mt-6">
+                    <TripCard trip={trip}/>
+                </div>
+
                 {/*
-                  phones: one column, About this trip, attendance (organizer only), then the itinerary.
-                  wide screens: the itinerary on the left; About this trip above attendance on the right.
+                  phones: one column, attendance (organizer only), then the itinerary.
+                  wide screens: the itinerary on the left, attendance on the right.
+                  Non-organizers have no attendance card, so the itinerary takes the full width.
                 */}
-                <div className="mt-6 sm:mt-8 grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-start">
-                    <div className="order-1 space-y-6 lg:order-2">
-                        <TripCard trip={trip}/>
-                        {isOwner && <AttendanceCard counts={null}/>}
-                    </div>
+                <div className={`mt-6 sm:mt-8 grid gap-6 lg:items-start ${isOwner ? "lg:grid-cols-[1fr_16rem]" : ""}`}>
+                    {isOwner && (
+                        <div className="order-1 lg:order-2">
+                            <AttendanceCard counts={null}/>
+                        </div>
+                    )}
 
                     {/* the itinerary, one section per day */}
                     <div className="order-2 space-y-6 lg:order-1">
@@ -259,7 +266,7 @@ function AttendanceCard({counts}: { counts: AttendanceCounts | null }) {
     );
 }
 
-/** The card above attendance: the trip's description, under the sunset stripes. */
+/** The full-width card under the trip's header: its description, under the sunset stripes. */
 function TripCard({trip}: { trip: Trip }) {
     return (
         <section className="overflow-hidden rounded-3xl border-2 border-[#031136] bg-white">
