@@ -148,7 +148,7 @@ function ProfileHero({profile}: { profile: Profile }) {
                 <p className="inline-block rounded-full bg-[#C9A3CB] px-3 py-1 text-xs font-bold text-[#031136]">
                     Welcome back, {firstName}!
                 </p>
-                <h1 className="mt-4 font-display text-4xl font-extrabold leading-tight tracking-tight text-[#031136] sm:text-5xl">
+                <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-[#031136] sm:text-5xl">
                     Your travel <span className="text-[#FF5903]">profile</span>
                 </h1>
                 <p className="mt-3 max-w-md text-[#434A90]">
@@ -226,7 +226,7 @@ function EditProfileForm({profile, cloudinary}: { profile: Profile; cloudinary: 
                 <div className="h-1.5 bg-[#FF6B6C]"/>
             </div>
             <div className="p-6 sm:p-8">
-            <h2 className="font-display text-2xl font-extrabold text-[#031136]">Edit profile</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-[#031136]">Edit profile</h2>
             <p className="mt-1 text-sm text-[#434A90]">Changes show up for everyone on your trips.</p>
 
             <Form

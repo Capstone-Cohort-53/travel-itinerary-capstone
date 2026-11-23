@@ -100,7 +100,7 @@ export default function MyTrips({loaderData}: Route.ComponentProps) {
                 {/* grid-cols-1 caps the phone column at the screen width, so long one-line text truncates instead of overflowing */}
                 <div className="grid grid-cols-1 gap-x-9 gap-y-6 lg:grid-cols-[minmax(0,1fr)_468px] lg:gap-y-8">
 
-                    <h1 className="font-display text-6xl font-bold leading-none sm:text-7xl lg:text-8xl">My Trips</h1>
+                    <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-none">My Trips</h1>
 
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-end lg:gap-3">
                         <Link to="/create-trip" className={primaryButtonClasses}>+ Create a new trip</Link>
@@ -126,7 +126,7 @@ export default function MyTrips({loaderData}: Route.ComponentProps) {
                                                 <ImageIcon className="h-6 w-6 lg:h-7 lg:w-7"/>
                                             </span>
                                             <span className="min-w-0 flex-1">
-                                                <span className="block truncate font-display text-xl font-bold leading-tight lg:text-3xl">{trip.title}</span>
+                                                <span className="block truncate text-xl font-extrabold tracking-tight leading-tight lg:text-3xl">{trip.title}</span>
                                                 <span className="block truncate text-sm text-[#3A4187] lg:text-base">
                                                     {trip.destination} · {trip.dates}
                                                 </span>
@@ -150,7 +150,7 @@ export default function MyTrips({loaderData}: Route.ComponentProps) {
                             <div className="h-1.5 bg-[#C19AC5]"/>
                         </div>
                         <div className="px-4 pb-5 pt-5 lg:px-7 lg:pb-7 lg:pt-6">
-                            <h2 id="invites-heading" className="font-display text-3xl font-bold lg:text-4xl">Trip Invites</h2>
+                            <h2 id="invites-heading" className="text-3xl font-extrabold tracking-tight lg:text-4xl">Trip Invites</h2>
                             <p className="mt-3 text-white/90">
                                 Trips other people have invited you to. Open one to see the plan and RSVP.
                             </p>
@@ -163,7 +163,7 @@ export default function MyTrips({loaderData}: Route.ComponentProps) {
                                         <li key={trip.id}>
                                             <Link to={`/trip-itinerary/${trip.id}`}
                                                   className="flex items-center justify-between gap-3 rounded-full bg-white py-2.5 pl-5 pr-3 text-[#0B1533] transition-colors hover:bg-[#FFF5F0]">
-                                                <span className="min-w-0 truncate font-display text-lg font-bold lg:text-xl">{trip.title}</span>
+                                                <span className="min-w-0 truncate text-lg font-extrabold tracking-tight lg:text-xl">{trip.title}</span>
                                                 {trip.ownerName && (
                                                     <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-bold lg:text-sm ${pillColors[index % pillColors.length]}`}>
                                                         <span className="lg:hidden">By</span>
