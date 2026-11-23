@@ -18,11 +18,13 @@ type PlaceSearchInputProps = {
     value: string,
     onChange: (value: string) => void,
     onPick: (place: PlaceSuggestion) => void,
-    /** where the trip is, so nearby places come first; null searches everywhere */
+    /** a pin on this trip, to tell apart destinations with the same name; null when there isn't one yet */
     near: Coordinates | null,
+    /** the trip's destination (e.g. "Cancun, MX"): places there are suggested first */
+    destination: string | null,
 } & Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type'>
 
-export function PlaceSearchInput({value, onChange, onPick, near, onBlur, onKeyDown, className, ...inputProps}: PlaceSearchInputProps) {
+export function PlaceSearchInput({value, onChange, onPick, near, destination, onBlur, onKeyDown, className, ...inputProps}: PlaceSearchInputProps) {
     const listId = useId()
     const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
     const [isOpen, setIsOpen] = useState(false)
@@ -42,7 +44,7 @@ export function PlaceSearchInput({value, onChange, onPick, near, onBlur, onKeyDo
         const timer = setTimeout(async () => {
             setIsSearching(true)
             try {
-                const places = await searchPlaces(query, near, controller.signal)
+                const places = await searchPlaces(query, {near, destination}, controller.signal)
                 setSuggestions(places)
                 setActiveIndex(-1)
                 setIsOpen(true)
@@ -57,7 +59,7 @@ export function PlaceSearchInput({value, onChange, onPick, near, onBlur, onKeyDo
             clearTimeout(timer)
             controller.abort()
         }
-    }, [value, near])
+    }, [value, near, destination])
 
     const showList = isOpen && suggestions.length > 0
 

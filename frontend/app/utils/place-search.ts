@@ -91,41 +91,112 @@ function escapeRegExp(text: string): string {
     return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
-/**
- * Up to `limit` places matching what's been typed. When `near` is given,
- * places within NEARBY_KM (150 km) of it come first: Photon ranks a close name match
- * above distance, so "folk art museum" would otherwise start with one in Greece.
- * Throws only when aborted or when Photon can't be reached.
- */
-export async function searchPlaces(query: string, near: Coordinates | null, signal: AbortSignal, limit = 5): Promise<PlaceSuggestion[]> {
-    // ask for extra results to re-rank, so a nearby place further down Photon's list can move up
-    const params = new URLSearchParams({q: query, limit: String(near ? limit * 2 : limit), lang: 'en'})
+/** One Photon search, as suggestions. Throws only when aborted or when Photon can't be reached. */
+async function photonSearch(query: string, limit: number, near: Coordinates | null, signal: AbortSignal): Promise<PlaceSuggestion[]> {
+    const params = new URLSearchParams({q: query, limit: String(limit), lang: 'en'})
     if (near) {
         params.set('lat', String(near.lat))
         params.set('lon', String(near.lng))
+        // weigh distance heavily (Photon's default 0.2 lets a famous name far away win)
+        // over about a city's worth of area, so "tacos" means tacos in Cancún
+        params.set('zoom', '12')
+        params.set('location_bias_scale', '0.1')
     }
     const response = await fetch(`${PHOTON_URL}?${params}`, {signal})
     if (!response.ok) {
         return []
     }
     const body = await response.json() as { features?: PhotonFeature[] }
-
-    // Photon sometimes lists the same place twice (e.g. a building and its entrance)
-    const seen = new Set<string>()
-    const suggestions = (body.features ?? [])
+    return (body.features ?? [])
         .map(toSuggestion)
-        .filter((suggestion): suggestion is PlaceSuggestion => {
-            if (suggestion === null) return false
-            const key = `${suggestion.name}|${suggestion.detail}`
-            if (seen.has(key)) return false
-            seen.add(key)
-            return true
-        })
+        .filter((suggestion): suggestion is PlaceSuggestion => suggestion !== null)
+}
 
-    if (near) {
-        // nearby first; otherwise keep Photon's order (Array.sort is stable)
-        const isFar = (place: PlaceSuggestion) => distanceKm(near, place) > NEARBY_KM ? 1 : 0
-        suggestions.sort((a, b) => isFar(a) - isFar(b))
+/** Drops repeats (Photon sometimes lists a building and its entrance), keeping the first. */
+function withoutRepeats(suggestions: PlaceSuggestion[]): PlaceSuggestion[] {
+    const seen = new Set<string>()
+    return suggestions.filter((suggestion) => {
+        const key = `${suggestion.name}|${suggestion.detail}`
+        if (seen.has(key)) return false
+        seen.add(key)
+        return true
+    })
+}
+
+/** Where the trip is, for ranking suggestions. Either may be missing. */
+export type SearchArea = {
+    /** a pin on this trip (another activity's); only used to tell apart places with the same name */
+    near: Coordinates | null,
+    /** the trip's destination as typed, e.g. "Cancun, MX" */
+    destination: string | null,
+}
+
+// only towns, regions and countries: "Cancun, MX" should find the city, not Cancun Airport
+const DESTINATION_LAYERS = ['city', 'locality', 'district', 'county', 'state', 'country']
+
+// one lookup per destination while the page is open, however many letters get typed
+const destinationCache = new Map<string, Promise<Coordinates[]>>()
+
+/** Places Photon thinks a destination could be, best match first. Empty when there's none or Photon can't be reached. */
+function destinationCandidates(destination: string): Promise<Coordinates[]> {
+    const key = destination.toLowerCase()
+    let lookup = destinationCache.get(key)
+    if (!lookup) {
+        const params = new URLSearchParams({q: destination, limit: '5', lang: 'en'})
+        DESTINATION_LAYERS.forEach((layer) => params.append('layer', layer))
+        // no AbortSignal: typing another letter shouldn't cancel this shared lookup
+        lookup = fetch(`${PHOTON_URL}?${params}`)
+            .then((response) => response.ok ? response.json() as Promise<{ features?: PhotonFeature[] }> : {features: []})
+            .then((body) => (body.features ?? []).map(({geometry}) => ({lat: geometry.coordinates[1], lng: geometry.coordinates[0]})))
+            .catch(() => [])
+            .then((candidates) => {
+                // don't remember a miss (Photon may have been busy); try again on the next search
+                if (candidates.length === 0) destinationCache.delete(key)
+                return candidates
+            })
+        destinationCache.set(key, lookup)
     }
+    return lookup
+}
+
+/**
+ * The middle of the trip's area: the destination's spot on the map. When a
+ * name could mean several places ("Santa Fe" is a US city and an Argentine
+ * province), the one closest to a pin already on the trip wins. With no
+ * destination, or one Photon can't find, the pin itself.
+ */
+export async function tripCenter({near, destination}: SearchArea): Promise<Coordinates | null> {
+    const place = destination?.trim()
+    const candidates = place ? await destinationCandidates(place) : []
+    if (candidates.length === 0) {
+        return near
+    }
+    if (!near) {
+        return candidates[0]
+    }
+    return candidates.reduce((best, candidate) => distanceKm(near, candidate) < distanceKm(near, best) ? candidate : best)
+}
+
+/**
+ * Up to `limit` places matching what's been typed, places at the trip's
+ * destination first.
+ *
+ * The destination ("Cancun, MX") is looked up once and the search is centered
+ * there, so "tacos" lists taco places in Cancún. Places within NEARBY_KM (150 km)
+ * come first; matches farther away fill in only after them.
+ *
+ * Throws only when aborted or when Photon can't be reached.
+ */
+export async function searchPlaces(query: string, area: SearchArea, signal: AbortSignal, limit = 5): Promise<PlaceSuggestion[]> {
+    const center = await tripCenter(area)
+    if (!center) {
+        return withoutRepeats(await photonSearch(query, limit, null, signal)).slice(0, limit)
+    }
+
+    // ask for extra results to re-rank, so a nearby place further down Photon's list can move up
+    const suggestions = withoutRepeats(await photonSearch(query, limit * 2, center, signal))
+    // nearby first; otherwise keep Photon's order (Array.sort is stable)
+    const isFar = (place: PlaceSuggestion) => distanceKm(center, place) > NEARBY_KM ? 1 : 0
+    suggestions.sort((a, b) => isFar(a) - isFar(b))
     return suggestions.slice(0, limit)
 }
