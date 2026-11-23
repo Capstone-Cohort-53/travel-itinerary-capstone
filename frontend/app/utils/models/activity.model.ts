@@ -1,6 +1,6 @@
 import {z} from "zod";
 import type {Status} from "~/utils/interfaces/Status";
-import {getRequest, postRequest} from "~/utils/request.utils";
+import {deleteRequest, getRequest, postRequest, putRequest} from "~/utils/request.utils";
 import type {SignedInUser} from "~/utils/session.server";
 
 // one activity, mirroring the backend's ActivitySchema (backend/src/apis/activity/activity.model.ts)
@@ -45,78 +45,114 @@ export async function getActivitiesByTripId(tripId: string, user: SignedInUser):
 
 
 
+/** A `datetime-local` input's value, e.g. "2026-12-02T18:00". */
+const dateTimeLocal = z.union([
+    z.literal(''),
+    z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Please pick a date and time.'),
+])
+
 /**
- * What the Add Activity form's inputs hold. Every input is a string, and an
- * empty string means "not provided". Used by TanStack Form in the browser and
- * again by the route action on the server.
+ * What the activity form's inputs hold: one input per column of the backend's
+ * activity table except lat and lng, which the server looks up from the
+ * address when the activity is saved (see geocode.server.ts). Every
+ * input is a string, and an empty string means "not provided". The limits
+ * mirror the backend's ActivitySchema. Used by TanStack Form in the browser
+ * and again by the route actions on the server.
  */
 export const ActivityFormSchema = z.object({
     name: z.string().trim().min(1, 'Please enter an activity name.').max(255, 'Name must be 255 characters or fewer.'),
+    // the `mandatory` boolean, as the two radio buttons' values
     mandatory: z.enum(['mandatory', 'optional'], 'Please choose mandatory or optional.'),
-    activityDate: z.iso.date('Please pick a date.'),
-    startTime: z.iso.time('Please pick a start time.'),
-    endTime: z.iso.time('Please pick an end time.'),
+    startDatetime: dateTimeLocal,
+    endDatetime: dateTimeLocal,
     description: z.string().trim(),
-    location: z.string().trim().max(255, 'Location name must be 255 characters or fewer.'),
-    streetAddress: z.string().trim().max(150, 'Street address must be 150 characters or fewer.'),
-    city: z.string().trim().max(60, 'City must be 60 characters or fewer.'),
-    state: z.string().trim().max(20, 'State must be 20 characters or fewer.'),
-    zip: z.union([z.literal(''), z.string().trim().regex(/^\d{5}(-\d{4})?$/, 'Please enter a 5-digit ZIP code.')]),
+    location: z.string().trim().max(255, 'Location must be 255 characters or fewer.'),
+    address: z.string().trim().max(255, 'Address must be 255 characters or fewer.'),
     // numeric(10,2) in the database: up to 99,999,999.99
     cost: z.union([
         z.literal(''),
         z.string().trim().regex(/^\d{1,8}(\.\d{1,2})?$/, 'Please enter a cost like 35 or 35.00.'),
     ]),
-    costNotes: z.string().trim(),
     notes: z.string().trim(),
 }).refine(
-    // same rule as the database: an activity can't end before it starts
-    (data) => data.endTime > data.startTime,
-    {message: 'End time must be after start time.', path: ['endTime']},
+    // same rule as the backend: an activity can't end before it starts
+    (data) => data.startDatetime === '' || data.endDatetime === '' || data.endDatetime >= data.startDatetime,
+    {message: 'End can’t be before the start.', path: ['endDatetime']},
 )
 export type ActivityForm = z.infer<typeof ActivityFormSchema>
 
-/** The body POST /trip/:tripId/activity expects. Fields left out get the API's defaults. */
+/** The body POST and PUT /trip/:tripId/activity expect: the backend's fields, by the same names. */
 export type ActivityRequest = {
     name: string,
     mandatory: boolean,
-    startDatetime: string,
-    endDatetime: string,
+    startDatetime: string | null,
+    endDatetime: string | null,
     description: string | null,
     location: string | null,
     address: string | null,
-    cost?: number,
+    cost: number,
     notes: string | null,
+    lat: number | null,
+    lng: number | null,
 }
 
 /**
- * Turns the form's strings into the API's request body.
+ * Turns the form's strings into the API's request body, field for field. An
+ * empty input becomes null (or 0 for cost, the backend's default).
  *
- * - The date and times are saved as the clock time at the destination, marked
- *   as UTC, the same way trip dates are. Display them with `timeZone: 'UTC'`
- *   so 6:00 PM stays 6:00 PM no matter where the viewer is.
- * - Street, city, state and ZIP become one `address` string.
- * - The database has no column for cost notes, so they are added to `notes`.
+ * Start and end are saved as the clock time at the destination, marked as UTC,
+ * the same way trip dates are. Display them with `timeZone: 'UTC'` so 6:00 PM
+ * stays 6:00 PM no matter where the viewer is.
  */
-export function toActivityRequest(form: ActivityForm): ActivityRequest {
-    const stateAndZip = [form.state, form.zip].filter(Boolean).join(' ')
-    const address = [form.streetAddress, form.city, stateAndZip].filter(Boolean).join(', ')
-    const notes = [form.notes, form.costNotes && `Cost notes: ${form.costNotes}`].filter(Boolean).join('\n\n')
-
+export function toActivityRequest(form: ActivityForm, coordinates: Pick<ActivityRequest, 'lat' | 'lng'> = {lat: null, lng: null}): ActivityRequest {
     return {
         name: form.name,
         mandatory: form.mandatory === 'mandatory',
-        startDatetime: `${form.activityDate}T${form.startTime}Z`,
-        endDatetime: `${form.activityDate}T${form.endTime}Z`,
+        startDatetime: form.startDatetime ? `${form.startDatetime}Z` : null,
+        endDatetime: form.endDatetime ? `${form.endDatetime}Z` : null,
         description: form.description || null,
         location: form.location || null,
-        // the field limits above keep the joined address under the column's 255 characters
-        address: address || null,
-        cost: form.cost === '' ? undefined : Number(form.cost),
-        notes: notes || null,
+        address: form.address || null,
+        cost: form.cost === '' ? 0 : Number(form.cost),
+        notes: form.notes || null,
+        // looked up from the address by the route action; null means no map pin
+        lat: coordinates.lat,
+        lng: coordinates.lng,
+    }
+}
+
+/** Turns a saved activity back into the form's strings, for the Edit page. The reverse of toActivityRequest. */
+export function toActivityForm(activity: Activity): ActivityForm {
+    return {
+        name: activity.name,
+        mandatory: activity.mandatory ? 'mandatory' : 'optional',
+        // read in UTC, the way toActivityRequest saved them: "2026-12-02T18:00"
+        startDatetime: activity.startDatetime?.toISOString().slice(0, 16) ?? '',
+        endDatetime: activity.endDatetime?.toISOString().slice(0, 16) ?? '',
+        description: activity.description ?? '',
+        location: activity.location ?? '',
+        address: activity.address ?? '',
+        cost: activity.cost === 0 ? '' : String(activity.cost),
+        notes: activity.notes ?? '',
     }
 }
 
 export async function postActivity(tripId: string, body: ActivityRequest, signedInUser: SignedInUser): Promise<Status> {
     return postRequest(`/trip/${tripId}/activity`, body, signedInUser)
+}
+
+/** GET /apis/trip/:tripId/activity/:activityId: one activity, or null when it can't be loaded. */
+export async function getActivity(tripId: string, activityId: string, signedInUser: SignedInUser): Promise<Activity | null> {
+    const status = await getRequest(`/trip/${tripId}/activity/${activityId}`, signedInUser)
+    const validationResult = ActivitySchema.safeParse(status.data)
+    return validationResult.success ? validationResult.data : null
+}
+
+/** PUT replaces every field: anything left out of the body goes back to the API's default. */
+export async function putActivity(tripId: string, activityId: string, body: ActivityRequest, signedInUser: SignedInUser): Promise<Status> {
+    return putRequest(`/trip/${tripId}/activity/${activityId}`, body, signedInUser)
+}
+
+export async function deleteActivity(tripId: string, activityId: string, signedInUser: SignedInUser): Promise<Status> {
+    return deleteRequest(`/trip/${tripId}/activity/${activityId}`, signedInUser)
 }

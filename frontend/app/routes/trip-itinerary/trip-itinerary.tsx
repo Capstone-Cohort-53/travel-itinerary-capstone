@@ -122,7 +122,7 @@ export default function TripItinerary(props: Route.ComponentProps) {
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold text-[#031136]">Itinerary</h2>
                     {isOwner && (
-                        <Link to="/activity" className="px-4 py-2 rounded-lg bg-[#FF5903] text-white text-sm font-medium hover:bg-[#FF5903]/90">
+                        <Link to={`/travel-itinerary/${trip.id}/activity/new`} className="px-4 py-2 rounded-lg bg-[#FF5903] text-white text-sm font-medium hover:bg-[#FF5903]/90">
                             + Add Activity
                         </Link>
                     )}
@@ -141,7 +141,11 @@ export default function TripItinerary(props: Route.ComponentProps) {
                 {days.map((day) => (
                     <section key={day.key} className="space-y-3">
                         <h3 className="text-lg font-semibold text-[#434A90]">{day.title}</h3>
-                        {day.activities.map((activity) => <ActivityCard key={activity.id} activity={activity}/>)}
+                        {day.activities.map((activity) => (
+                            <ActivityCard key={activity.id} activity={activity}
+                                          detailsTo={`/travel-itinerary/${trip.id}/activity/${activity.id}`}
+                                          editTo={isOwner ? `/travel-itinerary/${trip.id}/activity/${activity.id}/edit` : undefined}/>
+                        ))}
                     </section>
                 ))}
             </div>
@@ -163,14 +167,14 @@ function TripHeader({trip}: { trip: Trip }) {
     );
 }
 
-function ActivityCard({activity}: { activity: Activity }) {
+function ActivityCard({activity, detailsTo, editTo}: { activity: Activity; detailsTo: string; editTo?: string }) {
     const start = formatTime(activity.startDatetime);
     const end = formatTime(activity.endDatetime);
 
     return (
         <article className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-                <h4 className="text-lg font-bold text-[#031136]">{activity.name}</h4>
+                <h4 className="text-lg font-bold text-[#031136]"><Link to={detailsTo} className="hover:underline">{activity.name}</Link></h4>
                 {activity.mandatory && (
                     <span className="rounded-full bg-[#FF5903]/10 px-3 py-1 text-xs font-medium text-[#FF5903]">Required</span>
                 )}
@@ -185,6 +189,7 @@ function ActivityCard({activity}: { activity: Activity }) {
             <p className="text-sm text-gray-700">💵 {formatCost(activity.cost)}</p>
             {activity.description && <p className="text-gray-600">{activity.description}</p>}
             {activity.notes && <p className="text-sm italic text-gray-500">Note: {activity.notes}</p>}
+            {editTo && <Link to={editTo} className="inline-block text-sm font-medium text-[#434A90] underline">Edit</Link>}
         </article>
     );
 }

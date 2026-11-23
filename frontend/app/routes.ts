@@ -7,7 +7,8 @@ export default [
 route ('/my-trips','routes/my-trips/my-trips.tsx'),
     route('/create-trip','routes/create-trip/create-trip.tsx'),
 route('/travel-itinerary/:id/activity/new','routes/activity/activity.tsx'),
-    route('/activity-details','routes/activity-details.tsx'),
+    route('/travel-itinerary/:id/activity/:activityId/edit','routes/activity/edit-activity.tsx'),
+    route('/travel-itinerary/:id/activity/:activityId','routes/activity-details.tsx'),
     route('/trip-itinerary/:tripId', 'routes/trip-itinerary/trip-itinerary.tsx'),
 
     route('/travel-itinerary/:id', 'routes/travel-itinerary/travel-itinerary.tsx'),

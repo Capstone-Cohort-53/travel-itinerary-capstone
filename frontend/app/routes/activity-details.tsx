@@ -1,384 +1,451 @@
-import { useState } from "react";
+import {lazy, Suspense, useEffect, useState} from "react";
+import {Link, useFetcher} from "react-router";
+import {useForm} from "@tanstack/react-form";
+import type {Route} from "./+types/activity-details";
+import {requireSignedInUser} from "~/utils/session.server";
+import {getTripByTripId} from "~/utils/models/trip.model";
+import {getActivity, type Activity} from "~/utils/models/activity.model";
+import {getProfileByProfileId} from "~/utils/models/profile.model";
+import {
+    countAttendance,
+    getActivityRsvps,
+    getTripMembers,
+    GOING_OPTIONS,
+    postActivityRsvp,
+    RsvpFormSchema,
+    type Attendance,
+    type RsvpForm
+} from "~/utils/models/activity-rsvp.model";
+import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
+import {StatusMessage} from "~/components/StatusMessage";
 
-// RSVP choices, listed once and used for both the type and the buttons.
-const RSVP_OPTIONS = ["Going", "Maybe", "Not Going"] as const;
-type RSVPStatus = typeof RSVP_OPTIONS[number];
 
-type FamilyMember = {
-    id: number;
-    name: string;
-};
+/**
+ * One activity, for anyone on the trip. The organizer sees the Attendance
+ * panel and an Edit button; travelers see "Will you attend?" and answer for
+ * their household. Everything comes from the API: the trip, the activity,
+ * everyone's RSVPs, the member list and the organizer's profile.
+ */
+export async function loader({request, params}: Route.LoaderArgs) {
+    const signedInUser = await requireSignedInUser(request)
 
-// Activity Invite
-type ActivityInvite = {
-    user_id: number;
-    activity_id: number;
-    children: number[];
-    adults: number[];
-    going: RSVPStatus;
-};
+    // the API only returns the trip to its owner and members who accepted an invite
+    const trip = await getTripByTripId(params.id, signedInUser)
+    if (trip === null) {
+        throw new Response(null, {status: 404, statusText: 'Trip not found.'})
+    }
 
-// Matches the ACTIVITY table.
-type Activity = {
-    id: number;
-    trip_id: number;
-    name: string;
-    start_time: string;
-    end_time: string;
-    description: string;
-    location: string;
-    address: string;
-    lat: number;
-    lng: number;
-    cost: number;
-    notes: string;
-    cost_per_person: number;
-};
+    const [activity, rsvps, members, organizerResult] = await Promise.all([
+        getActivity(params.id, params.activityId, signedInUser),
+        getActivityRsvps(params.activityId, signedInUser),
+        getTripMembers(params.id, signedInUser),
+        getProfileByProfileId(trip.ownerId, signedInUser),
+    ])
+    if (activity === null) {
+        throw new Response(null, {status: 404, statusText: 'Activity not found.'})
+    }
 
-// Sample activity data. Later this can come from our database.
-const activity: Activity = {
-    id: 1,
-    trip_id: 1,
-    name: "Family Welcome Dinner",
-    start_time: "2026-10-24T18:00:00",
-    end_time: "2026-10-24T20:00:00",
-    description: "Join the family for our welcome dinner to kick off the reunion weekend.",
-    location: "Family Dinner Restaurant",
-    address: "123 Main Street, Albuquerque, NM",
-    lat: 35.0844,
-    lng: -106.6504,
-    cost: 0,
-    notes: "Casual attire. Parking is available near the entrance.",
-    cost_per_person: 35,
-};
+    const isOrganizer = trip.ownerId === signedInUser.profile.id
+    const myMember = members.find((member) => member.profileId === signedInUser.profile.id) ?? null
+    const myRsvp = myMember === null ? null : rsvps.find((rsvp) => rsvp.memberId === myMember.id) ?? null
 
-// Sample user contact information.
-const userEmail = "user@example.com";
+    // what the RSVP form starts with: the saved answer, or the household size from the invite
+    const rsvpValues: RsvpForm = {
+        going: myRsvp?.going ?? ('' as RsvpForm['going']),
+        adults: String(myRsvp?.adults ?? myMember?.adults ?? 1),
+        children: String(myRsvp?.children ?? myMember?.children ?? 0),
+    }
 
-// Sample family data. Later this can come from our database.
-const familyAdults: FamilyMember[] = [
-    { id: 1, name: "Penelope Martinez" },
-];
-const familyChildren: FamilyMember[] = [
-    { id: 2, name: "Emma Martinez" },
-    { id: 3, name: "Noah Martinez" },
-];
-
-// Format start_time / end_time for display.
-function formatDate(time: string) {
-    return new Date(time).toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-    });
+    const organizer = organizerResult.profile
+    return {
+        trip,
+        activity,
+        isOrganizer,
+        // only the organizer gets the counts ("Travelers never see this panel")
+        attendance: isOrganizer ? countAttendance(rsvps, members) : null,
+        canRsvp: !isOrganizer && myMember !== null,
+        hasAnswered: myRsvp !== null,
+        rsvpValues,
+        organizer: organizer === null ? null : {name: organizer.name, email: organizer.email},
+    }
 }
 
-function formatTime(time: string) {
-    return new Date(time).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-    });
+
+export async function action({request, params}: Route.ActionArgs): Promise<FormActionResponse> {
+    const signedInUser = await requireSignedInUser(request)
+    const formData = Object.fromEntries(await request.formData())
+
+    // never trust the browser: validate again with the same schema the form used
+    const result = RsvpFormSchema.safeParse(formData)
+    if (!result.success) {
+        return {success: false, status: {status: 400, data: null, message: result.error.issues[0].message}}
+    }
+
+    // 201 the first time, 200 when the answer changes
+    const status = await postActivityRsvp(params.activityId, result.data, signedInUser)
+    if (status.status !== 200 && status.status !== 201) {
+        return {success: false, status}
+    }
+    return {success: true, status: {...status, message: 'Your RSVP has been saved.'}}
 }
 
-export default function ActivityDetails() {
 
-    // The current user's invite for this activity.
-    const [invite, setInvite] = useState<ActivityInvite>({
-        user_id: 1,
-        activity_id: activity.id,
-        children: [2, 3],
-        adults: [1],
-        going: "Going",
-    });
+// ── formatting: activity times are saved as the destination's clock time, marked UTC ──
 
-    // Tracks whether the RSVP has been submitted.
-    const [isSaved, setIsSaved] = useState(false);
+function formatDate(date: Date, weekday: 'long' | 'short' = 'long'): string {
+    return date.toLocaleDateString('en-US', {timeZone: 'UTC', weekday, month: weekday === 'long' ? 'long' : 'short', day: 'numeric', year: 'numeric'})
+}
 
-    // Update one field of the invite.
-    function updateInvite(changes: Partial<ActivityInvite>) {
-        setInvite(previous => ({ ...previous, ...changes }));
-        setIsSaved(false);
+function formatTime(date: Date): string {
+    return date.toLocaleTimeString('en-US', {timeZone: 'UTC', hour: 'numeric', minute: '2-digit'})
+}
+
+/** "Saturday, October 24, 2026", or a range when the activity runs over several days. */
+function describeDate(activity: Activity): string {
+    const {startDatetime: start, endDatetime: end} = activity
+    if (start === null) {
+        return 'Not set yet'
     }
+    const sameDay = end === null || end.toISOString().slice(0, 10) === start.toISOString().slice(0, 10)
+    return sameDay ? formatDate(start) : `${formatDate(start, 'short')} – ${formatDate(end, 'short')}`
+}
 
-    // Add or remove a family member from the adults or children list.
-    function toggleMember(group: "adults" | "children", id: number) {
-        const list = invite[group];
-        updateInvite({
-            [group]: list.includes(id) ? list.filter(memberId => memberId !== id) : [...list, id],
-        });
+/** "6:00 – 8:00 PM", "6:00 PM", or "Not set yet". */
+function describeTime(activity: Activity): string {
+    const {startDatetime: start, endDatetime: end} = activity
+    if (start === null) {
+        return 'Not set yet'
     }
+    return end === null ? formatTime(start) : `${formatTime(start)} – ${formatTime(end)}`
+}
 
-    // Temporarily save the invite in React state.
-    function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        setIsSaved(true);
-        console.log("Submitted RSVP:", invite);
+function describeCost(cost: number): string {
+    return cost === 0 ? 'Free' : `${cost.toLocaleString('en-US', {style: 'currency', currency: 'USD'})} per person`
+}
+
+
+// ── shared pieces ──
+
+const cardClass = "rounded-3xl border-2 border-[#031136] bg-white"
+const tileLabelClass = "text-xs font-bold uppercase tracking-wider text-[#434A90]"
+
+// Leaflet only works in a browser, so its code is fetched only after the page mounts there
+const ActivityMap = lazy(() => import("~/routes/activity/activity-map"))
+
+/** The Leaflet map, rendered in the browser only; during server rendering a same-sized placeholder holds its place. */
+function ClientOnlyMap(props: { lat: number, lng: number, label: string }) {
+    const [isMounted, setIsMounted] = useState(false)
+    useEffect(() => setIsMounted(true), [])
+
+    const placeholder = <div className="h-64 w-full bg-[#FBF3FA] sm:h-72" aria-hidden="true"/>
+    if (!isMounted) {
+        return placeholder
     }
+    return (
+        <Suspense fallback={placeholder}>
+            <ActivityMap {...props}/>
+        </Suspense>
+    )
+}
+
+function SunsetStripes() {
+    return (
+        <div aria-hidden="true">
+            <div className="h-1.5 bg-[#FF5903]"/>
+            <div className="h-1.5 bg-[#FF6B6C]"/>
+            <div className="h-1.5 bg-[#C9A3CB]"/>
+        </div>
+    )
+}
+
+function InfoTile({label, value}: { label: string, value: string }) {
+    return (
+        <div className={`${cardClass} px-4 py-3`}>
+            <p className={tileLabelClass}>{label}</p>
+            <p className="mt-1 font-bold text-[#031136]">{value}</p>
+        </div>
+    )
+}
+
+
+export default function ActivityDetails({loaderData}: Route.ComponentProps) {
+    const {trip, activity, isOrganizer, attendance, canRsvp, hasAnswered, rsvpValues, organizer} = loaderData
+    const typeLabel = activity.mandatory ? 'Required' : 'Optional'
 
     return (
-        <main className="min-h-screen bg-white px-5 py-10 text-[#031136] md:px-10 lg:px-16">
+        <div className="bg-[#FBF3FA] min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-5xl mx-auto">
 
-            <div className="mx-auto max-w-7xl">
+                {/* ── heading ── */}
+                <Link to={`/trip-itinerary/${trip.id}`} className="text-sm font-bold text-[#434A90] hover:underline">
+                    ← Back to itinerary
+                </Link>
 
-                {/* BACK LINK */}
-                <a
-                    href="#"
-                    className="mb-6 inline-block text-sm text-[#434A90] hover:underline"
-                >
-                    ← Back to Itinerary
-                </a>
+                <div className="mt-3 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <span className={`inline-block rounded-full border-2 border-[#031136] px-3 py-0.5 text-xs font-bold text-[#031136] ${activity.mandatory ? 'bg-[#FF5903]' : 'bg-[#C9A3CB]'}`}>
+                            {typeLabel}
+                        </span>
+                        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight text-[#031136]">{activity.name}</h1>
+                        <p className="mt-1 text-sm text-[#434A90]">{trip.title}</p>
+                    </div>
+                    {isOrganizer && (
+                        <Link to={`/travel-itinerary/${trip.id}/activity/${activity.id}/edit`}
+                              className="w-full sm:w-auto px-8 py-3 rounded-full border-2 border-[#031136] bg-white text-center text-sm font-bold text-[#031136] hover:bg-[#031136]/5 transition">
+                            Edit Activity
+                        </Link>
+                    )}
+                </div>
 
-                {/* PAGE HEADER */}
-                <header className="mb-10">
-                    <h1 className="text-3xl font-bold md:text-4xl">
-                        {activity.name}
-                    </h1>
-                    <p className="mt-2 text-[#434A90]">
-                        Martinez Family Reunion
-                    </p>
-                </header>
+                <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_17rem] lg:items-start">
 
-                {/* MAIN TWO-COLUMN LAYOUT */}
-                <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
-
-                    {/* LEFT: ACTIVITY DETAILS */}
-                    <section className="space-y-10 lg:col-span-2">
-
-                        <div>
-                            <h2 className="mb-5 text-2xl font-semibold">
-                                Activity Overview
-                            </h2>
-
-                            {/* DATE / TIME / TYPE */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-
-                                <div className="rounded-lg bg-[#031136]/5 p-5">
-                                    <p className="mb-2 text-xs uppercase tracking-wider text-[#434A90]">
-                                        Date
-                                    </p>
-                                    <p className="font-medium">
-                                        {formatDate(activity.start_time)}
-                                    </p>
-                                </div>
-
-                                <div className="rounded-lg bg-[#031136]/5 p-5">
-                                    <p className="mb-2 text-xs uppercase tracking-wider text-[#434A90]">
-                                        Time
-                                    </p>
-                                    <p className="font-medium">
-                                        {formatTime(activity.start_time)} – {formatTime(activity.end_time)}
-                                    </p>
-                                </div>
-
-                                <div className="rounded-lg bg-[#031136]/5 p-5">
-                                    <p className="mb-2 text-xs uppercase tracking-wider text-[#434A90]">
-                                        Activity Type
-                                    </p>
-                                    <p className="font-medium">
-                                        Core Activity
-                                    </p>
-                                </div>
-                            </div>
+                    {/* ── the activity ── */}
+                    <div className="space-y-5">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
+                            <InfoTile label="Date" value={describeDate(activity)}/>
+                            <InfoTile label="Time" value={describeTime(activity)}/>
+                            <div className="hidden sm:block"><InfoTile label="Type" value={typeLabel}/></div>
                         </div>
 
-                        {/* LOCATION */}
-                        <div>
-                            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-[#434A90]">
-                                Location
-                            </h3>
-
-                            <div className="flex gap-5 rounded-lg border border-[#C7A2CB]/50 p-5">
-                                <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-md bg-[#434A90]/10 text-sm text-[#434A90]">
-                                    Map Pin
-                                </div>
-
+                        {(activity.location || activity.address) && (
+                            <div className={`${cardClass} overflow-hidden`}>
+                            <div className="flex items-center gap-4 p-4">
+                                <span aria-hidden="true"
+                                      className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#C9A3CB]">
+                                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="#031136"
+                                         strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/>
+                                        <circle cx="12" cy="10" r="2.5"/>
+                                    </svg>
+                                </span>
                                 <div>
-                                    <h4 className="text-lg font-semibold">
-                                        {activity.location}
-                                    </h4>
-                                    <p className="mt-2 text-sm text-[#434A90]">
-                                        {activity.address}
-                                    </p>
+                                    <p className={tileLabelClass}>Location</p>
+                                    {activity.location && <p className="text-lg font-extrabold text-[#031136]">{activity.location}</p>}
+                                    {activity.address && <p className="text-sm text-[#031136] whitespace-pre-line">{activity.address}</p>}
+                                    {activity.lat !== null && activity.lng !== null && (
+                                        <a href={`https://www.openstreetmap.org/?mlat=${activity.lat}&mlon=${activity.lng}#map=17/${activity.lat}/${activity.lng}`}
+                                           target="_blank" rel="noreferrer"
+                                           className="mt-1 inline-block text-sm font-bold text-[#434A90] underline">
+                                            Open larger map
+                                        </a>
+                                    )}
                                 </div>
                             </div>
-                        </div>
-
-                        {/* DESCRIPTION */}
-                        <div>
-                            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-[#434A90]">
-                                Description
-                            </h3>
-                            <p className="leading-7">
-                                {activity.description}
-                            </p>
-                        </div>
-
-                        {/* COST AND LOGISTICS */}
-                        <div>
-                            <h2 className="mb-5 text-2xl font-semibold">
-                                Cost and Logistics
-                            </h2>
-
-                            <div className="overflow-hidden rounded-lg border border-[#C7A2CB]/50">
-
-                                <div className="grid gap-2 border-b border-[#C7A2CB]/50 p-4 sm:grid-cols-2">
-                                    <p className="font-medium">
-                                        Estimated Cost Per Person
-                                    </p>
-                                    <p>${activity.cost_per_person} per person</p>
+                            {activity.lat !== null && activity.lng !== null && (
+                                <div className="border-t-2 border-[#031136]">
+                                    <ClientOnlyMap lat={activity.lat} lng={activity.lng}
+                                                   label={activity.location ?? activity.address ?? activity.name}/>
                                 </div>
-
-                                <div className="grid gap-2 border-b border-[#C7A2CB]/50 p-4 sm:grid-cols-2">
-                                    <p className="font-medium">
-                                        Total Cost
-                                    </p>
-                                    <p>${activity.cost}</p>
-                                </div>
-
-                                <div className="grid gap-2 p-4 sm:grid-cols-2">
-                                    <p className="font-medium">
-                                        Event Notes / What to Bring
-                                    </p>
-                                    <p>
-                                        {activity.notes}
-                                    </p>
-                                </div>
+                            )}
                             </div>
+                        )}
+
+                        {activity.description && (
+                            <div>
+                                <p className={tileLabelClass}>Description</p>
+                                <p className="mt-1 text-[#031136] whitespace-pre-line">{activity.description}</p>
+                            </div>
+                        )}
+
+                        <div className={`${cardClass} p-6`}>
+                            <h2 className="text-xl font-extrabold text-[#434A90]">Cost &amp; notes</h2>
+                            <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm text-[#031136] sm:grid-cols-[10rem_1fr]">
+                                <dt className="font-bold">Cost per person</dt>
+                                <dd>{describeCost(activity.cost)}</dd>
+                                {activity.notes && <>
+                                    <dt className="font-bold">Notes</dt>
+                                    <dd className="whitespace-pre-line">{activity.notes}</dd>
+                                </>}
+                            </dl>
                         </div>
 
-                        {/* USER CONTACT */}
                         <div>
-                            <h2 className="mb-4 text-2xl font-semibold">
-                                Organizer
-                            </h2>
-
-                            <div className="rounded-lg bg-[#031136]/5 p-5">
-                                <p className="font-semibold">
-                                    Organizer Name
+                            <h2 className="text-xl font-extrabold text-[#031136]">Organizer</h2>
+                            {isOrganizer ? (
+                                <p className="mt-1 text-sm text-[#031136]">
+                                    You are the organizer of this trip. Travelers see your contact details here.
                                 </p>
-                                <a
-                                    href={`mailto:${userEmail}`}
-                                    className="mt-2 inline-block text-sm text-[#434A90] hover:underline"
-                                >
-                                    {userEmail}
-                                </a>
-                            </div>
-                        </div>
-
-                    </section>
-
-                    {/* RIGHT: RSVP FORM */}
-                    <aside className="lg:col-span-1">
-
-                        <div className="overflow-hidden rounded-xl border border-[#434A90]/30">
-
-                            <div className="bg-[#031136] p-6 text-white">
-                                <h2 className="text-2xl font-semibold">
-                                    Will you attend?
-                                </h2>
-                                <p className="mt-2 text-sm text-white/80">
-                                    Respond once for your family.
-                                </p>
-                            </div>
-
-                            <form onSubmit={handleSubmit} className="p-6">
-
-                                {/* GOING / MAYBE / NOT GOING */}
-                                <fieldset className="border-b border-[#C7A2CB]/50 pb-5">
-                                    <legend className="mb-3 text-lg font-semibold">
-                                        Your response
-                                    </legend>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        {RSVP_OPTIONS.map(option => (
-                                            <label
-                                                key={option}
-                                                className={`cursor-pointer rounded-md border px-3 py-2 text-sm transition-colors ${
-                                                    invite.going === option
-                                                        ? "border-[#434A90] bg-[#434A90] text-white"
-                                                        : "border-[#C7A2CB] bg-white hover:bg-[#C7A2CB]/20"
-                                                }`}
-                                            >
-                                                <input
-                                                    type="radio"
-                                                    name="going"
-                                                    value={option}
-                                                    checked={invite.going === option}
-                                                    onChange={() => updateInvite({ going: option })}
-                                                    className="sr-only"
-                                                />
-                                                {option}
-                                            </label>
-                                        ))}
+                            ) : organizer && (
+                                <div className={`${cardClass} mt-2 flex items-center justify-between gap-4 px-4 py-3`}>
+                                    <div>
+                                        <p className="font-bold text-[#031136]">{organizer.name}</p>
+                                        <p className="text-xs text-[#434A90]">{organizer.email}</p>
                                     </div>
-                                </fieldset>
-
-                                {/* WHO IS INCLUDED */}
-                                {([
-                                    ["adults", "Adults", familyAdults],
-                                    ["children", "Children", familyChildren],
-                                ] as const).map(([group, label, members]) => (
-                                    <fieldset key={group} className="mt-5">
-                                        <legend className="mb-2 font-semibold">
-                                            {label}
-                                        </legend>
-
-                                        <div className="space-y-2">
-                                            {members.map(person => (
-                                                <label key={person.id} className="flex cursor-pointer items-center gap-3 text-sm">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={invite[group].includes(person.id)}
-                                                        onChange={() => toggleMember(group, person.id)}
-                                                        className="h-4 w-4 accent-[#434A90]"
-                                                    />
-                                                    {person.name}
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </fieldset>
-                                ))}
-
-                                {/* SUBMIT BUTTON */}
-                                <button
-                                    type="submit"
-                                    className="mt-6 w-full rounded-lg bg-[#FF5903] px-6 py-3 font-semibold text-white transition-colors hover:bg-[#031136]"
-                                >
-                                    Submit RSVP
-                                </button>
-
-                                {/* SUCCESS MESSAGE */}
-                                {isSaved && (
-                                    <div
-                                        role="status"
-                                        className="mt-5 rounded-lg border border-[#434A90]/30 bg-[#434A90]/5 p-4"
-                                    >
-                                        <p className="font-semibold">
-                                            Your RSVP has been saved.
-                                        </p>
-                                        <p className="mt-1 text-sm">
-                                            Change a response anytime and submit again.
-                                        </p>
-                                    </div>
-                                )}
-
-                            </form>
-
-                            {/* CONTACT USER */}
-                            <a
-                                href={`mailto:${userEmail}`}
-                                className="block px-6 pb-6 text-center text-sm font-medium text-[#434A90] underline"
-                            >
-                                Contact Organizer
-                            </a>
-
+                                    <a href={`mailto:${organizer.email}`} className="text-sm font-bold text-[#031136] underline">
+                                        Contact organizer
+                                    </a>
+                                </div>
+                            )}
                         </div>
+                    </div>
 
-                    </aside>
-
+                    {/* ── side panel: Attendance for the organizer (above the details on mobile), RSVP for travelers ── */}
+                    {attendance && (
+                        <aside className="order-first lg:order-none">
+                            <AttendancePanel attendance={attendance}/>
+                        </aside>
+                    )}
+                    {canRsvp && (
+                        <aside>
+                            <RsvpPanel defaultValues={rsvpValues} hasAnswered={hasAnswered}/>
+                        </aside>
+                    )}
                 </div>
             </div>
-        </main>
-    );
+        </div>
+    )
+}
+
+
+/** The organizer's counts, in people (adults + children). */
+function AttendancePanel({attendance}: { attendance: Attendance }) {
+    const total = attendance.going + attendance.maybe + attendance.notGoing + attendance.notResponded
+    const tiles = [
+        {label: 'Going', count: attendance.going, className: 'bg-[#434A90] text-white', bar: 'bg-[#434A90]'},
+        {label: 'Maybe', count: attendance.maybe, className: 'bg-[#C9A3CB] text-[#031136]', bar: 'bg-[#C9A3CB]'},
+        {label: 'Not going', count: attendance.notGoing, className: 'bg-[#FF6B6C] text-[#031136]', bar: 'bg-[#FF6B6C]'},
+        {label: 'Not responded', count: attendance.notResponded, className: 'bg-[#ECE9F3] text-[#031136]', bar: 'bg-[#ECE9F3]'},
+    ]
+
+    return (
+        <section aria-labelledby="attendance-heading" className={`${cardClass} overflow-hidden`}>
+            <div className="bg-[#031136] px-5 pt-4 pb-3">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#C9A3CB]">Organizer only</p>
+                <h2 id="attendance-heading" className="text-2xl font-extrabold text-white">Attendance</h2>
+            </div>
+            <SunsetStripes/>
+            <div className="space-y-3 p-4">
+                {/* one bar split by answer */}
+                <div className="flex h-4 overflow-hidden rounded-full border-2 border-[#031136] bg-[#ECE9F3]" aria-hidden="true">
+                    {total > 0 && tiles.map((tile) => (
+                        <div key={tile.label} className={tile.bar} style={{width: `${(tile.count / total) * 100}%`}}/>
+                    ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    {tiles.map((tile) => (
+                        <div key={tile.label} className={`rounded-2xl px-3 py-2 ${tile.className}`}>
+                            <p className="text-xs font-bold">{tile.label}</p>
+                            <p className="text-3xl font-extrabold">{tile.count}</p>
+                        </div>
+                    ))}
+                </div>
+                <p className="text-xs text-[#031136]">
+                    Counts are people: each answer includes its adults and children. Travelers never see this panel.
+                </p>
+            </div>
+        </section>
+    )
+}
+
+
+/** "Will you attend?": the traveler's answer for their household, saved with POST /activity/:activityId/rsvp. */
+function RsvpPanel({defaultValues, hasAnswered}: { defaultValues: RsvpForm, hasAnswered: boolean }) {
+    const fetcher = useFetcher<FormActionResponse>()
+    const isSaving = fetcher.state !== 'idle'
+    const labels: Record<RsvpForm['going'], string> = {yes: 'Going', maybe: 'Maybe', no: 'Not going'}
+
+    const form = useForm({
+        defaultValues,
+        validators: {onChange: RsvpFormSchema, onSubmit: RsvpFormSchema},
+        onSubmit: async ({value}) => {
+            await fetcher.submit(value, {method: 'post'})
+        },
+    })
+
+    // after saving, the loader reloads; keep the form showing the saved answer
+    useEffect(() => {
+        if (fetcher.state === 'idle' && fetcher.data?.success) {
+            form.reset(form.state.values)
+        }
+    }, [fetcher.state, fetcher.data, form])
+
+    const saved = fetcher.data?.success === true
+    const numberClass = "w-full px-3 py-2 rounded-xl border-2 border-[#434A90] bg-[#031136] text-white text-center font-bold focus:outline-none focus:ring-2 focus:ring-[#FF5903]"
+
+    return (
+        <section aria-labelledby="rsvp-heading" className="rounded-3xl bg-[#031136] p-5 text-white">
+            <div className="grid grid-cols-4 gap-2" aria-hidden="true">
+                <div className="h-1.5 rounded-full bg-[#FF5903]"/>
+                <div className="h-1.5 rounded-full bg-[#FF6B6C]"/>
+                <div className="h-1.5 rounded-full bg-[#C9A3CB]"/>
+                <div className="h-1.5 rounded-full bg-[#434A90]"/>
+            </div>
+            <h2 id="rsvp-heading" className="mt-5 text-3xl font-extrabold leading-tight">Will you attend?</h2>
+            <p className="mt-2 text-sm">Answer for your household, and say how many adults and children are coming.</p>
+
+            <form
+                className="mt-4 space-y-4 border-t border-white/20 pt-4"
+                noValidate
+                onSubmit={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    void form.handleSubmit()
+                }}
+            >
+                <form.Field name="going">
+                    {(field) => (
+                        <fieldset>
+                            <legend className="sr-only">Will you attend?</legend>
+                            <div className="grid grid-cols-3 gap-2">
+                                {GOING_OPTIONS.map((option) => {
+                                    const checked = field.state.value === option
+                                    return (
+                                        <label key={option}
+                                               className={`cursor-pointer rounded-full border-2 py-2 text-center text-sm font-bold transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-white ${checked ? 'border-[#FF5903] bg-[#FF5903] text-[#031136]' : 'border-[#434A90] text-white hover:bg-white/10'}`}>
+                                            <input type="radio" name={field.name} value={option} checked={checked}
+                                                   onBlur={field.handleBlur}
+                                                   onChange={() => field.handleChange(option)}
+                                                   className="sr-only"/>
+                                            {labels[option]}
+                                        </label>
+                                    )
+                                })}
+                            </div>
+                            {field.state.meta.isTouched && field.state.meta.errors[0] && (
+                                <p className="mt-1 text-sm text-[#FF6B6C]">{field.state.meta.errors[0].message}</p>
+                            )}
+                        </fieldset>
+                    )}
+                </form.Field>
+
+                <div className="grid grid-cols-2 gap-3">
+                    {(['adults', 'children'] as const).map((name) => (
+                        <form.Field key={name} name={name}>
+                            {(field) => (
+                                <div>
+                                    <label htmlFor={`rsvp-${name}`} className="mb-1 block text-sm font-bold capitalize">{name}</label>
+                                    <input id={`rsvp-${name}`} name={field.name} type="number" min="0" step="1" inputMode="numeric"
+                                           value={field.state.value}
+                                           onBlur={field.handleBlur}
+                                           onChange={(event) => field.handleChange(event.target.value)}
+                                           className={numberClass}/>
+                                    {field.state.meta.isTouched && field.state.meta.errors[0] && (
+                                        <p className="mt-1 text-xs text-[#FF6B6C]">{field.state.meta.errors[0].message}</p>
+                                    )}
+                                </div>
+                            )}
+                        </form.Field>
+                    ))}
+                </div>
+
+                <form.Subscribe selector={(state) => state.canSubmit}>
+                    {(canSubmit) => (
+                        <button type="submit" disabled={!canSubmit || isSaving}
+                                className="w-full rounded-full border-2 border-[#031136] bg-[#FF5903] py-3 font-bold text-[#031136] shadow-[4px_4px_0_#FF6B6C] transition hover:bg-[#FF5903]/90 disabled:opacity-50">
+                            {isSaving ? 'Saving…' : hasAnswered ? 'Update RSVP' : 'Submit RSVP'}
+                        </button>
+                    )}
+                </form.Subscribe>
+            </form>
+
+            {saved ? (
+                <div role="status" className="mt-4 rounded-2xl bg-[#434A90] p-4">
+                    <p className="font-bold">Your RSVP has been saved.</p>
+                    <p className="text-sm">Change a response anytime and submit again.</p>
+                </div>
+            ) : (
+                <StatusMessage actionData={fetcher.data}/>
+            )}
+        </section>
+    )
 }
