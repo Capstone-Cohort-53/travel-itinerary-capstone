@@ -66,11 +66,9 @@ export async function loader({request}: Route.LoaderArgs) {
 const iconColors = ['bg-[#FF5A1F]', 'bg-[#FF8A85]', 'bg-[#C19AC5]']
 const pillColors = ['bg-[#C19AC5]', 'bg-[#FF8A85]']
 
-// both header buttons: thick navy outline, bold text that never wraps.
-// Full width and stacked on phones; side by side on wide screens
-const buttonBase = 'flex items-center justify-center gap-2 whitespace-nowrap rounded-full border-[3px] border-[#0B1533] px-6 py-3 text-base font-bold text-[#0B1533] lg:py-2.5'
-const primaryButtonClasses = `${buttonBase} bg-[#FF5A1F] hover:bg-[#FF7A45]`
-const secondaryButtonClasses = `${buttonBase} bg-white hover:bg-[#F7EEF6]`
+// the "Create a new trip" button: orange with a thick navy outline, bold text that never wraps.
+// Full width on phones; sized to its text on wide screens
+const primaryButtonClasses = 'flex items-center justify-center gap-2 whitespace-nowrap rounded-full border-[3px] border-[#0B1533] bg-[#FF5A1F] px-6 py-3 text-base font-bold text-[#0B1533] hover:bg-[#FF7A45] lg:py-2.5'
 
 
 // picture placeholder, same as the landing page; swap for the trip's photo later
@@ -84,13 +82,6 @@ function ImageIcon({className}: { className: string }) {
     )
 }
 
-function RecycleIcon() {
-    return (
-        <svg aria-hidden="true" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/>
-        </svg>
-    )
-}
 
 
 export default function MyTrips({loaderData}: Route.ComponentProps) {
@@ -113,10 +104,6 @@ export default function MyTrips({loaderData}: Route.ComponentProps) {
 
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-end lg:gap-3">
                         <Link to="/create-trip" className={primaryButtonClasses}>+ Create a new trip</Link>
-                        {/* not built yet: shown so the layout matches the design */}
-                        <button type="button" disabled title="Coming soon" className={`${secondaryButtonClasses} cursor-not-allowed`}>
-                            <RecycleIcon/> Recycle a past itinerary
-                        </button>
                     </div>
 
                     {/* trips the signed-in user owns */}
