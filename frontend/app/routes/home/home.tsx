@@ -2,6 +2,7 @@ import {Link} from "react-router";
 import type {Route} from "./+types/home";
 import {getSession} from "~/utils/session.server";
 import {GoogleSignInButton} from "~/components/google-sign-in";
+import {RoyalAlbum} from "~/routes/home/royal-album";
 import {Crown, Gem, Parchment, RoyalPage, WaxSealLink, emphasis, eyebrow, headline} from "~/components/royal";
 
 
@@ -111,6 +112,9 @@ export default function Home(props: Route.ComponentProps) {
                             )}
                         </div>
                     </section>
+
+                    {/* the "From the Royal Album" photo carousel, between the welcome and the articles, as in the design */}
+                    <RoyalAlbum/>
 
                     {/* the three articles: stacked on phones, three across with lilac rules on wider screens */}
                     <section aria-label="What TripsQueen does" className="border-t-2 border-navy pt-10">
