@@ -174,7 +174,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
 
                 {/* ── heading ── */}
                 <p className="text-sm font-bold text-[#434A90]">{trip.title}</p>
-                <h1 className="mt-1 font-display text-5xl sm:text-6xl font-bold tracking-tight text-[#031136]">{heading}</h1>
+                <h1 className="mt-1 font-display text-4xl sm:text-6xl font-bold tracking-tight break-words text-[#031136]">{heading}</h1>
                 <p className="mt-2 mb-8 text-sm text-[#031136]">
                     {intro} <span className="text-[#434A90]">* Required</span>
                 </p>

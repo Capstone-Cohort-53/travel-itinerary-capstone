@@ -23,7 +23,9 @@ const pin = L.icon({
 
 export default function ActivityMap({lat, lng, label}: { lat: number, lng: number, label: string }) {
     return (
-        <MapContainer center={[lat, lng]} zoom={15} scrollWheelZoom={false}
+        // on phones a one-finger drag should scroll the page, not get stuck panning the map;
+        // the +/- buttons and "Open larger map" still work there
+        <MapContainer center={[lat, lng]} zoom={15} scrollWheelZoom={false} dragging={!L.Browser.mobile}
                       className="h-64 w-full sm:h-72" aria-label={`Map of ${label}`}>
             {/* OpenStreetMap's tile policy requires this credit to stay visible */}
             <TileLayer

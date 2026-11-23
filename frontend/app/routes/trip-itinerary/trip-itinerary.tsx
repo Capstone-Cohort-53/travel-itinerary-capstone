@@ -4,6 +4,7 @@ import type {Route} from "./+types/trip-itinerary";
 import {endSession, requireSignedInUser} from "~/utils/session.server";
 import {getTrip, type Trip} from "~/utils/models/trip.model";
 import {type Activity, getActivitiesByTripId} from "~/utils/models/activity.model";
+import {googleMapsUrl} from "~/utils/google-maps";
 
 // loads one trip and everything planned for it
 export async function loader({request, params}: Route.LoaderArgs) {
@@ -121,7 +122,7 @@ export default function TripItinerary(props: Route.ComponentProps) {
                 <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
                         <Link to="/my-trips" className="text-sm font-bold text-[#434A90] hover:underline">← My Trips</Link>
-                        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight text-[#031136]">{trip.title}</h1>
+                        <h1 className="mt-2 text-4xl sm:text-5xl font-extrabold tracking-tight break-words text-[#031136]">{trip.title}</h1>
                         <p className="mt-1 text-sm text-[#434A90]">
                             {trip.destination} · {formatTripDate(trip.startDate)} – {formatTripDate(trip.endDate)} · {length} {length === 1 ? "day" : "days"}
                         </p>
@@ -287,7 +288,9 @@ function ActivityCard({activity, detailsTo, editTo}: { activity: Activity; detai
     const start = formatTime(activity.startDatetime);
     const end = formatTime(activity.endDatetime);
     // the one-line summary under the name: only the parts this activity has
-    const details = [activity.location, activity.address, formatCost(activity.cost)].filter(Boolean).join(" · ");
+    // the place opens in Google Maps (the app, on phones); the cost follows it
+    const place = [activity.location, activity.address].filter(Boolean).join(" · ");
+    const mapsUrl = googleMapsUrl(activity.location, activity.address);
 
     return (
         // phones: the time on its own line above the name, with Required beside it.
@@ -312,7 +315,14 @@ function ActivityCard({activity, detailsTo, editTo}: { activity: Activity; detai
             <div className="min-w-0 flex-1 space-y-1">
                 {/* the name opens the activity's details page, where its map is */}
                 <h3 className="font-bold text-[#031136]"><Link to={detailsTo} className="hover:underline">{activity.name}</Link></h3>
-                <p className="text-sm text-[#434A90]">{details}</p>
+                <p className="text-sm text-[#434A90]">
+                    {mapsUrl && (
+                        <a href={mapsUrl} target="_blank" rel="noreferrer" className="underline decoration-dotted underline-offset-2 hover:decoration-solid">
+                            📍 {place}<span className="sr-only"> (opens Google Maps in a new tab)</span>
+                        </a>
+                    )}
+                    {mapsUrl && " · "}{formatCost(activity.cost)}
+                </p>
                 {activity.description && <p className="text-sm text-gray-700">{activity.description}</p>}
                 {activity.notes && <p className="text-sm italic text-gray-500">Note: {activity.notes}</p>}
                 <div className="flex gap-4 pt-1 text-sm font-bold text-[#434A90]">

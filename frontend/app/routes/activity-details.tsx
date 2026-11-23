@@ -18,6 +18,7 @@ import {
 } from "~/utils/models/activity-rsvp.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
+import {googleMapsUrl} from "~/utils/google-maps";
 
 
 /**
@@ -186,7 +187,7 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
                         <span className={`inline-block rounded-full border-2 border-[#031136] px-3 py-0.5 text-xs font-bold text-[#031136] ${activity.mandatory ? 'bg-[#FF5903]' : 'bg-[#C9A3CB]'}`}>
                             {typeLabel}
                         </span>
-                        <h1 className="mt-2 font-display text-5xl sm:text-6xl font-bold tracking-tight text-[#031136]">{activity.name}</h1>
+                        <h1 className="mt-2 font-display text-4xl sm:text-6xl font-bold tracking-tight break-words text-[#031136]">{activity.name}</h1>
                         <p className="mt-1 text-sm text-[#434A90]">{trip.title}</p>
                     </div>
                     {isOrganizer && (
@@ -218,17 +219,17 @@ export default function ActivityDetails({loaderData}: Route.ComponentProps) {
                                         <circle cx="12" cy="10" r="2.5"/>
                                     </svg>
                                 </span>
-                                <div>
+                                {/* the name and address open the place in Google Maps (the app, on phones) */}
+                                <div className="min-w-0">
                                     <p className={tileLabelClass}>Location</p>
-                                    {activity.location && <p className="font-display text-2xl font-semibold text-[#031136]">{activity.location}</p>}
-                                    {activity.address && <p className="text-sm text-[#031136] whitespace-pre-line">{activity.address}</p>}
-                                    {activity.lat !== null && activity.lng !== null && (
-                                        <a href={`https://www.openstreetmap.org/?mlat=${activity.lat}&mlon=${activity.lng}#map=17/${activity.lat}/${activity.lng}`}
-                                           target="_blank" rel="noreferrer"
-                                           className="mt-1 inline-block text-sm font-bold text-[#434A90] underline">
-                                            Open larger map
-                                        </a>
-                                    )}
+                                    <a href={googleMapsUrl(activity.location, activity.address) ?? undefined}
+                                       target="_blank" rel="noreferrer" className="group block">
+                                        {activity.location && <p className="font-display text-2xl font-semibold text-[#031136] break-words group-hover:underline">{activity.location}</p>}
+                                        {activity.address && <p className="text-sm text-[#031136] whitespace-pre-line group-hover:underline">{activity.address}</p>}
+                                        <span className="mt-1 inline-block text-sm font-bold text-[#434A90] underline">
+                                            Open in Google Maps ↗<span className="sr-only"> (opens in a new tab)</span>
+                                        </span>
+                                    </a>
                                 </div>
                             </div>
                             {activity.lat !== null && activity.lng !== null && (
