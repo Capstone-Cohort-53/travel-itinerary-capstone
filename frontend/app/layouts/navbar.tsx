@@ -4,15 +4,33 @@ import {FooterCap} from "~/layouts/footer"
 import {getSession} from "~/utils/session.server"
 import type {Route} from "./+types/navbar"
 import {GoogleSignInButton} from "~/components/google-sign-in";
+import {getMyTrips, type Trip} from "~/utils/models/trip.model";
 
 export async function loader({ request }: Route.LoaderArgs) {
-    const session = await getSession(request.headers.get("Cookie"));
+    const cookie = request.headers.get("Cookie") ?? "";
+    const session = await getSession(cookie);
+    const googleClientId = process.env.GOOGLE_CLIENT_ID ?? null
 
-    if (session.has("profile")) {
-        return { googleClientId: process.env.GOOGLE_CLIENT_ID ?? null , isLoggedIn: true};
+    const profile = session.get("profile");
+    const authorization = session.get("authorization");
+    if (!profile || !authorization) {
+        return { googleClientId, isLoggedIn: false, defaultTripId: null };
     }
 
-    return { googleClientId: process.env.GOOGLE_CLIENT_ID ?? null , isLoggedIn:false};
+    // the trip "Trip Itinerary" and "Manage Travelers" open when the user is not already on one
+    const {trips} = await getMyTrips({profile, authorization, cookie})
+    return { googleClientId, isLoggedIn: true, defaultTripId: pickDefaultTripId(trips) };
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+// trips come back soonest first: use the first one that has not ended yet,
+// or the most recent one if every trip is over. null when the user has no trips
+function pickDefaultTripId(trips: Trip[]) {
+    const now = Date.now()
+    // the end date is the trip's last day, so the trip lasts until the end of that day
+    const current = trips.find((trip) => trip.endDate.getTime() + DAY_MS > now)
+    return (current ?? trips.at(-1))?.id ?? null
 }
 
 // the trip id in the URL when the user is on /trip-itinerary/:tripId or /travel-itinerary/:id,
@@ -23,8 +41,8 @@ function getCurrentTripId(pathname: string) {
 }
 
 // the pages a signed-in user can jump to. "Trip Itinerary" and "Manage Travelers" need a
-// specific trip: while the user is looking at a trip they point to that trip, otherwise
-// they go to My Trips, where the user picks one
+// specific trip: while the user is looking at a trip they point to that trip, otherwise to
+// the user's next trip (see pickDefaultTripId). With no trips at all they go to My Trips
 function getNavLinks(tripId: string | null) {
     return [
         {to: '/my-trips', label: 'My Trips'},
@@ -52,12 +70,12 @@ function navLinkClasses(highlight = true) {
 const logoutButtonClasses = 'rounded-full bg-[#FF8A85] px-6 py-2 text-lg font-bold text-[#0B1533] hover:bg-[#FF6B6B]'
 
 export default function Nav (props : Route.ComponentProps) {
-    const {googleClientId, isLoggedIn} = props.loaderData
+    const {googleClientId, isLoggedIn, defaultTripId} = props.loaderData
     // whether the phone menu is open
     const [isMenuOpen, setIsMenuOpen] = useState(false)
     const closeMenu = () => setIsMenuOpen(false)
-    // links change with the trip being viewed, if any
-    const navLinks = getNavLinks(getCurrentTripId(useLocation().pathname))
+    // links follow the trip being viewed, if any, and otherwise the user's next trip
+    const navLinks = getNavLinks(getCurrentTripId(useLocation().pathname) ?? defaultTripId)
 
     // a full-height column, so the footer sits at the bottom of the window on short pages
     return <div className="flex min-h-screen flex-col">
