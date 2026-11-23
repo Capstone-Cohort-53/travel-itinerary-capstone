@@ -281,7 +281,7 @@ function TripCard({trip}: { trip: Trip }) {
             <Stripes/>
             <div className="p-5">
                 <h2 className="text-xl font-extrabold text-[#031136]">About this trip</h2>
-                <p className="mt-2 break-words whitespace-pre-line text-lg leading-relaxed text-[#434A90]">{trip.description ?? "No description yet."}</p>
+                <p className="mt-2 break-words whitespace-pre-line text-xl leading-relaxed text-[#434A90]">{trip.description ?? "No description yet."}</p>
             </div>
         </section>
     );

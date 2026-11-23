@@ -174,8 +174,8 @@ export function TripFormPage({heading, defaultValues, submitLabel, backTo, backL
                                     onChange={(event) => field.handleChange(event.target.value)}
                                     placeholder="What is this trip about?"
                                     maxLength={360}
-                                    rows={4}
-                                    className={inputClass}
+                                    rows={6}
+                                    className={`${inputClass} text-lg! leading-relaxed`}
                                     aria-invalid={field.state.meta.isTouched && !field.state.meta.isValid}
                                     aria-describedby="description-error"
                                 />
