@@ -165,7 +165,7 @@ function destinationCandidates(destination: string): Promise<Coordinates[]> {
  * province), the one closest to a pin already on the trip wins. With no
  * destination, or one Photon can't find, the pin itself.
  */
-async function tripCenter({near, destination}: SearchArea): Promise<Coordinates | null> {
+export async function tripCenter({near, destination}: SearchArea): Promise<Coordinates | null> {
     const place = destination?.trim()
     const candidates = place ? await destinationCandidates(place) : []
     if (candidates.length === 0) {

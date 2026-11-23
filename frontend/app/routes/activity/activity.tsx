@@ -90,6 +90,7 @@ export default function Activity({loaderData}: Route.ComponentProps) {
             intro="Add an event to your shared trip itinerary."
             submitLabel="Save Activity"
             searchNear={searchNear}
+            showIdeas
         />
     )
 }

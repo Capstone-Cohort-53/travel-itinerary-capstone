@@ -7,6 +7,8 @@ import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
 import type {Coordinates, PlaceSuggestion} from "~/utils/place-search";
 import {PlaceSearchInput} from "~/routes/activity/place-search-input";
+import {NeedIdeas} from "~/routes/activity/need-ideas";
+import type {TripIdea} from "~/utils/trip-ideas";
 
 /**
  * The activity form the Add and Edit pages share. TanStack Form validates with
@@ -71,6 +73,15 @@ export function splitAddress(address: string): AddressParts {
 export function joinAddress({street, cityState, zip}: AddressParts): string {
     const cityLine = [cityState.trim(), zip.trim()].filter(Boolean).join(' ')
     return [street.trim(), cityLine].filter(Boolean).join(', ')
+}
+
+
+/** A guide's description, cut to a few sentences for the Description box. */
+function shortDescription(text: string, maxLength = 400): string {
+    if (text.length <= maxLength) return text
+    const cut = text.slice(0, maxLength)
+    const lastSentence = cut.lastIndexOf('. ')
+    return lastSentence > maxLength / 3 ? cut.slice(0, lastSentence + 1) : `${cut.trimEnd()}…`
 }
 
 
@@ -164,9 +175,11 @@ type ActivityFormPageProps = {
     footer?: ReactNode,
     /** a place on this trip, so Location Name suggestions near it come first; null when there isn't one yet */
     searchNear: Coordinates | null,
+    /** show "Need ideas?" above the form (the Add page, not Edit) */
+    showIdeas?: boolean,
 }
 
-export function ActivityFormPage({trip, defaultValues, heading, intro, submitLabel, footer, searchNear}: ActivityFormPageProps) {
+export function ActivityFormPage({trip, defaultValues, heading, intro, submitLabel, footer, searchNear, showIdeas = false}: ActivityFormPageProps) {
     const fetcher = useFetcher<FormActionResponse>()
     const isSaving = fetcher.state !== 'idle'
 
@@ -193,6 +206,25 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
         form.setFieldValue('lng', String(place.lng))
     }
 
+    /**
+     * An idea from "Need ideas?" fills in the name, the location, the address and
+     * its map pin, plus the description when that's still empty. Without a pin,
+     * the address is looked up on save, as when it's typed by hand.
+     */
+    function pickIdea(idea: TripIdea) {
+        // the guide's address is just the street part; the destination stands in for City, State
+        const parts = {street: idea.address, cityState: trip.destination?.trim() ?? '', zip: ''}
+        setAddressParts(parts)
+        form.setFieldValue('name', idea.name)
+        form.setFieldValue('location', idea.name)
+        form.setFieldValue('address', joinAddress(parts))
+        form.setFieldValue('lat', idea.lat === null ? '' : String(idea.lat))
+        form.setFieldValue('lng', idea.lng === null ? '' : String(idea.lng))
+        if (!form.getFieldValue('description').trim()) {
+            form.setFieldValue('description', shortDescription(idea.description))
+        }
+    }
+
     const tripStart = toDateString(trip.startDate)
     const tripEnd = toDateString(trip.endDate)
     const tripDates = `${formatTripDate(trip.startDate)} – ${formatTripDate(trip.endDate)}`
@@ -211,6 +243,10 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                 <div className="grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-start">
 
                     <div className="space-y-5">
+                        {showIdeas && (
+                            <NeedIdeas near={searchNear} destination={trip.destination} onPick={pickIdea}/>
+                        )}
+
                         <form
                             className="space-y-5"
                             noValidate
