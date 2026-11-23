@@ -7,6 +7,8 @@ import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
 import type {Coordinates, PlaceSuggestion} from "~/utils/place-search";
 import {PlaceSearchInput} from "~/routes/activity/place-search-input";
+import {NeedIdeas} from "~/routes/activity/need-ideas";
+import type {TripIdea} from "~/utils/trip-ideas";
 
 /**
  * The activity form the Add and Edit pages share. TanStack Form validates with
@@ -74,6 +76,15 @@ export function joinAddress({street, cityState, zip}: AddressParts): string {
 }
 
 
+/** A guide's description, cut to a few sentences for the Description box. */
+function shortDescription(text: string, maxLength = 400): string {
+    if (text.length <= maxLength) return text
+    const cut = text.slice(0, maxLength)
+    const lastSentence = cut.lastIndexOf('. ')
+    return lastSentence > maxLength / 3 ? cut.slice(0, lastSentence + 1) : `${cut.trimEnd()}…`
+}
+
+
 // ── the date and time boxes: Date + Start + End, saved as startDatetime and endDatetime ──
 
 type When = { date: string, start: string, end: string }
@@ -84,6 +95,21 @@ function splitWhen(values: ActivityForm): When {
         start: values.startDatetime.slice(11, 16),
         end: values.endDatetime.slice(11, 16),
     }
+}
+
+/**
+ * What's wrong with the Date / Start / End boxes, or null when they can be saved.
+ * The database keeps a date and a time together (startDatetime), so a date with
+ * no start time, or a time with no date, would quietly be dropped on save.
+ */
+export function whenProblem({date, start, end}: When): string | null {
+    if (!date && (start || end)) {
+        return 'Pick a date for this time.'
+    }
+    if (date && !start) {
+        return 'Add a start time to keep this date, or clear the date if it isn’t set yet.'
+    }
+    return null
 }
 
 /** "Sat, Oct 24 | 6:00 – 8:00 PM" for the itinerary preview. */
@@ -149,9 +175,11 @@ type ActivityFormPageProps = {
     footer?: ReactNode,
     /** a place on this trip, so Location Name suggestions near it come first; null when there isn't one yet */
     searchNear: Coordinates | null,
+    /** show "Need ideas?" above the form (the Add page, not Edit) */
+    showIdeas?: boolean,
 }
 
-export function ActivityFormPage({trip, defaultValues, heading, intro, submitLabel, footer, searchNear}: ActivityFormPageProps) {
+export function ActivityFormPage({trip, defaultValues, heading, intro, submitLabel, footer, searchNear, showIdeas = false}: ActivityFormPageProps) {
     const fetcher = useFetcher<FormActionResponse>()
     const isSaving = fetcher.state !== 'idle'
 
@@ -178,6 +206,25 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
         form.setFieldValue('lng', String(place.lng))
     }
 
+    /**
+     * An idea from "Need ideas?" fills in the name, the location, the address and
+     * its map pin, plus the description when that's still empty. Without a pin,
+     * the address is looked up on save, as when it's typed by hand.
+     */
+    function pickIdea(idea: TripIdea) {
+        // the guide's address is just the street part; the destination stands in for City, State
+        const parts = {street: idea.address, cityState: trip.destination?.trim() ?? '', zip: ''}
+        setAddressParts(parts)
+        form.setFieldValue('name', idea.name)
+        form.setFieldValue('location', idea.name)
+        form.setFieldValue('address', joinAddress(parts))
+        form.setFieldValue('lat', idea.lat === null ? '' : String(idea.lat))
+        form.setFieldValue('lng', idea.lng === null ? '' : String(idea.lng))
+        if (!form.getFieldValue('description').trim()) {
+            form.setFieldValue('description', shortDescription(idea.description))
+        }
+    }
+
     const tripStart = toDateString(trip.startDate)
     const tripEnd = toDateString(trip.endDate)
     const tripDates = `${formatTripDate(trip.startDate)} – ${formatTripDate(trip.endDate)}`
@@ -196,12 +243,22 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                 <div className="grid gap-6 lg:grid-cols-[1fr_16rem] lg:items-start">
 
                     <div className="space-y-5">
+                        {showIdeas && (
+                            <NeedIdeas near={searchNear} destination={trip.destination} onPick={pickIdea}/>
+                        )}
+
                         <form
                             className="space-y-5"
                             noValidate
                             onSubmit={(event) => {
                                 event.preventDefault()
                                 event.stopPropagation()
+                                // a date with no start time (or the reverse) would be dropped on save:
+                                // send the organizer to the box to fix instead of saving
+                                if (whenProblem(when)) {
+                                    document.getElementById(when.date ? 'activity-start' : 'activity-date')?.focus()
+                                    return
+                                }
                                 void form.handleSubmit()
                             }}
                         >
@@ -266,7 +323,8 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                     startField.handleChange(next.date && next.start ? `${next.date}T${next.start}` : '')
                                                     endField.handleChange(next.date && next.end ? `${next.date}T${next.end}` : '')
                                                 }
-                                                const error = fieldError(startField) ?? fieldError(endField)
+                                                // the box mix-up first (it's the one to fix first), then the schema's own checks
+                                                const error = whenProblem(when) ?? fieldError(startField) ?? fieldError(endField)
                                                 return (
                                                     <div>
                                                         <div className="grid gap-3 sm:grid-cols-3">
@@ -287,7 +345,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                                        className={boxClass(Boolean(error))}/>
                                                             </div>
                                                             <div>
-                                                                <label htmlFor="activity-end" className={labelClass}>End</label>
+                                                                <label htmlFor="activity-end" className={labelClass}>End <span className="font-normal text-gray-500">(optional)</span></label>
                                                                 <input id="activity-end" type="time"
                                                                        value={when.end}
                                                                        onBlur={endField.handleBlur}
@@ -296,8 +354,8 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                             </div>
                                                         </div>
                                                         {error
-                                                            ? <p className="mt-1 text-sm text-red-600">{error}</p>
-                                                            : <p className="mt-1 text-xs text-gray-500">Trip: {tripDates}. Leave the times blank if they aren’t set yet.</p>}
+                                                            ? <p id="when-error" role="alert" className="mt-1 text-sm text-red-600">{error}</p>
+                                                            : <p className="mt-1 text-xs text-gray-500">Trip: {tripDates}. Leave End blank if there’s no set finish time.</p>}
                                                     </div>
                                                 )
                                             }}
@@ -343,6 +401,7 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                                       onChange={(value) => field.handleChange(value)}
                                                                       onPick={pickPlace}
                                                                       near={searchNear}
+                                                                      destination={trip.destination}
                                                                       placeholder="Start typing a place, e.g., La Choza"/>
                                                     <p className="mt-1 text-xs text-gray-500">Pick a suggestion to fill in the address, or type it yourself.</p>
                                                     <FieldError field={field}/>
