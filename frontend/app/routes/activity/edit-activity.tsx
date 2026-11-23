@@ -5,6 +5,9 @@ import {getTripByTripId} from "~/utils/models/trip.model";
 import {
     ActivityFormSchema,
     deleteActivity,
+    coordinatesFromForm,
+    firstPin,
+    getActivitiesByTripId,
     getActivity,
     putActivity,
     toActivityForm,
@@ -37,7 +40,11 @@ export async function loader({request, params}: Route.LoaderArgs) {
         throw new Response(null, {status: 404, statusText: 'Activity not found.'})
     }
 
-    return {trip, values: toActivityForm(activity)}
+    // place suggestions near this activity, or else near the trip's other activities, come first
+    const {activities} = await getActivitiesByTripId(trip.id, signedInUser)
+    const searchNear = firstPin([activity, ...activities])
+
+    return {trip, values: toActivityForm(activity), searchNear}
 }
 
 
@@ -72,8 +79,8 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
         return {success: false, status: {status: 400, data: null, message: 'The start and end must be during the trip.'}}
     }
 
-    // PUT replaces every field, so look the address up again: it may have changed
-    const coordinates = await geocodeAddress(result.data.address || null)
+    // the saved or newly picked pin when the address wasn't retyped; otherwise look it up again
+    const coordinates = coordinatesFromForm(result.data) ?? await geocodeAddress(result.data.address || null)
     const status = await putActivity(params.id, params.activityId, toActivityRequest(result.data, coordinates), signedInUser)
     if (status.status !== 200) {
         return {success: false, status}
@@ -85,7 +92,7 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
 
 
 export default function EditActivity({loaderData}: Route.ComponentProps) {
-    const {trip, values} = loaderData
+    const {trip, values, searchNear} = loaderData
     return (
         <ActivityFormPage
             trip={trip}
@@ -93,6 +100,7 @@ export default function EditActivity({loaderData}: Route.ComponentProps) {
             heading="Edit Activity"
             intro={`Update “${values.name}” on your shared trip itinerary.`}
             submitLabel="Save Changes"
+            searchNear={searchNear}
             footer={<DeleteActivityButton activityName={values.name}/>}
         />
     )

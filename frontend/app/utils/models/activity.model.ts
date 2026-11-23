@@ -51,13 +51,20 @@ const dateTimeLocal = z.union([
     z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, 'Please pick a date and time.'),
 ])
 
+/** A coordinate from a picked place suggestion, or empty when the address was typed by hand. */
+const coordinate = z.union([
+    z.literal(''),
+    z.string().regex(/^-?\d{1,3}(\.\d+)?$/, 'Please pick the place again.'),
+])
+
 /**
  * What the activity form's inputs hold: one input per column of the backend's
- * activity table except lat and lng, which the server looks up from the
- * address when the activity is saved (see geocode.server.ts). Every
- * input is a string, and an empty string means "not provided". The limits
- * mirror the backend's ActivitySchema. Used by TanStack Form in the browser
- * and again by the route actions on the server.
+ * activity table. lat and lng are filled in when the organizer picks a place
+ * from the Location Name suggestions (Photon); when they're empty, the server
+ * looks the address up instead (see geocode.server.ts). Every input is a
+ * string, and an empty string means "not provided". The limits mirror the
+ * backend's ActivitySchema. Used by TanStack Form in the browser and again by
+ * the route actions on the server.
  */
 export const ActivityFormSchema = z.object({
     name: z.string().trim().min(1, 'Please enter an activity name.').max(255, 'Name must be 255 characters or fewer.'),
@@ -74,12 +81,32 @@ export const ActivityFormSchema = z.object({
         z.string().trim().regex(/^\d{1,8}(\.\d{1,2})?$/, 'Please enter a cost like 35 or 35.00.'),
     ]),
     notes: z.string().trim(),
+    lat: coordinate,
+    lng: coordinate,
 }).refine(
     // same rule as the backend: an activity can't end before it starts
     (data) => data.startDatetime === '' || data.endDatetime === '' || data.endDatetime >= data.startDatetime,
     {message: 'End can’t be before the start.', path: ['endDatetime']},
 )
 export type ActivityForm = z.infer<typeof ActivityFormSchema>
+
+/**
+ * The coordinates that came with a picked place, when they're usable: both
+ * present, in range, and there's still an address. null means "look the
+ * address up on the server instead".
+ */
+export function coordinatesFromForm(form: ActivityForm): Pick<ActivityRequest, 'lat' | 'lng'> | null {
+    if (!form.address || form.lat === '' || form.lng === '') {
+        return null
+    }
+    const lat = Number(form.lat)
+    const lng = Number(form.lng)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+        return null
+    }
+    // numeric(9,6) in the database: 6 decimal places
+    return {lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6))}
+}
 
 /** The body POST and PUT /trip/:tripId/activity expect: the backend's fields, by the same names. */
 export type ActivityRequest = {
@@ -121,6 +148,12 @@ export function toActivityRequest(form: ActivityForm, coordinates: Pick<Activity
     }
 }
 
+/** The first of these activities that has a map pin, as a hint for where the trip is; null when none do. */
+export function firstPin(activities: Activity[]): { lat: number, lng: number } | null {
+    const pinned = activities.find((activity) => activity.lat !== null && activity.lng !== null)
+    return pinned ? {lat: pinned.lat as number, lng: pinned.lng as number} : null
+}
+
 /** Turns a saved activity back into the form's strings, for the Edit page. The reverse of toActivityRequest. */
 export function toActivityForm(activity: Activity): ActivityForm {
     return {
@@ -134,6 +167,9 @@ export function toActivityForm(activity: Activity): ActivityForm {
         address: activity.address ?? '',
         cost: activity.cost === 0 ? '' : String(activity.cost),
         notes: activity.notes ?? '',
+        // the saved pin is reused when the address isn't changed; editing the address clears it
+        lat: activity.lat === null ? '' : String(activity.lat),
+        lng: activity.lng === null ? '' : String(activity.lng),
     }
 }
 

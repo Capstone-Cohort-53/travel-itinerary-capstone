@@ -5,6 +5,8 @@ import {ActivityFormSchema, type ActivityForm} from "~/utils/models/activity.mod
 import type {Trip} from "~/utils/models/trip.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {StatusMessage} from "~/components/StatusMessage";
+import type {Coordinates, PlaceSuggestion} from "~/utils/place-search";
+import {PlaceSearchInput} from "~/routes/activity/place-search-input";
 
 /**
  * The activity form the Add and Edit pages share. TanStack Form validates with
@@ -20,7 +22,7 @@ import {StatusMessage} from "~/components/StatusMessage";
 
 export const emptyActivityValues: ActivityForm = {
     name: '', mandatory: 'mandatory', startDatetime: '', endDatetime: '',
-    description: '', location: '', address: '', cost: '', notes: '',
+    description: '', location: '', address: '', cost: '', notes: '', lat: '', lng: '',
 }
 
 /** A trip date as YYYY-MM-DD. Trip dates are stored as UTC midnight. */
@@ -145,9 +147,11 @@ type ActivityFormPageProps = {
     submitLabel: string,
     /** shown below the form, outside it: the Edit page's delete button */
     footer?: ReactNode,
+    /** a place on this trip, so Location Name suggestions near it come first; null when there isn't one yet */
+    searchNear: Coordinates | null,
 }
 
-export function ActivityFormPage({trip, defaultValues, heading, intro, submitLabel, footer}: ActivityFormPageProps) {
+export function ActivityFormPage({trip, defaultValues, heading, intro, submitLabel, footer, searchNear}: ActivityFormPageProps) {
     const fetcher = useFetcher<FormActionResponse>()
     const isSaving = fetcher.state !== 'idle'
 
@@ -163,6 +167,16 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
     // what's typed in the split boxes; each change writes the combined value into the form
     const [when, setWhen] = useState<When>(() => splitWhen(defaultValues))
     const [addressParts, setAddressParts] = useState<AddressParts>(() => splitAddress(defaultValues.address))
+
+    /** A place picked from the Location Name suggestions fills in the name, the address boxes and the map pin. */
+    function pickPlace(place: PlaceSuggestion) {
+        const parts = {street: place.street, cityState: place.cityState, zip: place.zip}
+        setAddressParts(parts)
+        form.setFieldValue('location', place.name)
+        form.setFieldValue('address', joinAddress(parts))
+        form.setFieldValue('lat', String(place.lat))
+        form.setFieldValue('lng', String(place.lng))
+    }
 
     const tripStart = toDateString(trip.startDate)
     const tripEnd = toDateString(trip.endDate)
@@ -323,7 +337,14 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                             {(field) => (
                                                 <div>
                                                     <label htmlFor={field.name} className={labelClass}>Location Name</label>
-                                                    <input type="text" placeholder="e.g., Family Dinner Restaurant" {...inputProps(field)}/>
+                                                    {/* suggests places as the organizer types; picking one fills in the address below */}
+                                                    <PlaceSearchInput {...inputProps(field)}
+                                                                      value={field.state.value}
+                                                                      onChange={(value) => field.handleChange(value)}
+                                                                      onPick={pickPlace}
+                                                                      near={searchNear}
+                                                                      placeholder="Start typing a place, e.g., La Choza"/>
+                                                    <p className="mt-1 text-xs text-gray-500">Pick a suggestion to fill in the address, or type it yourself.</p>
                                                     <FieldError field={field}/>
                                                 </div>
                                             )}
@@ -336,6 +357,9 @@ export function ActivityFormPage({trip, defaultValues, heading, intro, submitLab
                                                     const next = {...addressParts, ...changes}
                                                     setAddressParts(next)
                                                     field.handleChange(joinAddress(next))
+                                                    // a hand-edited address may not match the picked place: look it up again on save
+                                                    form.setFieldValue('lat', '')
+                                                    form.setFieldValue('lng', '')
                                                 }
                                                 const error = fieldError(field)
                                                 return (

@@ -2,7 +2,14 @@ import {redirect} from "react-router";
 import type {Route} from "./+types/activity";
 import {requireSignedInUser} from "~/utils/session.server";
 import {getTripByTripId} from "~/utils/models/trip.model";
-import {ActivityFormSchema, postActivity, toActivityRequest} from "~/utils/models/activity.model";
+import {
+    ActivityFormSchema,
+    coordinatesFromForm,
+    firstPin,
+    getActivitiesByTripId,
+    postActivity,
+    toActivityRequest
+} from "~/utils/models/activity.model";
 import type {FormActionResponse} from "~/utils/interfaces/FormActionResponse";
 import {geocodeAddress} from "~/utils/geocode.server";
 import {
@@ -33,7 +40,10 @@ export async function loader({request, params}: Route.LoaderArgs) {
     // worked out here, on the server, so the page renders the same date in the browser
     const startDate = defaultActivityDate(toDateString(trip.startDate), toDateString(trip.endDate))
 
-    return {trip, startDate}
+    // place suggestions near the trip's other activities come first
+    const {activities} = await getActivitiesByTripId(trip.id, signedInUser)
+
+    return {trip, startDate, searchNear: firstPin(activities)}
 }
 
 
@@ -56,8 +66,9 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
         return {success: false, status: {status: 400, data: null, message: 'The start and end must be during the trip.'}}
     }
 
-    // find the address on the map; if that fails, the activity still saves without a pin
-    const coordinates = await geocodeAddress(result.data.address || null)
+    // the pin of the place picked from the suggestions, or else look the address up;
+    // if that fails too, the activity still saves without a pin
+    const coordinates = coordinatesFromForm(result.data) ?? await geocodeAddress(result.data.address || null)
     const status = await postActivity(params.id, toActivityRequest(result.data, coordinates), signedInUser)
     if (status.status !== 201) {
         return {success: false, status}
@@ -69,7 +80,7 @@ export async function action({request, params}: Route.ActionArgs): Promise<FormA
 
 
 export default function Activity({loaderData}: Route.ComponentProps) {
-    const {trip, startDate} = loaderData
+    const {trip, startDate, searchNear} = loaderData
     return (
         <ActivityFormPage
             trip={trip}
@@ -78,6 +89,7 @@ export default function Activity({loaderData}: Route.ComponentProps) {
             heading="Add Activity"
             intro="Add an event to your shared trip itinerary."
             submitLabel="Save Activity"
+            searchNear={searchNear}
         />
     )
 }
