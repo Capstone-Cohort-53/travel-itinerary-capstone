@@ -4,6 +4,7 @@ import {FooterCap} from "~/layouts/footer"
 import {getSession} from "~/utils/session.server"
 import type {Route} from "./+types/navbar"
 import {GoogleSignInButton} from "~/components/google-sign-in";
+import {outlineButtonOnNavy, Wordmark} from "~/components/royal";
 
 export async function loader({ request }: Route.LoaderArgs) {
     const cookie = request.headers.get("Cookie") ?? "";
@@ -23,16 +24,16 @@ const navLinks = [
     {to: '/profile', label: 'My Profile'},
 ]
 
-// white links on navy; the current page's link is underlined in orange
+// white spaced-out capitals on navy; the current page's link is underlined in gold
 function navLinkClasses() {
     return ({isActive}: { isActive: boolean }) =>
-        `block rounded-lg px-3 py-2 text-lg font-bold text-white hover:bg-white/10 ${
-            isActive ? 'underline decoration-[#FF5A1F] decoration-4 underline-offset-8' : ''
+        `block rounded-lg px-3 py-2 text-xs font-bold uppercase tracking-[0.18em] text-white hover:bg-white/10 ${
+            isActive ? 'underline decoration-gold decoration-2 underline-offset-[10px]' : ''
         }`
 }
 
-// coral pill with navy text, like the mockup's Log out button
-const logoutButtonClasses = 'rounded-full bg-[#FF8A85] px-6 py-2 text-lg font-bold text-[#0B1533] hover:bg-[#FF6B6B]'
+// lilac-outlined pill, like the design's Log out button
+const logoutButtonClasses = `${outlineButtonOnNavy} !px-4 !py-2.5 !text-xs`
 
 export default function Nav (props : Route.ComponentProps) {
     const {googleClientId, isLoggedIn} = props.loaderData
@@ -41,15 +42,16 @@ export default function Nav (props : Route.ComponentProps) {
     const closeMenu = () => setIsMenuOpen(false)
 
     // a full-height column, so the footer sits at the bottom of the window on short pages
-    return <div className="flex min-h-screen flex-col">
+    return <div className="flex min-h-screen flex-col bg-navy">
         <header>
-            {/* navy bar: logo on the left, links centered, Log out (or Google sign-in) on the right */}
-            <nav className="bg-[#0B1533]">
+            {/* navy bar: wordmark on the left, links centered, Log out (or Google sign-in) on the right */}
+            <nav className="bg-navy">
                 <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-4 py-3 sm:px-8 md:grid-cols-[1fr_auto_1fr]">
                     <div>
-                        {/* the groupie.travel logo links home */}
-                        <Link to="/" onClick={closeMenu}>
-                            <img src="/logo.png" alt="groupie.travel home" className="h-10 w-auto sm:h-14"/>
+                        {/* the TripsQueen wordmark links home */}
+                        <Link to="/" onClick={closeMenu} aria-label="TripsQueen home"
+                              className="inline-block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold">
+                            <Wordmark/>
                         </Link>
                     </div>
 
@@ -73,10 +75,10 @@ export default function Nav (props : Route.ComponentProps) {
                             googleClientId && <GoogleSignInButton clientId={googleClientId} text={"signin_with"}/>
                         )}
 
-                        {/* phones: coral round menu button, like the mobile mockup */}
+                        {/* phones: round menu button, lilac-outlined like Log out */}
                         {isLoggedIn && (
                             <button type="button"
-                                    className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FF8A85] text-[#0B1533] md:hidden"
+                                    className="flex h-11 w-11 items-center justify-center rounded-full border-[1.5px] border-lilac text-white hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold md:hidden"
                                     aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
                                     aria-expanded={isMenuOpen}
                                     aria-controls="mobile-menu"
@@ -107,13 +109,6 @@ export default function Nav (props : Route.ComponentProps) {
                 )}
             </nav>
 
-            {/* retro sunset stripes under the bar, from the mockup */}
-            <div aria-hidden="true">
-                <div className="h-2 bg-[#FF5A1F]"/>
-                <div className="h-2 bg-[#FF8A85]"/>
-                <div className="h-2 bg-[#C19AC5]"/>
-                <div className="h-2 bg-[#3A4187]"/>
-            </div>
         </header>
         {/* the page grows to fill the space between the navbar and the footer */}
         <div className="flex-1">

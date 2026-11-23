@@ -3,10 +3,31 @@
 @source "../.flowbite-react/class-list.json";
 
 
-/* rounded display font for big headings: use the font-display class */
+/*
+ * TripsQueen · Royal Decree theme (the team's design canvas, "TripsQueen · Royal Decree (all screens)").
+ * Each color below becomes Tailwind classes, e.g. --color-gold → bg-gold, text-gold, border-gold.
+ * Orange is retired. Gold marks every call to action; lilac marks selected RSVPs and tags.
+ */
 @theme {
-    --font-display: "Fredoka", ui-rounded, system-ui, sans-serif;
+    /* type: Playfair Display headlines, Montserrat for everything else, Pinyon Script for the signature */
+    --font-sans: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Playfair Display", Georgia, serif;
+    --font-script: "Pinyon Script", cursive;
+
+    /* the base */
+    --color-navy: #031136;        /* Elegant Blue: the page background, and text on parchment */
+    --color-bay: #434A90;         /* Blue Bay: panels and secondary text */
+    --color-parchment: #FFFAF7;   /* the framed cream pages */
+    /* accents */
+    --color-gold: #D4AF37;        /* Antique Gold: wax seals and main buttons */
+    --color-gold-dark: #9C7F1F;   /* the gold button's pressed-edge shadow */
+    --color-royal-red: #B3262B;
+    --color-pink: #FD6B6C;        /* Watermelon Pink: big italic emphasis and ornaments (too light for small text on cream) */
+    --color-lilac: #C7A2CB;       /* Lilac Lily: selected RSVPs and tags */
+    --color-peach: #FFA678;       /* kept on Travelers & Invites */
+    --color-mist: #ECE6EA;        /* empty bars and quiet backgrounds */
 }
+
 
 /* phones: iOS Safari zooms the page in when you tap a box whose text is under 16px,
    and most inputs here (ours and Flowbite's) use 14px. Plain CSS outside a layer

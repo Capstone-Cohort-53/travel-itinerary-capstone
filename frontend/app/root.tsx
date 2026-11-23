@@ -12,7 +12,8 @@ import type { Route } from "./+types/root";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
-  // groupie.travel icon in the browser tab, and on phone home screens
+  // the TripsQueen crown in the browser tab (the PNG for browsers without SVG icons), and on phone home screens
+  { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
   { rel: "icon", type: "image/png", href: "/favicon.png" },
   { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -23,8 +24,8 @@ export const links: Route.LinksFunction = () => [
   },
   {
     rel: "stylesheet",
-    // Inter for body text, Fredoka for the rounded display headings on the landing page
-    href: "https://fonts.googleapis.com/css2?family=Fredoka:wght@500..700&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
+    // TripsQueen type: Playfair Display headlines, Montserrat for everything else, Pinyon Script for the signature
+    href: "https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700;1,800&family=Pinyon+Script&display=swap",
   },
 ];
 
