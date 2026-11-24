@@ -93,7 +93,7 @@ export async function postTripInviteController(
             // points at the frontend's accept-invitation/:token page. The backend is only
             // reached server-to-server (http://backend:4200), so the request's own host
             // can't be used; PUBLIC_URL is the address people open in their browser.
-            const publicUrl: string = (process.env.PUBLIC_URL ?? 'http://localhost').replace(/\/+$/, '')
+            const publicUrl: string = (process.env.PUBLIC_URL ?? 'http://localhost:5173').replace(/\/+$/, '')
             const inviteLink: string = `${publicUrl}/accept-invitation/${tripInvite.token}`
             await sendInviteEmail(email, inviteLink, trip, name, profile.name)
                 .catch(mailError => {
