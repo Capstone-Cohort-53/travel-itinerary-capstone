@@ -89,11 +89,12 @@ export async function postTripInviteController(
             token: crypto.randomBytes(32).toString('hex')
         }
         if (email) {
-
-// fire off the activation email without awaiting it — a delivery failure is
-// logged via .catch() and never blocks or fails the sign-up response
-            // points at the frontend's accept-invitation/:token page
-            const inviteLink: string = `${request.protocol}://${request.hostname}:8080/accept-invitation/${tripInvite.token}`
+            // a delivery failure is logged via .catch() and never fails the invite request
+            // points at the frontend's accept-invitation/:token page. The backend is only
+            // reached server-to-server (http://backend:4200), so the request's own host
+            // can't be used; PUBLIC_URL is the address people open in their browser.
+            const publicUrl: string = (process.env.PUBLIC_URL ?? 'http://localhost').replace(/\/+$/, '')
+            const inviteLink: string = `${publicUrl}/accept-invitation/${tripInvite.token}`
             await sendInviteEmail(email, inviteLink, trip, name, profile.name)
                 .catch(mailError => {
                     console.error('Invite email failed to send:', mailError)
