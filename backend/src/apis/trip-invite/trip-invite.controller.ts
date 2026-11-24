@@ -1,7 +1,7 @@
 import type {Request, Response} from 'express'
 import * as crypto from 'crypto'
-import formData from 'form-data'
-import Mailgun from 'mailgun.js'
+import {Resend} from 'resend'
+import validator from 'validator'
 import {z} from 'zod/v4'
 import {v7} from 'uuid'
 
@@ -376,31 +376,37 @@ export async function putTripInviteController (request: Request, response: Respo
 }
 
 /**
- * Builds and sends the trip-invitation email via Mailgun. The returned promise
- * rejects on any failure (including client construction), so callers should
- * handle errors with `.catch()` or a try/catch.
+ * Builds and sends the trip-invitation email via Resend. The returned promise
+ * rejects on any failure (missing API key, or Resend refusing the message),
+ * so callers should handle errors with `.catch()` or a try/catch.
+ *
+ * Needs RESEND_API_KEY and RESEND_DOMAIN (a domain verified in Resend) in project.env.
  *
  * @param to the invitee's email address
  * @param inviteLink the absolute invite-response URL to embed in the message
- * @param trip the trip the recipient is being invited to (title, destination, and start date appear in the email)
- * @param name the name shown in the email as the person sending the invite
- * @param organizerName the username sending invite
- * @returns a promise that resolves once Mailgun accepts the message
+ * @param trip the trip the recipient is being invited to (its destination appears in the email)
+ * @param name the invitee's name, shown in the greeting
+ * @param organizerName the name of the trip owner sending the invite
+ * @returns a promise that resolves once Resend accepts the message
  */
-async function sendInviteEmail (to: string, inviteLink: string, trip:Trip, name: string, organizerName: string): Promise<void> {
-    const mailgun: Mailgun = new Mailgun(formData)
-    const mailgunClient = mailgun.client({ username: 'api', key: process.env.MAILGUN_API_KEY as string })
+async function sendInviteEmail (to: string, inviteLink: string, trip: Trip, name: string, organizerName: string): Promise<void> {
+    const resend = new Resend(process.env.RESEND_API_KEY)
 
-    const message = `<h2> ${name} You're Invited</h2>
-        <p>To respond to your invite from ${organizerName} to ${trip.destination}. Click here:</p>
+    // names and destination are typed by users, so escape them before putting them in HTML
+    const message = `<h2>${validator.escape(name)}, You're Invited</h2>
+        <p>To respond to your invite from ${validator.escape(organizerName)} to ${validator.escape(trip.destination)}, click here:</p>
         <p><a href="${inviteLink}">${inviteLink}</a></p>`
 
-    await mailgunClient.messages.create(process.env.MAILGUN_DOMAIN as string, {
-        from: `Mailgun Sandbox <postmaster@${process.env.MAILGUN_DOMAIN as string}>`,
+    // Resend reports failures in `error` instead of throwing, so turn them into a rejection
+    const { error } = await resend.emails.send({
+        from: `TripsQueen <invites@${process.env.RESEND_DOMAIN as string}>`,
         to,
         subject: 'Invitation to join your fab friends.',
         html: message
     })
+    if (error) {
+        throw new Error(`Resend rejected the invite email: ${error.name}: ${error.message}`)
+    }
 }
 
 export async function getTripInvitesKitchenSinkController (request: Request, response: Response): Promise<void> {

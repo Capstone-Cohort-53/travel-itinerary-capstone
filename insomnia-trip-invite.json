@@ -20,7 +20,7 @@
         "base_url": "http://lauren.ddfullstack.cloud:8080",
         "google_client_id": "PASTE_GOOGLE_CLIENT_ID_HERE",
         "google_client_secret": "PASTE_GOOGLE_CLIENT_SECRET_HERE",
-        "invite_email": "PASTE_A_MAILGUN_VERIFIED_EMAIL_HERE",
+        "invite_email": "PASTE_AN_EMAIL_ADDRESS_HERE",
         "csrf_token": "",
         "trip_id": "",
         "invite_id": ""
