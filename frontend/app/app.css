@@ -26,6 +26,13 @@
     --color-lilac: #C7A2CB;       /* Lilac Lily: selected RSVPs and tags */
     --color-peach: #FFA678;       /* kept on Travelers & Invites */
     --color-mist: #ECE6EA;        /* empty bars and quiet backgrounds */
+
+    /* the landing headline's rotating trip phrase rises into place (class animate-trip-in) */
+    --animate-trip-in: trip-in 0.45s ease-out;
+    @keyframes trip-in {
+        from { opacity: 0; transform: translateY(0.25em); }
+        to { opacity: 1; transform: translateY(0); }
+    }
 }
 
 

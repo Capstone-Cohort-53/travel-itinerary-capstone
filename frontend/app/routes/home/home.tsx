@@ -3,6 +3,7 @@ import type {Route} from "./+types/home";
 import {getSession} from "~/utils/session.server";
 import {GoogleSignInButton} from "~/components/google-sign-in";
 import {RoyalAlbum} from "~/routes/home/royal-album";
+import {RotatingTrip, RotationPauseButton, useRotatingTrip} from "~/routes/home/rotating-trip";
 import {Crown, Gem, Parchment, RoyalPage, WaxSealLink, emphasis, eyebrow, headline} from "~/components/royal";
 
 
@@ -62,6 +63,8 @@ function HeadlineRule() {
 
 export default function Home(props: Route.ComponentProps) {
     const {isLoggedIn, googleClientId} = props.loaderData
+    // the signed-out headline's pink phrase rotates through kinds of trips
+    const rotation = useRotatingTrip()
 
     return (
         <RoyalPage>
@@ -78,13 +81,18 @@ export default function Home(props: Route.ComponentProps) {
 
                         <p className={eyebrow}>{isLoggedIn ? "Welcome back, Your Majesty" : "By royal decree"}</p>
 
-                        <h1 className={`${headline} text-[40px] sm:text-6xl lg:text-[77px]`}>
+                        <h1 className={`${headline} text-[34px] min-[400px]:text-[40px] sm:text-6xl lg:text-[77px]`}
+                            {...(isLoggedIn ? {} : rotation.hoverHandlers)}>
                             {isLoggedIn ? (
                                 <>Thy kingdom <em className={emphasis}>awaits.</em></>
                             ) : (
-                                <>Hear ye, hear ye: <em className={emphasis}>the girls' trip</em> is happening.</>
+                                // three lines, as in the design; the middle one rotates
+                                <>Hear ye, hear ye:<br/><RotatingTrip index={rotation.index}/>is happening.</>
                             )}
                         </h1>
+                        {!isLoggedIn && rotation.canPause && (
+                            <RotationPauseButton isPaused={rotation.isPaused} onToggle={rotation.togglePause}/>
+                        )}
 
                         <HeadlineRule/>
 
